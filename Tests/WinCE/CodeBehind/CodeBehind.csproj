@@ -59,7 +59,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\OpenNETCF.Web.Extensions\OpenNETCF.Web.Extensions.CF.csproj">
+    <ProjectReference Include="..\..\..\OpenNETCF.Web.Extensions\OpenNETCF.Web.Extensions.CF.csproj">
       <Project>{5517ABE7-5582-4405-8F5B-C84FC6F11222}</Project>
       <Name>OpenNETCF.Web.Extensions.CF</Name>
       <Private>True</Private>

@@ -15,7 +15,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeBehind", "Tests\WinCE\C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenNETCF.Web.Extensions.CF", "OpenNETCF.Web.Extensions\OpenNETCF.Web.Extensions.CF.csproj", "{5517ABE7-5582-4405-8F5B-C84FC6F11222}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenNETCF.Extensions.CF", "..\OpenNETCF.Extensions\OpenNETCF.Extensions\OpenNETCF.Extensions.CF.csproj", "{8C471165-A242-437D-B117-02663D1E064B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenNETCF.Extensions.CF", "..\extensions\OpenNETCF.Extensions.CF.csproj", "{8C471165-A242-437D-B117-02663D1E064B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
