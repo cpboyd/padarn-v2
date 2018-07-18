@@ -1,0 +1,17 @@
+{
+  "name": "mdn-parser",
+  "version": "1.0.0",
+  "description": "Parse HTML element data from MDN",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Christopher Boyd",
+  "license": "ISC",
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.2",
+    "lodash": "^4.17.10",
+    "request": "^2.87.0",
+    "request-promise": "^4.2.2"
+  }
+}
