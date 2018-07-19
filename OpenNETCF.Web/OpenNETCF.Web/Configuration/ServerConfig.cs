@@ -1,4 +1,4 @@
-#region License
+﻿#region License
 // Copyright ©2017 Tacke Consulting (dba OpenNETCF)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
@@ -17,8 +17,10 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
+
+using System.Linq;
 #if WindowsCE
-  using OpenNETCF.Configuration;
+using OpenNETCF.Configuration;
 #else
   using System.Configuration;
 #endif
@@ -68,6 +70,7 @@ using System.Diagnostics;
             Cookies = new CookiesConfiguration();
             Session = new SessionConfiguration();
             Security = new SecurityConfig();
+            this.VirtualPathProviders = new VirtualPathProviders();
             this.HttpHandlers = new List<HttpHandler>();
             this.AssembliesToLoad = new List<string>();
             m_loadedAssemblies = new List<Assembly>();
@@ -84,7 +87,7 @@ using System.Diagnostics;
             get { return m_licenseFile; }
             set
             {
-                var temp = value;
+                string temp = value;
 
                 if(temp != null)
                 {
@@ -117,9 +120,9 @@ using System.Diagnostics;
         public static ServerConfig Create(int port, string documentRoot)
         {
             var doc = new XmlDocument();
-            var configNode = doc.CreateNode(XmlNodeType.Element, "WebServer", null);
+            XmlNode configNode = doc.CreateNode(XmlNodeType.Element, "WebServer", null);
 
-            var attr = doc.CreateAttribute("DefaultPort");
+            XmlAttribute attr = doc.CreateAttribute("DefaultPort");
             attr.Value = port.ToString();
             configNode.Attributes.Append(attr);
 
@@ -162,7 +165,7 @@ using System.Diagnostics;
             }
 
             var handler = new ServerConfigurationHandler();
-            return (ServerConfig)handler.Create(null, null, serverConfigNode);
+            return (ServerConfig) handler.Create(null, null, serverConfigNode);
         }
 
         internal static void SetConfig(ServerConfig config)
@@ -227,7 +230,7 @@ using System.Diagnostics;
                     // if we have a page that at least says "the server is installed an running" I think that would be useful
                 }
 
-                foreach (var assemblyName in config.AssembliesToLoad)
+                foreach (string assemblyName in config.AssembliesToLoad.Distinct())
                 {
                     string newName = Path.Combine(Path.Combine(config.DocumentRoot, "bin"), assemblyName);
 
@@ -241,9 +244,9 @@ using System.Diagnostics;
                         // try loading from the docs folder first
                         if (File.Exists(newName))
                         {
-                            var a = Assembly.LoadFrom(newName);
+                            Assembly a = Assembly.LoadFrom(newName);
                             config.m_loadedAssemblies.Add(a);
-                            var t = a.GetTypes();
+                            Type[] t = a.GetTypes();
 
                         }
                         else
@@ -254,7 +257,7 @@ using System.Diagnostics;
                     }
                     catch (Exception ex)
                     {
-                        var msg = string.Format("Unable to load requested assembly '{0}': {1}", assemblyName, ex.Message);
+                        string msg = string.Format("Unable to load requested assembly '{0}': {1}", assemblyName, ex.Message);
                         Debug.WriteLine(msg);
                         if (provider != null)
                         {
@@ -272,7 +275,7 @@ using System.Diagnostics;
             {
                 if (m_instance.LogFileFolder == null)
                 {
-                    m_instance.LogFileFolder = "\\Temp\\PadarnLogs";
+                    m_instance.LogFileFolder = @"\Temp\PadarnLogs";
                 }
 
                 config = m_instance;
@@ -285,7 +288,7 @@ using System.Diagnostics;
         {
             Type t = null;
 
-            foreach (var a in m_loadedAssemblies)
+            foreach (Assembly a in m_loadedAssemblies)
             {
                 t = a.GetType(typeName.Substring(0, typeName.IndexOf(',')));
 
@@ -387,14 +390,7 @@ using System.Diagnostics;
             internal set
             {
                 // ensure that it's not '\' terminated
-                if (value[value.Length - 1] == '\\')
-                {
-                    m_documentRoot = value.Substring(0, value.Length - 1);
-                }
-                else
-                {
-                    m_documentRoot = value;
-                }
+                m_documentRoot = value.RemoveTrailingSlash();
             }
         }
 
@@ -448,14 +444,7 @@ using System.Diagnostics;
             internal set
             {
                 // don't enable logging if the log folder can't be created for some reason
-                if (m_logFolderError)
-                {
-                    m_loggingEnabled = false;
-                }
-                else
-                {
-                    m_loggingEnabled = value;
-                }
+                m_loggingEnabled = !m_logFolderError && value;
             }
         }
 
@@ -472,12 +461,9 @@ using System.Diagnostics;
 
                 try
                 {
-                    if (LoggingEnabled)
+                    if (LoggingEnabled && !Directory.Exists(m_logFolder = value))
                     {
-                        if (!Directory.Exists(m_logFolder = value))
-                        {
-                            Directory.CreateDirectory(m_logFolder);
-                        }
+                        Directory.CreateDirectory(m_logFolder);
                     }
                 }
                 catch
@@ -535,7 +521,7 @@ using System.Diagnostics;
                 }
                 catch
                 {
-                    m_errorFolder = "\\";
+                    m_errorFolder = @"\";
                 }
 
                 return m_errorFolder; 
@@ -545,23 +531,14 @@ using System.Diagnostics;
 
         internal void SetLogExtensions(string extensionList)
         {
-            string[] extensions = extensionList.Split(';');
+            IEnumerable<string> extensions = extensionList
+                .Split(';')
+                .Select(extension => extension.Trim())
+                .Where(extension => extension.Length > 0);
 
-            foreach (string extension in extensions)
+            foreach (string e in extensions)
             {
-                string e = extension.Trim();
-
-                if (e.Length > 0)
-                {
-                    if (e[0] != '.')
-                    {
-                        LogExtensions.Add(string.Format(".{0}", e));
-                    }
-                    else
-                    {
-                        LogExtensions.Add(e);
-                    }
-                }
+                LogExtensions.Add((e[0] == '.') ? e : string.Format(".{0}", e));
             }
         }
     }

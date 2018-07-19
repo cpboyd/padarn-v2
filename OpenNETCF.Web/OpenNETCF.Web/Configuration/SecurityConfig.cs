@@ -21,6 +21,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
+using System.Xml;
 
 namespace OpenNETCF.Web.Configuration
 {
@@ -36,6 +37,11 @@ namespace OpenNETCF.Web.Configuration
             this.Tls12 = true;
             this.ResumeSession = true;
             CipherList = new List<short>();
+        }
+
+        internal SecurityConfig(XmlNode node) : this()
+        {
+            ParseXml(node);
         }
 
         /// <summary>
@@ -63,5 +69,70 @@ namespace OpenNETCF.Web.Configuration
         /// See https://www.eldos.com/documentation/sbb/documentation/ref_cl_clientsslsocket_mtd_getciphersuites.html
         /// </summary>
         public List<short> CipherList { get; internal set; }
+
+        private void ParseXml(XmlNode node)
+        {
+            foreach (XmlNode subnode in node.ChildNodes)
+            {
+                bool enabled = false;
+
+                if (subnode.Attributes.Count > 0 && subnode.Attributes["Enabled"] != null)
+                {
+                    enabled = bool.Parse(subnode.Attributes["Enabled"].Value);
+                }
+
+                switch (subnode.Name)
+                {
+                    case "TLS10":
+                        this.Tls10 = enabled;
+                        break;
+
+                    case "TLS11":
+                        this.Tls11 = enabled;
+                        break;
+
+                    case "TLS12":
+                        this.Tls12 = enabled;
+                        break;
+
+                    case "ResumeSession":
+                        this.ResumeSession = enabled;
+                        break;
+
+                    case "CipherList":
+                        try
+                        {
+                            string list = subnode.InnerText;
+                            if (string.IsNullOrEmpty(list))
+                            {
+                                break;
+                            }
+
+                            IEnumerable<string> items = list
+                                .Split(',')
+                                .Select(item => item.Trim())
+                                .Where(item => item.Length > 0);
+
+                            foreach (string item in items)
+                            {
+                                try
+                                {
+                                    short cipher = short.Parse(item);
+                                    this.CipherList.Add(cipher);
+                                }
+                                catch
+                                {
+                                    // ignore non-numerics
+                                }
+                            }
+                        }
+                        catch
+                        {
+                            // just use the defaults
+                        }
+                        break;
+                }
+            }
+        }
     }
 }

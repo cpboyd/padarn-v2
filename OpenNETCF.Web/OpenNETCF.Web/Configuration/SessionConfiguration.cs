@@ -38,67 +38,73 @@ namespace OpenNETCF.Web.Configuration
             Timeout = DefaultTimeout;
         }
 
+        internal SessionConfiguration(XmlNode node) : this()
+        {
+            ParseXml(node);
+        }
+
         internal static SessionConfiguration FromXml(XmlNode sessionNode)
         {
-            SessionConfiguration config = new SessionConfiguration();
+            return new SessionConfiguration(sessionNode);
+        }
 
-            var attrib = sessionNode.Attributes["allowSessionState"];
+        private void ParseXml(XmlNode sessionNode)
+        {
+            XmlAttribute attrib = sessionNode.Attributes["allowSessionState"];
             if (attrib == null)
             {
-                config.AllowSessionState = DefaultAllowSessionState;
+                this.AllowSessionState = DefaultAllowSessionState;
             }
             else
             {
                 try
                 {
-                    config.AllowSessionState = bool.Parse(attrib.Value);
+                    this.AllowSessionState = bool.Parse(attrib.Value);
                 }
                 catch
                 {
-                    config.AllowSessionState = DefaultAllowSessionState;
+                    this.AllowSessionState = DefaultAllowSessionState;
                 }
             }
 
             attrib = sessionNode.Attributes["max"];
             if (attrib == null)
             {
-                config.MaxSessions = DefaultMaxSessions;
+                this.MaxSessions = DefaultMaxSessions;
             }
             else
             {
                 try
                 {
-                    config.MaxSessions = int.Parse(attrib.Value);
+                    this.MaxSessions = int.Parse(attrib.Value);
                 }
                 catch
                 {
-                    config.MaxSessions = DefaultMaxSessions;
+                    this.MaxSessions = DefaultMaxSessions;
                 }
             }
 
             attrib = sessionNode.Attributes["timeout"];
             if (attrib == null)
             {
-                config.Timeout = DefaultTimeout;
+                this.Timeout = DefaultTimeout;
             }
             else
             {
                 try
                 {
-                    config.Timeout = (int)TimeSpan.Parse(attrib.Value).TotalMinutes;
+                    this.Timeout = (int)TimeSpan.Parse(attrib.Value).TotalMinutes;
                 }
                 catch
                 {
-                    config.Timeout = DefaultTimeout;
+                    this.Timeout = DefaultTimeout;
                 }
             }
 
-            if (config.Timeout < 1)
+            if (this.Timeout < 1)
             {
-                config.Timeout = DefaultTimeout;
+                this.Timeout = DefaultTimeout;
             }
-
-            return config;
         }
 
         /// <summary>

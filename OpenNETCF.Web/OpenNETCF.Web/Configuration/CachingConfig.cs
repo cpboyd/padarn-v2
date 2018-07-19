@@ -20,24 +20,28 @@
 using System;
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using System.Xml;
 
 namespace OpenNETCF.Web.Configuration
 {
     /// <summary>
     /// Caching configuration for the server
     /// </summary>
-    public sealed class CachingConfig
+    public sealed class CachingConfig : List<CachingProfile>
     {
-        private List<CachingProfile> m_profiles = new List<CachingProfile>();
-
         internal CachingConfig()
         {
         }
 
-        internal void AddProfile(CachingProfile profile)
+        internal CachingConfig(XmlNode node, XmlNamespaceManager nsmgr)
         {
-            m_profiles.Add(profile);
+            XmlNodeList list = node.GetNodes("profiles/add", nsmgr);
+            foreach (XmlNode profile in list)
+            {
+                this.Add(new CachingProfile(profile));
+            }
         }
 
         /// <summary>
@@ -45,7 +49,7 @@ namespace OpenNETCF.Web.Configuration
         /// </summary>
         public CachingProfile[] Profiles 
         {
-            get { return m_profiles.ToArray(); } 
+            get { return this.ToArray(); } 
         }
     }
 }

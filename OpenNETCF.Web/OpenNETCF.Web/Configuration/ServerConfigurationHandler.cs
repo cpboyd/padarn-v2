@@ -1,4 +1,4 @@
-#region License
+﻿#region License
 // Copyright ©2017 Tacke Consulting (dba OpenNETCF)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
@@ -18,6 +18,8 @@
 //
 #endregion
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Xml;
 using System.Net;
 using System.Reflection;
@@ -53,113 +55,126 @@ namespace OpenNETCF.Web.Configuration
         /// <returns></returns>
         public object Create(object parent, object configContext, XmlNode section)
         {
-            ServerConfig cfg = new ServerConfig();
+            var cfg = new ServerConfig();
 
             foreach (XmlAttribute attribute in section.Attributes)
             {
-                if (attribute.NodeType == XmlNodeType.Attribute)
+                if (attribute.NodeType != XmlNodeType.Attribute)
+                    continue;
+
+                switch (attribute.Name)
                 {
-                    switch (attribute.Name)
-                    {
-                        case "LocalIP":
-                            try
-                            {
-                                cfg.LocalIP = IPAddress.Parse(attribute.Value);
-                            }
-                            catch
-                            {
-                                // TODO: log this
-                                cfg.LocalIP = IPAddress.Any;
-                            }
-                            break;
-                        case "DefaultPort":
-                            cfg.Port = Int32.Parse(attribute.Value);
-                            break;
-                        case "DocumentRoot":
-                            string docRoot = attribute.Value;
-                            cfg.DocumentRoot = !docRoot.EndsWith("\\") ? string.Concat(docRoot, "\\") : docRoot;
-                            break;
-                        case "TempRoot":
-                            cfg.TempRoot = attribute.Value;
-                            break;
-                        case "MaxConnections":
-                            cfg.MaxConnections = Int32.Parse(attribute.Value);
-                            break;
-                        case "Logging":
-                            cfg.LoggingEnabled = bool.Parse(attribute.Value);
-                            break;
-                        case "LogFolder":
-                            cfg.LogFileFolder = attribute.Value;
-                            break;
-                        case "LogExtensions":
-                            cfg.SetLogExtensions(attribute.Value);
-                            break;
-                        case "LogProvider":
-                            cfg.LogProvider = attribute.Value;
-                            break;
-                        case "BrowserDefinitions":
-                            cfg.BrowserDefinitions = attribute.Value;
-                            break;
-                        case "AuthenticationEnabled":
-                            cfg.AuthenticationEnabled = bool.Parse(attribute.Value);
-                            break;
-                        case "CertificateName":
-                            cfg.CertificateName = attribute.Value;
-                            break;
-                        case "CertificatePassword":
-                            cfg.CertificatePassword = attribute.Value;
-                            break;
-                        case "UseSsl":
-                            cfg.UseSsl = bool.Parse(attribute.Value);
-                            break;
-                        case "SSLLicenseKey":
-                            cfg.SSLLicenseKey = attribute.Value;
-                            break;
-                        case "CustomErrorFolder":
-                            cfg.CustomErrorFolder = attribute.Value;
-                            break;
-                        case "LicensePath":
-                            cfg.LicensePath = attribute.Value;
-                            break;
-                        default:
-                            HandleInvalidAttributes();
-                            break;
-                    }
+                    case "LocalIP":
+                        try
+                        {
+                            cfg.LocalIP = IPAddress.Parse(attribute.Value);
+                        }
+                        catch
+                        {
+                            // TODO: log this
+                            cfg.LocalIP = IPAddress.Any;
+                        }
+                        break;
+                    case "DefaultPort":
+                        cfg.Port = Int32.Parse(attribute.Value);
+                        break;
+                    case "DocumentRoot":
+                        cfg.DocumentRoot = attribute.Value;
+                        break;
+                    case "TempRoot":
+                        cfg.TempRoot = attribute.Value;
+                        break;
+                    case "MaxConnections":
+                        cfg.MaxConnections = Int32.Parse(attribute.Value);
+                        break;
+                    case "Logging":
+                        cfg.LoggingEnabled = bool.Parse(attribute.Value);
+                        break;
+                    case "LogFolder":
+                        cfg.LogFileFolder = attribute.Value;
+                        break;
+                    case "LogExtensions":
+                        cfg.SetLogExtensions(attribute.Value);
+                        break;
+                    case "LogProvider":
+                        cfg.LogProvider = attribute.Value;
+                        break;
+                    case "BrowserDefinitions":
+                        cfg.BrowserDefinitions = attribute.Value;
+                        break;
+                    case "AuthenticationEnabled":
+                        cfg.AuthenticationEnabled = bool.Parse(attribute.Value);
+                        break;
+                    case "CertificateName":
+                        cfg.CertificateName = attribute.Value;
+                        break;
+                    case "CertificatePassword":
+                        cfg.CertificatePassword = attribute.Value;
+                        break;
+                    case "UseSsl":
+                        cfg.UseSsl = bool.Parse(attribute.Value);
+                        break;
+                    case "SSLLicenseKey":
+                        cfg.SSLLicenseKey = attribute.Value;
+                        break;
+                    case "CustomErrorFolder":
+                        cfg.CustomErrorFolder = attribute.Value;
+                        break;
+                    case "LicensePath":
+                        cfg.LicensePath = attribute.Value;
+                        break;
+                    default:
+                        HandleInvalidAttributes();
+                        break;
                 }
             }
 
             //Do the child nodes
+            XmlNamespaceManager nsMgr = section.GetNsManager();
             foreach (XmlNode node in section.ChildNodes)
             {
                 try
                 {
-                    switch (node.Name)
+                    switch (node.Name.FirstCharToLower())   // for backward compatibility
                     {
-                        case "DefaultDocuments":
+                        case "defaultDocuments":            // for backward compatibility
                             foreach (XmlNode docNode in node.ChildNodes)
                             {
                                 cfg.DefaultDocuments.Add(docNode.InnerText);
                             }
                             break;
 
-                        case "Authentication": // for backward compatibility
+                        case "defaultDocument":
+                            IEnumerable<string> docs = node.GetAttributeList("files/add", "value", nsMgr);
+                            cfg.DefaultDocuments.AddRange(docs);
+                            break;
+
+                        case "assemblies":
+                            IEnumerable<string> assemblyNames = node.GetAttributeList("add", "assembly", nsMgr);
+                            cfg.AssembliesToLoad.AddRange(assemblyNames);
+                            break;
+
                         case "authentication":
                             cfg.Authentication = ReadAuthenticationConfig(node);
                             break;
+
                         case "authorization":
                             ParseFormsAuthorization(node);
                             break;
-                        case "VirtualDirectories":
+
+                        case "virtualDirectories":
                             if (cfg.VirtualDirectories == null)
                             {
                                 cfg.VirtualDirectories = new VirtualDirectoryMappingCollection();
                             }
                             ReadVirtualDirectoriesConfig(cfg, node);
                             break;
-                        case "Cookies":
-                            CookiesConfiguration cookieConfig = new CookiesConfiguration();
+
+                        case "cookies":
+                            var cookieConfig = new CookiesConfiguration();
                             XmlAttribute domainAttrib = node.Attributes["Domain"];
-                            if (domainAttrib == null) break;
+                            if (domainAttrib == null)
+                                break;
 
                             cookieConfig.Domain = domainAttrib.Value;
 
@@ -175,135 +190,28 @@ namespace OpenNETCF.Web.Configuration
 
                             cfg.Cookies = cookieConfig;
                             break;
-                        case "Caching":
-                            CachingConfig cachingConfig = new CachingConfig();
 
-                            foreach (XmlNode subnode in node.ChildNodes)
-                            {
-                                if (subnode.Name.ToLower() == "profiles")
-                                {
-                                    foreach (XmlNode profileNode in subnode.ChildNodes)
-                                    {
-                                        if (profileNode.Name.ToLower() == "add")
-                                        {
-                                            CachingProfile profile = new CachingProfile(profileNode);
-                                            cachingConfig.AddProfile(profile);
-                                        }
-                                    }
-                                }
-                            }
-
-                            cfg.Caching = cachingConfig;
+                        case "caching":
+                            cfg.Caching.AddRange(new CachingConfig(node, nsMgr));
                             break;
-                        case "VirtualPathProviders":
-                            VirtualPathProviders providers = new VirtualPathProviders();
 
-                            if (node.Attributes.Count > 0)
-                            {
-                                if (node.Attributes["ProviderPath"] != null)
-                                {
-                                    string val = node.Attributes["ProviderPath"].Value;
-                                    if (String.IsNullOrEmpty(val)) { val = null; }
-                                    if (val != null)
-                                    {
-                                        providers.ProviderPath = val;
-                                    }
-                                }
-                            }
-
-                            foreach (XmlNode subnode in node.ChildNodes)
-                            {
-                                if (subnode.Name.Equals("Provider"))
-                                {
-                                    if (subnode.Attributes.Count > 0)
-                                    {
-                                        if (subnode.Attributes["Type"] != null)
-                                        {
-                                            string provider = subnode.Attributes["Type"].Value;
-                                            providers.Add(provider);
-                                        }
-                                    }
-                                }
-                            }
-
-                            cfg.VirtualPathProviders = providers;
+                        case "virtualPathProviders":
+                            IEnumerable<string> providers = node.GetAttributeList("add", "type", nsMgr);
+                            cfg.VirtualPathProviders.AddRange(providers);
                             break;
+
                         case "httpHandlers":
-                            var h = new HttpHandlersConfigSection(node);
-                            foreach (var assemblyName in h.AssemblyNames)
-                            {
-                                cfg.AssembliesToLoad.Add(assemblyName);
-                            }
-
+                            var h = new HttpHandlersConfigSection(node, nsMgr);
+                            cfg.AssembliesToLoad.AddRange(h.AssemblyNames); // for backward compatibility
                             cfg.HttpHandlers.AddRange(h);
                             break;
+
                         case "session":
-                            cfg.Session = SessionConfiguration.FromXml(node);
+                            cfg.Session = new SessionConfiguration(node);
                             break;
-                        case "Security":
-                            cfg.Security = new SecurityConfig();
 
-                            foreach (XmlNode subnode in node.ChildNodes)
-                            {
-                                bool enabled = false;
-                                
-                                if (subnode.Attributes.Count > 0 && subnode.Attributes["Enabled"] != null)
-                                {
-                                    enabled = bool.Parse(subnode.Attributes["Enabled"].Value);
-                                }
-
-                                switch (subnode.Name)
-                                {
-                                    case "TLS10":
-                                        cfg.Security.Tls10 = enabled;
-                                        break;
-
-                                    case "TLS11":
-                                        cfg.Security.Tls11 = enabled;
-                                        break;
-
-                                    case "TLS12":
-                                        cfg.Security.Tls12 = enabled;
-                                        break;
-
-                                    case "ResumeSession":
-                                        cfg.Security.ResumeSession = enabled;
-                                        break;
-
-                                    case "CipherList":
-                                        try
-                                        {
-                                            var list = subnode.InnerText;
-                                            if (!string.IsNullOrEmpty(list))
-                                            {
-                                                var items = list.Split(new char[] { ',' });
-
-                                                foreach (var item in items)
-                                                {
-                                                    if (string.IsNullOrEmpty(item))
-                                                    {
-                                                        continue;
-                                                    }
-
-                                                    try
-                                                    {
-                                                        var cipher = short.Parse(item.Trim());
-                                                        cfg.Security.CipherList.Add(cipher);
-                                                    }
-                                                    catch
-                                                    {
-                                                        // ignore non-numerics
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        catch
-                                        {
-                                            // just use the defaults
-                                        }
-                                        break;
-                                }
-                            }
+                        case "security":
+                            cfg.Security = new SecurityConfig(node);
                             break;
                     }
                 }
@@ -336,25 +244,18 @@ namespace OpenNETCF.Web.Configuration
                     {
                         XmlNode directoryNode = childNode;
 
-                        string virtualPath = HandlerBase.RemoveRequiredAttribute(directoryNode, "VirtualPath",
-                                                                                 false);
-                        string physicalPath = HandlerBase.RemoveRequiredAttribute(directoryNode,
-                                                                                  "PhysicalPath",
-                                                                                  false);
+                        string virtualPath = HandlerBase.RemoveRequiredAttribute(
+                            directoryNode, "VirtualPath", false);
+                        string physicalPath = HandlerBase.RemoveRequiredAttribute(
+                            directoryNode, "PhysicalPath", false).RemoveTrailingSlash();
 
-                        if (physicalPath.EndsWith("\\"))
+                        string requiresAuthValue = HandlerBase.RemoveAttribute(
+                            directoryNode, "RequireAuthentication");
+                        var virtualDir = new VirtualDirectoryMapping(virtualPath, physicalPath)
                         {
-                            physicalPath = physicalPath.Substring(0, physicalPath.Length - 1);
-                        }
-
-                        VirtualDirectoryMapping virtualDir = new VirtualDirectoryMapping(virtualPath,
-                                                                                         physicalPath);
-
-                        string requiresAuthValue = HandlerBase.RemoveAttribute(directoryNode,
-                                                                               "RequireAuthentication");
-                        virtualDir.RequiresAuthentication = String.IsNullOrEmpty(requiresAuthValue)
-                                                                ? false
-                                                                : Convert.ToBoolean(requiresAuthValue);
+                            RequiresAuthentication =
+                                !string.IsNullOrEmpty(requiresAuthValue) && Convert.ToBoolean(requiresAuthValue)
+                        };
 
                         HandlerBase.CheckForUnrecognizedAttributes(directoryNode);
 
@@ -373,11 +274,12 @@ namespace OpenNETCF.Web.Configuration
             {
                 foreach (XmlNode child in node.ChildNodes)
                 {
-                    if (string.Compare(child.Name, "allow", true) == 0)
+                    switch (child.Name.FirstCharToLower())  // for backward compatibility
                     {
-                    }
-                    if (string.Compare(child.Name, "deny", true) == 0)
-                    {
+                        case "allow":
+                            break;
+                        case "deny":
+                            break;
                     }
                 }
             }
@@ -385,16 +287,17 @@ namespace OpenNETCF.Web.Configuration
 
         private static AuthenticationConfiguration ReadAuthenticationConfig(XmlNode node)
         {
-            AuthenticationConfiguration auth = new AuthenticationConfiguration();
-
-            auth.Mode = node.Attributes["Mode"].Value;
+            var auth = new AuthenticationConfiguration
+            {
+                Mode = node.Attributes["Mode"].Value
+            };
 
             if (string.Compare(auth.Mode, "forms", true) == 0)
             {
                 FormsAuthentication.IsEnabled = true;
             }
 
-            var attr = node.Attributes["Enabled"];
+            XmlAttribute attr = node.Attributes["Enabled"];
             auth.Enabled = false;
             if (attr != null)
             {
@@ -420,91 +323,53 @@ namespace OpenNETCF.Web.Configuration
             {
                 foreach (XmlNode child in node.ChildNodes)
                 {
-                    if (string.Compare(child.Name, "users", true) == 0)
+                    switch (child.Name.FirstCharToLower())  // for backward compatibility
                     {
-                        foreach (XmlNode userNode in child.ChildNodes)
-                        {
-                            User user = new User();
-
-                            XmlAttribute nameAttribute = userNode.Attributes["Name"];
-                            user.Name = (nameAttribute == null) ? String.Empty : nameAttribute.Value;
-
-                            XmlAttribute passwordAttribute = userNode.Attributes["Password"];
-                            user.Password = (passwordAttribute == null) ? String.Empty : passwordAttribute.Value;
-
-                            if (userNode.HasChildNodes)
+                        case "users":
+                            foreach (XmlNode userNode in child.ChildNodes)
                             {
-                                foreach (XmlNode roleNode in userNode.ChildNodes)
+                                string name = userNode.AttributeOrEmpty("Name");
+                                string password = userNode.AttributeOrEmpty("Password");
+
+                                var user = new User {Name = name, Password = password};
+                                if (userNode.HasChildNodes)
                                 {
-                                    Role role = new Role();
-                                    XmlAttribute roleNameAttribute = roleNode.Attributes["Name"];
-                                    role.Name = (roleNameAttribute == null)
-                                                    ? String.Empty
-                                                    : roleNameAttribute.Value;
-                                    user.Roles.Add(role);
+                                    IEnumerable<Role> roles = userNode.ChildNodes.GetAttributeList("Name")
+                                        .Select(roleName => new Role { Name = roleName });
+                                    user.Roles.AddRange(roles);
                                 }
+
+                                auth.Users.Add(user);
+                            }
+                            break;
+                        case "forms":
+                            //loginUrl="login.aspx"
+                            //name=".PADARNAUTH"
+                            //domain="testdomain"
+                            //defaultUrl="default.aspx"
+                            //path="/"
+                            //timeout="30"
+
+                            //slidingExpiration="true"
+                            //requireSSL="false"
+                            //protection="None"
+                            //enableCrossAppRedirects="false"
+                            //cookieless="UseCookies"    
+
+                            attr = child.Attributes["loginUrl"];
+                            if (attr != null)
+                            {
+                                FormsAuthentication.LoginUrl = attr.Value;
                             }
 
-                            auth.Users.Add(user);
-                        }
-                    }
-                    if (string.Compare(child.Name, "forms", true) == 0)
-                    {
-                        //loginUrl="login.aspx"
-                        //name=".PADARNAUTH"
-                        //domain="testdomain"
-                        //defaultUrl="default.aspx"
-                        //path="/"
-                        //timeout="30"
-
-                        //slidingExpiration="true"
-                        //requireSSL="false"
-                        //protection="None"
-                        //enableCrossAppRedirects="false"
-                        //cookieless="UseCookies"    
-
-                        attr = child.Attributes["loginUrl"];
-                        if (attr != null)
-                        {
-                            FormsAuthentication.LoginUrl = attr.Value;
-                        }
-
-                        attr = child.Attributes["loginUrl"];
-                        if (attr != null)
-                        {
-                            FormsAuthentication.LoginUrl = attr.Value;
-                        }
+                            attr = child.Attributes["loginUrl"];
+                            if (attr != null)
+                            {
+                                FormsAuthentication.LoginUrl = attr.Value;
+                            }
+                            break;
                     }
                 }
-
-                //if (node.FirstChild.HasChildNodes)
-                //{
-                //    foreach (XmlNode userNode in node.FirstChild.ChildNodes)
-                //    {
-                //        User user = new User();
-
-                //        XmlAttribute nameAttribute = userNode.Attributes["Name"];
-                //        user.Name = (nameAttribute == null) ? String.Empty : nameAttribute.Value;
-
-                //        XmlAttribute passwordAttribute = userNode.Attributes["Password"];
-                //        user.Password = (passwordAttribute == null) ? String.Empty : passwordAttribute.Value;
-
-                //        if (userNode.HasChildNodes)
-                //        {
-                //            foreach (XmlNode roleNode in userNode.ChildNodes)
-                //            {
-                //                Role role = new Role();
-                //                XmlAttribute roleNameAttribute = roleNode.Attributes["Name"];
-                //                role.Name = (roleNameAttribute == null)
-                //                                ? String.Empty
-                //                                : roleNameAttribute.Value;
-                //                user.Roles.Add(role);
-                //            }
-                //        }
-
-                //        auth.Users.Add(user);
-                //    }
-                //}
             }
             return auth;
         }

@@ -146,6 +146,7 @@
     <Compile Include="Configuration\CacheLocation.cs" />
     <Compile Include="Configuration\CachingConfig.cs" />
     <Compile Include="Configuration\CachingProfile.cs" />
+    <Compile Include="Configuration\ConfigExtensions.cs" />
     <Compile Include="Configuration\CookiesConfiguration.cs" />
     <None Include="Configuration\HandlerBase.cs" />
     <Compile Include="Configuration\HttpHandlersConfig.cs" />

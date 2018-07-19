@@ -20,6 +20,7 @@
 using System;
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Xml;
 
@@ -27,65 +28,32 @@ namespace OpenNETCF.Web.Configuration
 {
     internal class HttpHandlersConfigSection : List<HttpHandler>
     {
-        readonly XmlNode _section;
-        public string[] AssemblyNames { get; private set; }
+        public IEnumerable<string> AssemblyNames { get; private set; }
 
-        internal HttpHandlersConfigSection(XmlNode section)
+        internal HttpHandlersConfigSection(XmlNode section, XmlNamespaceManager nsMgr)
         {
-            _section = section;
-            ParseSection(_section);
+            ParseSection(section, nsMgr);
         }
 
-        private void ParseSection(XmlNode _section)
+        private void ParseSection(XmlNode section, XmlNamespaceManager nsMgr)
         {
-            XmlNamespaceManager nsmgr = null;
-            if (!string.IsNullOrEmpty(_section.NamespaceURI))
-            {
-                nsmgr = new XmlNamespaceManager(_section.OwnerDocument.NameTable);
-                nsmgr.AddNamespace("padarn", _section.NamespaceURI);
-            }
+            AssemblyNames = section.GetAssemblies(nsMgr);
 
-            List<string> assemblies = new List<string>();
-            XmlNodeList l;
-
-            if (nsmgr == null)
+            XmlNodeList list = section.GetNodes("add", nsMgr);
+            foreach (XmlNode node in list)
             {
-                l = _section.SelectNodes("assembly");
-            }
-            else
-            {
-                l = _section.SelectNodes("padarn:assembly", nsmgr);
-            }
-
-            foreach (XmlNode n in l)
-            {
-                assemblies.Add(n.InnerText);
-            }
-            AssemblyNames = assemblies.ToArray();
-
-            if (nsmgr == null)
-            {
-                l = _section.SelectNodes("add");
-            }
-            else
-            {
-                l = _section.SelectNodes("padarn:add", nsmgr);
-            }
-
-            foreach (XmlNode n in l)
-            {
-                string verb = n.Attributes["verb"].Value;
+                string verb = node.Attributes["verb"].Value;
                 HttpMethod method;
                 if (verb != "*")
                 {
-                    method = (HttpMethod)Enum.Parse(typeof(HttpMethod), verb, true);
+                    method = (HttpMethod) Enum.Parse(typeof(HttpMethod), verb, true);
                 }
                 else
                 {
                     method = HttpMethod.ANY;
                 }
 
-                this.Add(new HttpHandler(method, n.Attributes["path"].Value, n.Attributes["type"].Value));
+                this.Add(new HttpHandler(method, node.Attributes["path"].Value, node.Attributes["type"].Value));
             }
         }
     }
@@ -93,11 +61,10 @@ namespace OpenNETCF.Web.Configuration
 
     internal class HttpHandler
     {
-
         readonly HttpMethod _verb;
         readonly string _path;
-        readonly string  _type;
-        
+        readonly string _type;
+
         internal HttpHandler(HttpMethod verb, string path, string typeName)
         {
 
