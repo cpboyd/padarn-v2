@@ -196,6 +196,21 @@ namespace OpenNETCF.Web.UI
         /// Renders an anchor tag.
         /// </summary>
         /// <param name="writer">The writer to render to.</param>
+        /// <returns>The writer.</returns>
+        public static HtmlTextWriter A(this HtmlTextWriter writer)
+        {
+            return writer.Tag(HtmlTextWriterTag.A);
+        }
+
+        public static HtmlTextWriter A(this HtmlTextWriter writer, Func<HtmlAttributeManager, HtmlAttributeManager> attributes)
+        {
+            return writer.Tag(HtmlTextWriterTag.A, attributes);
+        }
+
+        /// <summary>
+        /// Renders an anchor tag.
+        /// </summary>
+        /// <param name="writer">The writer to render to.</param>
         /// <param name="href">The url of the hyperlink.</param>
         /// <param name="title">The title of the hyperlink.</param>
         /// <returns>The writer.</returns>
@@ -210,13 +225,18 @@ namespace OpenNETCF.Web.UI
         }
 
         /// <summary>
-        /// Renders an anchor tag.
+        /// Renders a complete anchor element (start and end tag).
         /// </summary>
         /// <param name="writer">The writer to render to.</param>
+        /// <param name="href">The url of the hyperlink.</param>
+        /// <param name="title">The title of the hyperlink.</param>
+        /// <param name="text">The text to display.</param>
         /// <returns>The writer.</returns>
-        public static HtmlTextWriter A(this HtmlTextWriter writer)
+        public static HtmlTextWriter A(this HtmlTextWriter writer, string href, string title, string text)
         {
-            return writer.Tag(HtmlTextWriterTag.A);
+            return A(writer, href, title)
+                .Text(text)
+                .EndTag();
         }
 
         /// <summary>
@@ -306,18 +326,6 @@ namespace OpenNETCF.Web.UI
             }
 
             return writer;
-        }
-
-        public static HtmlTextWriter Label(this HtmlTextWriter writer, Func<HtmlAttributeManager, HtmlAttributeManager> attributes)
-        {
-            return writer
-                .Tag(HtmlTextWriterTag.Label, attributes);
-        }
-
-        public static HtmlTextWriter Label(this HtmlTextWriter writer)
-        {
-            return writer
-                .Tag(HtmlTextWriterTag.Label);
         }
 
         /// <summary>
@@ -465,35 +473,6 @@ namespace OpenNETCF.Web.UI
             return writer.Tag(HtmlTextWriterTag.Strong, attributes);
         }
 
-        /// <summary>
-        /// Renders a td start tag.
-        /// </summary>
-        /// <param name="writer">The writer to render to.</param>
-        /// <returns>The writer.</returns>
-        public static HtmlTextWriter Td(this HtmlTextWriter writer)
-        {
-            return writer.Tag(HtmlTextWriterTag.Td);
-        }
-
-        public static HtmlTextWriter Td(this HtmlTextWriter writer, Func<HtmlAttributeManager, HtmlAttributeManager> attributes)
-        {
-            return writer.Tag(HtmlTextWriterTag.Td, attributes);
-        }
-
-        /// <summary>
-        /// Renders a complete TD element (start and end tag) with the specified text
-        /// </summary>
-        /// <param name="writer"></param>
-        /// <param name="text"></param>
-        /// <returns></returns>
-        public static HtmlTextWriter Td(this HtmlTextWriter writer, string text)
-        {
-            return writer
-                .Tag(HtmlTextWriterTag.Td)
-                .Text(text)
-                .EndTag();
-        }
-
         public static HtmlTextWriter H4(this HtmlTextWriter writer, string text)
         {
             return writer
@@ -564,27 +543,6 @@ namespace OpenNETCF.Web.UI
                 .Tag(HtmlTextWriterTag.H1, attributes);
         }
 
-        public static HtmlTextWriter SubmitButton(this HtmlTextWriter writer, string name, string value)
-        {
-            return writer
-                        .Tag(HtmlTextWriterTag.Input, t => t
-                            [HtmlTextWriterAttribute.Type, "submit"]
-                            [HtmlTextWriterAttribute.Name, name]
-                            [HtmlTextWriterAttribute.Value, value])
-                        .EndTag(); // input
-        }
-
-        public static HtmlTextWriter SubmitButton(this HtmlTextWriter writer, string id, string name, string value)
-        {
-            return writer
-                        .Tag(HtmlTextWriterTag.Input, t => t
-                            [HtmlTextWriterAttribute.Type, "submit"]
-                            [HtmlTextWriterAttribute.Name, name]
-                            [HtmlTextWriterAttribute.Id, id]
-                            [HtmlTextWriterAttribute.Value, value])
-                        .EndTag(); // input
-        }
-
         public static HtmlTextWriter Hidden(this HtmlTextWriter writer, string name, string value)
         {
             return writer
@@ -595,79 +553,10 @@ namespace OpenNETCF.Web.UI
                         .EndTag(); // input
         }
 
-        public static HtmlTextWriter Tr(this HtmlTextWriter writer)
-        {
-            return writer.Tag(HtmlTextWriterTag.Tr);
-        }
-
-        public static HtmlTextWriter Tr(this HtmlTextWriter writer, Func<HtmlAttributeManager, HtmlAttributeManager> attributes)
-        {
-            return writer.Tag(HtmlTextWriterTag.Tr, attributes);
-        }
-
         public static HtmlTextWriter Br(this HtmlTextWriter writer)
         {
             writer.WriteBreak();
             return writer;
-        }
-
-        public static HtmlTextWriter Option(this HtmlTextWriter writer)
-        {
-            return writer.Tag(HtmlTextWriterTag.Option);
-        }
-
-        public static HtmlTextWriter Option(this HtmlTextWriter writer, string name, string value, string text)
-        {
-            return writer
-                .Tag(HtmlTextWriterTag.Option, t => t
-                    [HtmlTextWriterAttribute.Value, value]
-                    [HtmlTextWriterAttribute.Name, name])
-                .Text(text);
-        }
-
-        public static HtmlTextWriter Option(this HtmlTextWriter writer, Func<HtmlAttributeManager, HtmlAttributeManager> attributes)
-        {
-            return writer.Tag(HtmlTextWriterTag.Option, attributes);
-        }
-
-        public static HtmlTextWriter Thead(this HtmlTextWriter writer)
-        {
-            return writer.Tag(HtmlTextWriterTag.Thead);
-        }
-
-        public static HtmlTextWriter Tbody(this HtmlTextWriter writer)
-        {
-            return writer.Tag(HtmlTextWriterTag.Tbody);
-        }
-
-        public static HtmlTextWriter Tbody(this HtmlTextWriter writer, Func<HtmlAttributeManager, HtmlAttributeManager> attributes)
-        {
-            return writer.Tag(HtmlTextWriterTag.Tbody, attributes);
-        }
-
-        public static HtmlTextWriter Table(this HtmlTextWriter writer)
-        {
-            return writer.Tag(HtmlTextWriterTag.Table);
-        }
-
-        public static HtmlTextWriter Table(this HtmlTextWriter writer, Func<HtmlAttributeManager, HtmlAttributeManager> attributes)
-        {
-            return writer.Tag(HtmlTextWriterTag.Table, attributes);
-        }
-
-        public static HtmlTextWriter Colgroup(this HtmlTextWriter writer, Func<HtmlAttributeManager, HtmlAttributeManager> attributes)
-        {
-            return writer.Tag(HtmlTextWriterTag.Colgroup, attributes);
-        }
-
-        public static HtmlTextWriter Colgroup(this HtmlTextWriter writer)
-        {
-            return writer.Tag(HtmlTextWriterTag.Colgroup);
-        }
-
-        public static HtmlTextWriter Col(this HtmlTextWriter writer, Func<HtmlAttributeManager, HtmlAttributeManager> attributes)
-        {
-            return writer.Tag(HtmlTextWriterTag.Col, attributes);
         }
 
         public static HtmlTextWriter Ul(this HtmlTextWriter writer, Func<HtmlAttributeManager, HtmlAttributeManager> attributes)
@@ -678,26 +567,6 @@ namespace OpenNETCF.Web.UI
         public static HtmlTextWriter Ul(this HtmlTextWriter writer)
         {
             return writer.Tag(HtmlTextWriterTag.Ul);
-        }
-
-        public static HtmlTextWriter Fieldset(this HtmlTextWriter writer, Func<HtmlAttributeManager, HtmlAttributeManager> attributes)
-        {
-            return writer.Tag(HtmlTextWriterTag.Fieldset, attributes);
-        }
-
-        public static HtmlTextWriter Fieldset(this HtmlTextWriter writer)
-        {
-            return writer.Tag(HtmlTextWriterTag.Fieldset);
-        }
-
-        public static HtmlTextWriter Legend(this HtmlTextWriter writer, Func<HtmlAttributeManager, HtmlAttributeManager> attributes)
-        {
-            return writer.Tag(HtmlTextWriterTag.Legend, attributes);
-        }
-
-        public static HtmlTextWriter Legend(this HtmlTextWriter writer)
-        {
-            return writer.Tag(HtmlTextWriterTag.Legend);
         }
 
         public static HtmlTextWriter Li(this HtmlTextWriter writer, Func<HtmlAttributeManager, HtmlAttributeManager> attributes)
@@ -718,67 +587,6 @@ namespace OpenNETCF.Web.UI
         public static HtmlTextWriter JavaScript(this HtmlTextWriter writer)
         {
             return writer.Tag(HtmlTextWriterTag.Script, t=>t[HtmlTextWriterAttribute.Type, "text/javascript"]);
-        }
-
-        public static HtmlTextWriter Form(this HtmlTextWriter writer)
-        {
-            return writer.Tag(HtmlTextWriterTag.Form);
-        }
-
-        public static HtmlTextWriter Form(this HtmlTextWriter writer, Func<HtmlAttributeManager, HtmlAttributeManager> attributes)
-        {
-            return writer.Tag(HtmlTextWriterTag.Form, attributes);
-        }
-
-        public static HtmlTextWriter Th(this HtmlTextWriter writer)
-        {
-            return writer.Tag(HtmlTextWriterTag.Th);
-        }
-
-        public static HtmlTextWriter Th(this HtmlTextWriter writer, Func<HtmlAttributeManager, HtmlAttributeManager> attributes)
-        {
-            return writer.Tag(HtmlTextWriterTag.Th, attributes);
-        }
-
-        public static HtmlTextWriter A(this HtmlTextWriter writer, Func<HtmlAttributeManager, HtmlAttributeManager> attributes)
-        {
-            return writer.Tag(HtmlTextWriterTag.A, attributes);
-        }
-
-        public static HtmlTextWriter Select(this HtmlTextWriter writer)
-        {
-            return writer.Tag(HtmlTextWriterTag.Select);
-        }
-
-        public static HtmlTextWriter Select(this HtmlTextWriter writer, Func<HtmlAttributeManager, HtmlAttributeManager> attributes)
-        {
-            return writer.Tag(HtmlTextWriterTag.Select, attributes);
-        }
-
-        public static HtmlTextWriter Button(this HtmlTextWriter writer, Func<HtmlAttributeManager, HtmlAttributeManager> attributes)
-        {
-            return writer.Tag(HtmlTextWriterTag.Button, attributes);
-        }
-
-        public static HtmlTextWriter Input(this HtmlTextWriter writer, Func<HtmlAttributeManager, HtmlAttributeManager> attributes)
-        {
-            return writer.Tag(HtmlTextWriterTag.Input, attributes);
-        }
-
-        public static HtmlTextWriter TextArea(this HtmlTextWriter writer, string name, string id, int rows, int columns)
-        {
-            return writer.Tag(HtmlTextWriterTag.Textarea, t => t
-                [HtmlTextWriterAttribute.Name, name]
-                [HtmlTextWriterAttribute.Id, id]
-                [HtmlTextWriterAttribute.Rows, rows.ToString()]
-                [HtmlTextWriterAttribute.Cols, columns.ToString()]);
-        }
-        public static HtmlTextWriter TextArea(this HtmlTextWriter writer, string id, int rows, int columns)
-        {
-            return writer.Tag(HtmlTextWriterTag.Textarea, t=>t
-                [HtmlTextWriterAttribute.Id, id]
-                [HtmlTextWriterAttribute.Rows, rows.ToString()]
-                [HtmlTextWriterAttribute.Cols, columns.ToString()]);
         }
 
         public static HtmlTextWriter Meta(this HtmlTextWriter writer, Func<HtmlAttributeManager, HtmlAttributeManager> attributes)
