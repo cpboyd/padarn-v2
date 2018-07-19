@@ -1,4 +1,4 @@
-﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -172,6 +172,7 @@
     <Compile Include="Helpers\UrlPath.cs" />
     <Compile Include="Hosting\AsyncWorkerRequest.cs" />
     <Compile Include="Hosting\HostingEnvironment.cs" />
+    <Compile Include="Hosting\SslWorkerRequest.cs" />
     <Compile Include="Hosting\VirtualDirectory.cs" />
     <Compile Include="Hosting\VirtualFile.cs" />
     <Compile Include="Hosting\VirtualFileBase.cs" />

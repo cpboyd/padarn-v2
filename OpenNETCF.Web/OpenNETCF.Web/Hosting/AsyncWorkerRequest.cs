@@ -25,29 +25,29 @@ using OpenNETCF.Web.Helpers;
 using OpenNETCF.Web.Security;
 using System.Runtime.InteropServices;
 using System.Linq;
+using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Globalization;
+using System.IO;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading;
+using OpenNETCF.Web.Configuration;
+using OpenNETCF.Web.Server;
+using OpenNETCF.WindowsCE;
+using OpenNETCF.Web.Logging;
+using System.Net;
+using System.Diagnostics;
+using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace OpenNETCF.Web.Hosting
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Collections.Specialized;
-    using System.Globalization;
-    using System.IO;
-    using System.Net.Sockets;
-    using System.Text;
-    using System.Threading;
-    using Configuration;
-    using OpenNETCF.WindowsCE;
-    using OpenNETCF.Web.Logging;
-    using System.Net;
-    using System.Diagnostics;
-    using System.Reflection;
-    using System.Text.RegularExpressions;
-
     /// <summary>
     /// Default handler for ASP.NET page requests for the Web Server
     /// </summary>
-    public sealed class AsyncWorkerRequest : HttpWorkerRequest
+    public class AsyncWorkerRequest : HttpWorkerRequest
     {
 #if TRACE
         private const string TRACE = "TRACE";
@@ -88,17 +88,19 @@ namespace OpenNETCF.Web.Hosting
         }
 
         /// <summary>
-        /// Initializes an instance of <see cref="DefaultWorkerRequest"/>
+        /// Initializes an instance of <see cref="AsyncWorkerRequest"/>
         /// </summary>
         /// <param name="client"></param>
-        internal AsyncWorkerRequest(Server.SocketWrapperBase client, ILogProvider logProvider)
+        /// <param name="output"></param>
+        /// <param name="logProvider"></param>
+        internal AsyncWorkerRequest(Server.SocketWrapperBase client, Stream output, ILogProvider logProvider)
         {
             m_logProvider = logProvider;
             m_logProvider.LogRuntimeInfo(ZoneFlags.WorkerRequest, "+AsyncWorkerRequest");
 
             this.m_client = client;
             m_logProvider.LogRuntimeInfo(ZoneFlags.WorkerRequest, string.Format("Creating network stream to {0}", m_client.RemoteEndPoint));
-            m_output = client.CreateNetworkStream();
+            m_output = output;
 
             if (m_output != null)
             {
@@ -111,6 +113,28 @@ namespace OpenNETCF.Web.Hosting
                 m_logProvider.LogRuntimeInfo(ZoneFlags.WorkerRequest, "Network stream is null!");
             }
             m_logProvider.LogRuntimeInfo(ZoneFlags.WorkerRequest, "-AsyncWorkerRequest");
+        }
+
+        /// <summary>
+        /// Initializes an instance of <see cref="AsyncWorkerRequest"/>
+        /// </summary>
+        /// <param name="socket"></param>
+        /// <param name="output"></param>
+        /// <param name="logProvider"></param>
+        internal AsyncWorkerRequest(Socket socket, Stream output, ILogProvider logProvider)
+            : this(new HttpSocket(), output, logProvider)
+        {
+            ((HttpSocket) m_client).Create(socket);
+        }
+
+        /// <summary>
+        /// Initializes an instance of <see cref="AsyncWorkerRequest"/>
+        /// </summary>
+        /// <param name="client"></param>
+        /// <param name="logProvider"></param>
+        internal AsyncWorkerRequest(Server.SocketWrapperBase client, ILogProvider logProvider)
+            : this(client, client.CreateNetworkStream(), logProvider)
+        {
         }
 
         /// <summary>
@@ -346,11 +370,11 @@ namespace OpenNETCF.Web.Hosting
 
                 HttpContext.Current.Response.HeadersWritten = m_headersSent = true;
             }
-            
-            if (Path.EndsWith(".aspx"))
-            {
-                // TranslateResponseASP();
-            }
+
+            //if (Path.EndsWith(".aspx"))
+            //{
+            //    TranslateResponseASP();
+            //}
 
             try
             {
@@ -362,12 +386,39 @@ namespace OpenNETCF.Web.Hosting
                 m_response.SetLength(0);
                 if (finalFlush)
                 {
+                    // TODO: determine why exactly this is here and if it needs to be deleted.
+                    //       Having it causes a hang when serving some pages but it must be here for a reason, right?
+
+                    //persistant connections http://www.w3.org/Protocols/rfc2616/rfc2616-sec8.html#sec8.1
+                    //if (false) // if (KeepConnectionAlive)
+                    //{
+                    //    //Reset the headers sent since we are sendign new data
+                    //    m_headersSent = false;
+
+                    //    //get the content
+                    //    HttpRawRequestContent content = GetPartialRawRequestContent(m_client);
+
+                    //    if (content.Length > 0)
+                    //    {
+                    //        m_httpRawRequestContent = content;
+                    //        SetDefaultServerHeaderAndStatus();
+                    //        InitializeResponse();
+                    //        ProcessRequest();
+                    //    }
+                    //    else
+                    //    {
+                    //        CloseConnection();
+                    //    }
+                    //}
+                    //else
+                    //{
                     CloseConnection();
+                    //}
                 }
             }
             catch (Exception e)
             {
-                m_logProvider.LogPadarnError("DefaultWorkerRequest.FlushResponse: " + e.Message, null);
+                m_logProvider.LogPadarnError("AsyncWorkerRequest.FlushResponse: " + e.Message, null);
                 CloseConnection();
             }
         }
@@ -378,6 +429,10 @@ namespace OpenNETCF.Web.Hosting
             m_headersCleared = true;
         }
 
+        /// <summary>
+        /// Returns a value indicating whether HTTP response headers have been sent to the client for the current request.
+        /// </summary>
+        /// <returns></returns>
         public override bool HeadersSent()
         {
             return m_headersSent;
