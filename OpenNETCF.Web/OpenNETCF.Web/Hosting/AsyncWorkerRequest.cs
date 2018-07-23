@@ -529,6 +529,15 @@ namespace OpenNETCF.Web.Hosting
         }
 
         /// <summary>
+        /// Provides access to the response stream.
+        /// </summary>
+        /// <returns>The response stream.</returns>
+        public override Stream ResponseStream
+        {
+            get { return m_response; }
+        }
+
+        /// <summary>
         /// Writes the specifide byte array to the response stream
         /// </summary>
         /// <param name="data"></param>

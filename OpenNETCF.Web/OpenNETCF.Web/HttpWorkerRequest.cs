@@ -136,6 +136,15 @@ namespace OpenNETCF.Web
         }
 
         /// <summary>
+        /// Provides access to the response stream.
+        /// </summary>
+        /// <returns>The response stream.</returns>
+        public virtual Stream ResponseStream
+        {
+            get { throw new HttpException("Response stream is not available."); }
+        }
+
+        /// <summary>
         /// Returns the physical path to the currently executing server application.
         /// </summary>
         /// <returns>The physical path of the current application.</returns>

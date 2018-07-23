@@ -159,6 +159,15 @@ namespace OpenNETCF.Web
             }
         }
 
+        /// <summary>
+        /// Enables binary output to the outgoing HTTP content body.
+        /// </summary>
+        /// <returns>An IO <see cref="System.IO.Stream"/> representing the raw contents of the outgoing HTTP content body.</returns>
+        public Stream OutputStream
+        {
+            get { return m_wr.ResponseStream; }
+        }
+
         private int m_statusCode = 200;
         private string m_statusDescription = string.Empty;
 
@@ -265,7 +274,7 @@ namespace OpenNETCF.Web
         /// </summary>
         public void ClearHeaders()
         {
-            m_wr.ClearHeaders();   
+            m_wr.ClearHeaders();
         }
 
         /// <summary>
