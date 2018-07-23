@@ -49,6 +49,7 @@ namespace OpenNETCF.Web
         private Encoding m_contentEncoding = null;
         private List<MultipartContentItem> m_multipartContentElements;
         private HttpCookieCollection m_cookies;
+        private string m_subpath;
 
         /// <summary>
         /// Gets or sets information about the requesting client's browser capabilities.
@@ -284,6 +285,15 @@ namespace OpenNETCF.Web
         public string Path
         {
             get { return HttpContext.Current.WorkerRequest.GetUriPath(); }
+        }
+
+        /// <summary>
+        /// Gets the sub-path for an HttpHandler.
+        /// </summary>
+        public string SubPath
+        {
+            get { return m_subpath ?? Path; }
+            internal set { m_subpath = value; }
         }
 
         /// <summary>

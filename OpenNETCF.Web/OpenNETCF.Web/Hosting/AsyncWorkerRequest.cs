@@ -620,7 +620,7 @@ namespace OpenNETCF.Web.Hosting
         /// </summary>
         private void SetDefaultServerHeaderAndStatus()
         {
-            if(m_versionString == null)
+            if (m_versionString == null)
             {
                 m_versionString = Assembly.GetExecutingAssembly().GetName().Version.ToString(3);
             }
@@ -646,11 +646,9 @@ namespace OpenNETCF.Web.Hosting
             string extension = System.IO.Path.GetExtension(fileName).ToLower();
 
             // Load the correct file handler
-            IHttpHandler handler = null;
+            IHttpHandler handler = GetCustomHandler(fileName, method);
 
-            handler = GetCustomHandler(fileName, method);
-
-            // TODO: ** check for custon HttpHandlers **
+            // TODO: ** check for custom HttpHandlers **
             if (handler == null)
             {
 
@@ -678,57 +676,65 @@ namespace OpenNETCF.Web.Hosting
 
         private static Dictionary<string, Type> m_handlerTypeCache = new Dictionary<string, Type>();
 
-        private IHttpHandler GetCustomHandler(string fileName, HttpMethod method)
+        private Type CheckType(string typeName, ServerConfig config)
         {
-            IHttpHandler returnValue = null;
-            ServerConfig c = ServerConfig.GetConfig();
-
-            foreach (HttpHandler h in c.HttpHandlers)
-            {
-                if (((h.Verb & method) == method) && FileNameIsInPath(fileName, h.Path))
-                {
                     Type t;
 
                     lock (m_handlerTypeCache)
                     {
-                        if (m_handlerTypeCache.ContainsKey(h.TypeName))
+                if (m_handlerTypeCache.ContainsKey(typeName))
                         {
-                            t = m_handlerTypeCache[h.TypeName];
+                    t = m_handlerTypeCache[typeName];
                         }
                         else
                         {
-                            t = Type.GetType(h.TypeName);
+                    t = Type.GetType(typeName);
 
                             if (t == null)
                             {
-                                t = c.GetType(h.TypeName);
+                        t = config.GetType(typeName);
 
                     if (t == null)
                     {
                         throw new HttpException(HttpErrorCode.InternalServerError,
-                            string.Format("Unable To load type '{0}'", h.TypeName));
+                                string.Format("Unable To load type '{0}'", typeName));
                     }
                             }
 
-                            m_handlerTypeCache.Add(h.TypeName, t);
+                    m_handlerTypeCache.Add(typeName, t);
                         }
                     }
+            return t;
+        }
 
+        private IHttpHandler GetCustomHandler(string fileName, HttpMethod method)
+        {
+            IHttpHandler handler = null;
+            string subPath = null;
+
+            ServerConfig config = ServerConfig.GetConfig();
+            foreach (HttpHandler h in config.HttpHandlers)
+            {
+                Match match = Regex.Match(fileName, h.Path, RegexOptions.IgnoreCase);
+                if (((h.Verb & method) == method) && match.Success)
+                {
+                    subPath = fileName.Substring(match.Index + match.Length);
+                    Type t = CheckType(h.TypeName, config);
                     try
                     {
                         lock (m_httpHandlerCache)
                         {
                             if (m_httpHandlerCache.ContainsKey(t))
                             {
-                                returnValue = m_httpHandlerCache[t];
+                                handler = m_httpHandlerCache[t];
                             }
                             else
                             {
-                                returnValue = (IHttpHandler)Activator.CreateInstance(t);
+                                handler = (IHttpHandler) Activator.CreateInstance(t);
 
-                                if (returnValue.IsReusable)
+                                if (handler.IsReusable)
                                 {
-                                    m_httpHandlerCache.Add(t, returnValue);
+                                    m_httpHandlerCache.Add(t, handler);
                                 }
                             }
                         }
@@ -752,14 +758,12 @@ namespace OpenNETCF.Web.Hosting
                 }
             }
 
-            return returnValue;
+            return handler == null ? null : new HttpHandlerResult(handler, subPath);
         }
 
         private bool FileNameIsInPath(string fileName, string path)
         {
-            if (path == "*") return true;
-
-            return Regex.IsMatch(fileName, path, RegexOptions.IgnoreCase);
+            return (path == "*") || Regex.IsMatch(fileName, path, RegexOptions.IgnoreCase);
         }
 
         /// <summary>
