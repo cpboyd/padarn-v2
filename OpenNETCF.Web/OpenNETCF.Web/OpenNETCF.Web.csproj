@@ -141,7 +141,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CodeBehindAssembly.cs" />
+    <Compile Include="Handlers\CodeBehindAssembly.cs" />
     <Compile Include="Configuration\AuthenticationConfiguration.cs" />
     <Compile Include="Configuration\CacheLocation.cs" />
     <Compile Include="Configuration\CachingConfig.cs" />
@@ -162,10 +162,11 @@
     <Compile Include="Configuration\VirtualPathProviders.cs" />
     <Compile Include="Core\ExtensionAttribute.cs" />
     <Compile Include="Core\Extensions.cs" />
-    <Compile Include="DefaultHttpHandler.cs" />
+    <Compile Include="Handlers\DefaultHttpHandler.cs" />
     <Compile Include="Delegates.cs" />
     <Compile Include="Exceptions\ConfigurationErrorsException.cs" />
     <Compile Include="Exceptions\HttpRequestValidationException.cs" />
+    <Compile Include="Headers\StringWithQualityHeaderValue.cs" />
     <Compile Include="Helpers\CaseInsensitiveDictionary.cs" />
     <Compile Include="Helpers\CrossSiteScriptingValidation.cs" />
     <Compile Include="Helpers\Device.cs" />
@@ -179,20 +180,21 @@
     <Compile Include="Hosting\VirtualFileBase.cs" />
     <Compile Include="Hosting\VirtualPathProvider.cs" />
     <Compile Include="HttpApplicationFactory.cs" />
-    <Compile Include="HttpBrowserCapabilities.cs" />
-    <Compile Include="HttpCacheability.cs" />
-    <Compile Include="HttpCachePolicy.cs" />
-    <Compile Include="HttpCachePolicyBase.cs" />
-    <Compile Include="HttpCapabilitiesBase.cs" />
+    <Compile Include="Headers\HttpBrowserCapabilities.cs" />
+    <Compile Include="Headers\HttpCacheability.cs" />
+    <Compile Include="Headers\HttpCachePolicy.cs" />
+    <Compile Include="Headers\HttpCachePolicyBase.cs" />
+    <Compile Include="Headers\HttpCapabilitiesBase.cs" />
     <Compile Include="HttpContext.cs" />
     <Compile Include="HttpContextBase.cs" />
     <Compile Include="HttpContextWrapper.cs" />
-    <Compile Include="HttpCookie.cs" />
-    <Compile Include="HttpCookieCollection.cs" />
-    <Compile Include="HttpCookieMode.cs" />
+    <Compile Include="Headers\HttpCookie.cs" />
+    <Compile Include="Headers\HttpCookieCollection.cs" />
+    <Compile Include="Headers\HttpCookieMode.cs" />
     <Compile Include="HttpErrorCode.cs" />
     <Compile Include="HttpException.cs" />
     <Compile Include="HttpFileCollection.cs" />
+    <Compile Include="Handlers\HttpHandlerResult.cs" />
     <Compile Include="HttpInputStream.cs" />
     <Compile Include="HttpRequestBase.cs" />
     <Compile Include="HttpRequestWrapper.cs" />
@@ -209,7 +211,7 @@
     <Compile Include="HttpRequest.cs" />
     <Compile Include="Exceptions\HttpUnhandledException.cs" />
     <Compile Include="HttpUtility.cs" />
-    <Compile Include="HttpValueCollection.cs" />
+    <Compile Include="Headers\HttpValueCollection.cs" />
     <Compile Include="HttpMethod.cs" />
     <Compile Include="MultipartContentItem.cs" />
     <Compile Include="Networking\INetworkInterface.cs" />
@@ -268,8 +270,8 @@
     <Compile Include="HttpResponse.cs" />
     <Compile Include="HttpRuntime.cs" />
     <Compile Include="HttpWorkerRequest.cs" />
-    <Compile Include="IHttpHandler.cs" />
-    <Compile Include="MimeMapping.cs" />
+    <Compile Include="Handlers\IHttpHandler.cs" />
+    <Compile Include="Headers\MimeMapping.cs" />
     <Compile Include="Server\HttpSocket.cs" />
     <Compile Include="Server\NetworkStreamWrapperBase.cs" />
     <Compile Include="Server\RequestEventArgs.cs" />
@@ -313,12 +315,12 @@
     <Compile Include="UI\IPostBackEventHandler.cs" />
     <Compile Include="UI\ITextControl.cs" />
     <Compile Include="UI\Page.cs" />
-    <Compile Include="PageHandler.cs" />
+    <Compile Include="Handlers\PageHandler.cs" />
     <Compile Include="Configuration\ServerConfigurationHandler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Hosting\DefaultWorkerRequest.cs" />
     <Compile Include="Configuration\ServerConfig.cs" />
-    <Compile Include="StaticFileHandler.cs" />
+    <Compile Include="Handlers\StaticFileHandler.cs" />
     <Compile Include="Parsers\PageParser.cs" />
     <Compile Include="UI\PageParserFilter.cs" />
     <Compile Include="UI\TemplateControl.cs" />

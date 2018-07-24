@@ -17,19 +17,17 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-// 
-// Copyright (c) 2007-2010 OpenNETCF Consulting, LLC                        
-//                                                                     
+
+using System;
+using System.Globalization;
+using System.IO;
+using System.Security;
+using System.Text;
+using OpenNETCF.Web.Configuration;
+using System.Diagnostics;
+
 namespace OpenNETCF.Web
 {
-    using System;
-    using System.Globalization;
-    using System.IO;
-    using System.Security;
-    using System.Text;
-    using Configuration;
-    using System.Diagnostics;
-
     /// <summary>
     /// Provides access to specific file types.
     /// </summary>

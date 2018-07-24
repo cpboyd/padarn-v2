@@ -17,11 +17,12 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
+
+using System;
+using System.Collections;
+
 namespace OpenNETCF.Web
 {
-    using System;
-    using System.Collections;
-
     internal class MimeMapping
     {
         private static readonly Hashtable extensionToMimeMappingTable = new Hashtable(190, StringComparer.CurrentCultureIgnoreCase);
