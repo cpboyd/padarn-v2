@@ -17,22 +17,21 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-//                                                                   
-// Copyright (c) 2007-2008 OpenNETCF Consulting, LLC                        
-//                                                                     
 
-namespace OpenNETCF.Web
-{
     using System.Collections.Specialized;
     using System.Text;
     using System.Collections;
     using System.Collections.Generic;
     using System;
+using System.Linq;
     using OpenNETCF.WindowsCE;
     using System.IO;
     using OpenNETCF.Security;
     using OpenNETCF.Security.Principal;
+using OpenNETCF.Web.Headers;
 
+namespace OpenNETCF.Web
+{
     /// <summary>
     /// Enables Padarn to read the HTTP values sent by a client during a Web request.
     /// </summary>
@@ -43,10 +42,11 @@ namespace OpenNETCF.Web
         private HttpValueCollection m_queryString;
         private HttpBrowserCapabilities m_browser;
         private byte[] m_queryStringBytes;
-        private string[] m_acceptTypes;
+        private IEnumerable<StringWithQualityHeaderValue> m_acceptTypes;
+        private IEnumerable<StringWithQualityHeaderValue> m_acceptEncoding;
         private HttpValueCollection m_form;
         private HttpFileCollection m_files;
-        private Encoding m_contentEncoding = null;
+        private Encoding m_contentEncoding;
         private List<MultipartContentItem> m_multipartContentElements;
         private HttpCookieCollection m_cookies;
         private string m_subpath;
@@ -197,13 +197,11 @@ namespace OpenNETCF.Web
             {
                 if (m_contentEncoding == null)
                 {
-                    if (Headers["HTTP_CONTENT_ENCODING"] != null)
-                    {
-                        m_contentEncoding = Encoding.GetEncoding(Headers["HTTP_CONTENT_ENCODING"]);
+                    string encoding = Headers["HTTP_CONTENT_ENCODING"];
+                    m_contentEncoding = (encoding == null)
+                        ? Encoding.UTF8
+                        : Encoding.GetEncoding(encoding);
                     }
-                    else
-                        m_contentEncoding = Encoding.UTF8;
-                }
 
                 return m_contentEncoding;
             }
@@ -231,9 +229,8 @@ namespace OpenNETCF.Web
                 try
                 {
                     string length = Headers["HTTP_CONTENT_LENGTH"];
-                    if (string.IsNullOrEmpty(length)) return 0;
-
-                    return Int32.Parse(Headers["HTTP_CONTENT_LENGTH"]);
+                    return string.IsNullOrEmpty(length)
+                        ? 0 : Int32.Parse(length);
                 }
                 catch
                 {
@@ -249,11 +246,46 @@ namespace OpenNETCF.Web
         {
             get
             {
+                IEnumerable<StringWithQualityHeaderValue> accept = Accept;
+                return (accept == null) ? null
+                    : accept
+                        .Where(x => x.Quality > 0) // Remove explicitly forbidden types.
+                        .Select(x => x.Value)
+                        .ToArray();
+            }
+        }
+
+        /// <summary>
+        /// The <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept">Accept</a>
+        /// request HTTP header advertises which content types, expressed as MIME types, the client
+        /// is able to understand.
+        /// </summary>
+        public IEnumerable<StringWithQualityHeaderValue> Accept
+        {
+            get
+            {
                 if (m_acceptTypes == null && m_wr != null)
                 {
                     m_acceptTypes = ParseAcceptHeader(Headers["HTTP_ACCEPT"]);
                 }
                 return m_acceptTypes;
+            }
+        }
+
+        /// <summary>
+        /// The <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept-Encoding">Accept-Encoding</a>
+        /// request HTTP header advertises which content encoding, usually a compression algorithm,
+        /// the client is able to understand.
+        /// </summary>
+        public IEnumerable<StringWithQualityHeaderValue> AcceptEncoding
+        {
+            get
+            {
+                if (m_acceptEncoding == null && m_wr != null)
+                {
+                    m_acceptEncoding = ParseAcceptHeader(Headers["HTTP_ACCEPT_ENCODING"]);
+                }
+                return m_acceptEncoding;
             }
         }
 
@@ -425,43 +457,21 @@ namespace OpenNETCF.Web
             }
         }
 
-        private string[] ParseAcceptHeader(string s)
+        private IEnumerable<StringWithQualityHeaderValue> ParseAcceptHeader(string s)
         {
-            if (s == null || s.Length == 0)
+            if (string.IsNullOrEmpty(s))
             {
                 return null;
             }
 
-            //Parse the items which are comma delimited
-            ArrayList list = new ArrayList();
-            int startIndex = 0;
-            int length = s.Length;
-            while (startIndex < length)
-            {
-                int index = s.IndexOf(',', startIndex);
-                if (index < 0)
-                {
-                    index = length;
-                }
-                list.Add(s.Substring(startIndex, index - startIndex));
-                startIndex = index + 1;
-                if ((startIndex < length) && (s[startIndex] == ' '))
-                {
-                    startIndex++;
-                }
-            }
+            // Parse the items which are comma delimited
+            var list = s.Split(',')
+                .Select(x => StringWithQualityHeaderValue.Parse(x));
+                // TODO: Performance vs benefit for ordering by quality?
+                //.OrderByDescending(x => x.Quality);
 
-            //Make sure there is something in the list
-            int count = list.Count;
-            if (count == 0)
-            {
-                return null;
-            }
-
-            //return a string[]
-            string[] array = new string[count];
-            list.CopyTo(0, array, 0, count);
-            return array;
+            // Make sure there is something in the list
+            return list.Any() ? null : list;
         }
 
         /// <summary>

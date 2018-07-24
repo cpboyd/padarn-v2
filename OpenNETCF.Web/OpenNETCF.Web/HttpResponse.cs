@@ -16,10 +16,7 @@
 // ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
-#endregion
-//                                                                   
-// Copyright (c) 2007-2010 OpenNETCF Consulting, LLC                        
-//                                                                     
+#endregion                                                   
 
 namespace OpenNETCF.Web
 {
@@ -64,7 +61,8 @@ namespace OpenNETCF.Web
         }
 
         /// <summary>
-        /// Specifies the length of the entity body in the HTTP response
+        /// The <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Length">Content-Length</a>
+        /// entity header is indicating the size of the entity-body, in bytes, sent to the recipient.
         /// </summary>
         public long ContentLength
         {
@@ -109,9 +107,29 @@ namespace OpenNETCF.Web
             }
         }
 
+        private string m_contentEncoding;
+        /// <summary>
+        /// The <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Encoding">Content-Encoding</a>
+        /// entity header is used to compress the media-type.
+        /// 
+        /// When present, its value indicates which encodings were applied to the entity-body.
+        /// </summary>
+        public string ContentEncoding
+        {
+            get { return m_contentEncoding; }
+            set
+            {
+                if (HeadersWritten)
+                    throw new HttpException("Server cannot set content encoding after HTTP headers have been sent.");
+
+                m_contentEncoding = value;
+            }
+        }
+
         private string m_contentType;
         /// <summary>
-        /// Specifies the content type for the HTTP response
+        /// The <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type">Content-Type</a>
+        /// entity header is used to indicate the media type of the resource.
         /// </summary>
         public string ContentType
         {

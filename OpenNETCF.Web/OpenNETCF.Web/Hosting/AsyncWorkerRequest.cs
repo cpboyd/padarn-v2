@@ -17,9 +17,6 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-//                                                                   
-// Copyright (c) 2007-2008 OpenNETCF Consulting, LLC                        
-//    
 
 using OpenNETCF.Web.Helpers;
 using OpenNETCF.Web.Security;
@@ -298,6 +295,13 @@ namespace OpenNETCF.Web.Hosting
                 m_responseHeaders.Append(HttpContext.Current.Response.Cache.GetHeaderString());
 
                 // entity header fields - see http://www.w3.org/Protocols/rfc2616/rfc2616-sec7.html#sec7.1
+                // Content-Encoding https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.11
+                if (!string.IsNullOrEmpty(HttpContext.Current.Response.ContentEncoding))
+                {
+                    m_responseHeaders.Append(string.Format("Content-Encoding: {0}\r\n", HttpContext.Current.Response.ContentEncoding));
+                }
+
+                // Content-Type https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.17
                 m_responseHeaders.Append(string.Format("Content-Type: {0}\r\n", HttpContext.Current.Response.ContentType));
 
                 // Cookies
