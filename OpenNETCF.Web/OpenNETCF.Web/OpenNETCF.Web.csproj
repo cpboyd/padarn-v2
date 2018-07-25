@@ -1,4 +1,4 @@
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -166,6 +166,7 @@
     <Compile Include="Delegates.cs" />
     <Compile Include="Exceptions\ConfigurationErrorsException.cs" />
     <Compile Include="Exceptions\HttpRequestValidationException.cs" />
+    <Compile Include="Headers\ContentEncoding.cs" />
     <Compile Include="Headers\StringWithQualityHeaderValue.cs" />
     <Compile Include="Helpers\CaseInsensitiveDictionary.cs" />
     <Compile Include="Helpers\CrossSiteScriptingValidation.cs" />

@@ -1,4 +1,4 @@
-#region License
+﻿#region License
 // Copyright ©2017 Tacke Consulting (dba OpenNETCF)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
@@ -21,10 +21,12 @@
 using System;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Security;
 using System.Text;
-using OpenNETCF.Web.Configuration;
 using System.Diagnostics;
+using OpenNETCF.Web.Core;
+using OpenNETCF.Web.Headers;
 
 namespace OpenNETCF.Web
 {
@@ -61,10 +63,9 @@ namespace OpenNETCF.Web
             HttpRequest request = context.Request;
             HttpResponse response = context.Response;
 
-            string filename = m_localFile; // TODO: Re-instate request.PhysicalPath;
+            string filename = GetFilename(context); // TODO: Re-instate request.PhysicalPath;
 
-            byte[] content;
-            using (FileStream fs = new FileStream(m_localFile, FileMode.Open, FileAccess.Read))
+            using (var fs = new FileStream(filename, FileMode.Open, FileAccess.Read))
             {
                 try
                 {
@@ -72,7 +73,7 @@ namespace OpenNETCF.Web
 
                     try
                     {
-                        requestedFile = new FileInfo(m_localFile);
+                        requestedFile = new FileInfo(filename);
                     }
                     catch (IOException)
                     {
@@ -84,7 +85,7 @@ namespace OpenNETCF.Web
                     }
 
                     string ims = request.Headers["HTTP_IF_MODIFIED_SINCE"];
-                    if ((ims != null) && (ims.Length > 0))
+                    if (!string.IsNullOrEmpty(ims))
                     {
                         try
                         {
@@ -135,16 +136,16 @@ namespace OpenNETCF.Web
                     HttpContext.Current.Response.ContentType = m_mime;
 
                     // packetize output to prevent OOMs on serving large files
-                    using (BinaryReader r = new BinaryReader(fs))
+                    using (var r = new BinaryReader(fs))
                     {
-                        var totalSent = 0;
+                        int totalSent = 0;
 
                         try
                         {
                             do
                             {
                                 // TODO: allow this to be configurable
-                                content = r.ReadBytes(0x40000); // 256k
+                                byte[] content = r.ReadBytes(0x40000);
 
                                 if (content.Length > 0)
                                 {
@@ -180,6 +181,67 @@ namespace OpenNETCF.Web
             }
         }
 
+        // Focus on compressing text files:
+        private static readonly string[] AllowCompress =
+        {
+            ".css",
+            ".htm",
+            ".html",
+            ".js",
+            ".json",
+            ".txt",
+            ".svg",
+            ".xml",
+        };
+
+        // Get the local file to serve and set Content-Encoding on the Response if necessary.
+        private string GetFilename(HttpContext context)
+        {
+            string filename = m_localFile;
+            string extension = Path.GetExtension(filename).ToLowerInvariant();
+
+            if (!AllowCompress.Contains(extension))
+            {
+                return filename;
+            }
+
+            HttpRequest request = context.Request;
+            HttpResponse response = context.Response;
+
+            bool acceptGzip = false;
+            bool acceptBrotli = false;
+            foreach (StringWithQualityHeaderValue encoding in request.AcceptEncoding.Where(x => x.Quality > 0))
+            {
+                switch (encoding.Value.ToLowerInvariant())
+                {
+                    case ContentEncoding.Brotli:
+                        acceptBrotli = true;
+                        break;
+                    case ContentEncoding.Gzip:
+                        acceptGzip = true;
+                        break;
+                }
+
+                if (acceptBrotli && acceptGzip)
+                    break;
+            }
+
+            // Prefer Brotli if available:
+            if (acceptBrotli && File.Exists(filename + ".br"))
+            {
+                HttpContext.Current.Response.ContentEncoding = ContentEncoding.Brotli;
+                return filename + ".br";
+            }
+
+            if (acceptGzip && File.Exists(filename + ".gz"))
+            {
+                HttpContext.Current.Response.ContentEncoding = ContentEncoding.Gzip;
+                return filename + ".gz";
+            }
+
+            return filename;
+        }
+
         private static DateTimeFormatInfo m_dtfi = new DateTimeFormatInfo();
         private static void BuildFileItemResponse(HttpContext context, string fileName, long fileSize,
                                                   DateTime lastModifiedTime, string strETag, DateTime lastChange)
@@ -196,7 +258,7 @@ namespace OpenNETCF.Web
 
         internal static string GenerateETag(HttpContext context, DateTime lastModTime)
         {
-            StringBuilder builder = new StringBuilder();
+            var builder = new StringBuilder();
             long num = DateTime.Now.ToFileTime();
             long num2 = lastModTime.ToFileTime();
             builder.Append("\"");
@@ -206,11 +268,10 @@ namespace OpenNETCF.Web
             builder.Append("\"");
             if ((DateTime.Now.ToFileTime() - num2) <= 0x1c9c380)
             {
-                return ("W/" + builder.ToString());
+                return ("W/" + builder);
             }
             return builder.ToString();
         }
-
 
     }
 }

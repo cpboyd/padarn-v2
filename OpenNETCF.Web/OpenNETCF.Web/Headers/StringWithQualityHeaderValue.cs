@@ -6,6 +6,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
+using OpenNETCF.Web.Core;
 
 namespace OpenNETCF.Web.Headers
 {
@@ -52,7 +53,7 @@ namespace OpenNETCF.Web.Headers
             for (int i = 1; i < array.Length; i++)
             {
                 string[] toParse = array[i].Split('=');
-                switch (toParse[0].Trim().ToLower())
+                switch (toParse[0].Trim().ToLowerInvariant())
                 {
                     case "q":
                         double quality = 1;
