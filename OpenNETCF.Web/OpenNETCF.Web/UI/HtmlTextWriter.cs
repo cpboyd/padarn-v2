@@ -1,4 +1,4 @@
-#region License
+﻿#region License
 // Copyright ©2017 Tacke Consulting (dba OpenNETCF)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
@@ -50,19 +50,17 @@ namespace OpenNETCF.Web.UI
         {
             get
             {
-                StringBuilder sb = new StringBuilder();
+                var sb = new StringBuilder();
                 sb.Append("<");
                 sb.Append(TagName);
 
-                foreach (var attrib in Attributes)
+                foreach (KeyValuePair<string, string> attrib in Attributes)
                 {
-                    if (attrib.Value == null)
+                    sb.Append(" ");
+                    sb.Append(attrib.Key);
+                    if (attrib.Value != null)
                     {
-                        sb.Append(string.Format(" {0}", attrib.Key));
-                    }
-                    else
-                    {
-                        sb.Append(string.Format(" {0}=\"{1}\"", attrib.Key, attrib.Value));
+                        sb.Append(string.Format("=\"{1}\"", attrib.Value));
                     }
                 }
 
@@ -168,7 +166,7 @@ namespace OpenNETCF.Web.UI
             }
             m_currentElement = new HtmlElement(tagName);
 
-            foreach (var attrib in m_NextElementAttributes)
+            foreach (KeyValuePair<string, string> attrib in m_NextElementAttributes)
             {
                 m_currentElement.Attributes.Add(attrib.Key, attrib.Value);
             }
@@ -271,7 +269,7 @@ namespace OpenNETCF.Web.UI
         /// <param name="value"></param>
         public override void Write(bool value)
         {
-            Write(value.ToString());
+            m_writer.Write(value);
         }
 
         /// <summary>
@@ -280,7 +278,7 @@ namespace OpenNETCF.Web.UI
         /// <param name="buffer"></param>
         public override void Write(char[] buffer)
         {
-            Write(new string(buffer));
+            m_writer.Write(buffer);
         }
 
         /// <summary>
@@ -289,7 +287,7 @@ namespace OpenNETCF.Web.UI
         /// <param name="value"></param>
         public override void Write(decimal value)
         {
-            Write(value.ToString());
+            m_writer.Write(value);
         }
 
         /// <summary>
@@ -298,7 +296,7 @@ namespace OpenNETCF.Web.UI
         /// <param name="value"></param>
         public override void Write(double value)
         {
-            Write(value.ToString());
+            m_writer.Write(value);
         }
 
         /// <summary>
@@ -307,7 +305,7 @@ namespace OpenNETCF.Web.UI
         /// <param name="value"></param>
         public override void Write(float value)
         {
-            Write(value.ToString());
+            m_writer.Write(value);
         }
 
         /// <summary>
@@ -316,7 +314,7 @@ namespace OpenNETCF.Web.UI
         /// <param name="value"></param>
         public override void Write(int value)
         {
-            Write(value.ToString());
+            m_writer.Write(value);
         }
 
         /// <summary>
@@ -325,7 +323,7 @@ namespace OpenNETCF.Web.UI
         /// <param name="value"></param>
         public override void Write(long value)
         {
-            Write(value.ToString());
+            m_writer.Write(value);
         }
 
         /// <summary>
@@ -334,7 +332,7 @@ namespace OpenNETCF.Web.UI
         /// <param name="value"></param>
         public override void Write(object value)
         {
-            Write(value.ToString());
+            m_writer.Write(value);
         }
 
         /// <summary>
@@ -343,8 +341,7 @@ namespace OpenNETCF.Web.UI
         /// <param name="value"></param>
         public override void Write(char value)
         {
-            string s = new string(new char[] { value });
-            Write(s);
+            m_writer.Write(value);
         }
 
         /// <summary>
