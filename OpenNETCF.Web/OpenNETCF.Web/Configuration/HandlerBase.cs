@@ -222,7 +222,7 @@ namespace OpenNETCF.Configuration
 				locals = new object[]{name};
 				throw new ConfigurationException("Required attribute missing: " + locals, node);
 			}
-			if (xmlNode.Value != String.Empty || allowEmpty)
+			if (xmlNode.Value != string.Empty || allowEmpty)
 			{
 				return xmlNode.Value;
 			}

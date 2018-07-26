@@ -17,8 +17,8 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
 
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -44,13 +44,7 @@ namespace OpenNETCF.Web.Configuration
 
         static bool FindByUserName(User u)
         {
-            if (string.IsNullOrEmpty(searchTerm))
-                return false;
-
-            if (u.Name.Equals(searchTerm))
-                return true;
-
-            return false;
+            return !string.IsNullOrEmpty(searchTerm) && u.Name.Equals(searchTerm);
         }
     }
 }

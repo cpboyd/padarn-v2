@@ -17,6 +17,13 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Xml;
+using OpenNETCF.Web.Security;
+
 namespace OpenNETCF.Web.Configuration
 {
     /// <summary>
@@ -24,37 +31,35 @@ namespace OpenNETCF.Web.Configuration
     /// </summary>
     public sealed class AuthenticationConfiguration
     {
-        private string m_mode;
-        private bool m_enabled;
-        private string m_realm;
         private UserCollection m_users;
+
+        /// <summary>
+        /// Creates an instance of the AuthneticationConfiguration class. 
+        /// </summary>
+        public AuthenticationConfiguration()
+        {
+            m_users = new UserCollection();
+        }
+
+        internal AuthenticationConfiguration(XmlNode node) : this()
+        {
+            ParseXml(node);
+        }
 
         /// <summary>
         /// Gets the authentication mode. Either Basic, Digest or Forms.
         /// </summary>
-        public string Mode
-        {
-            get { return m_mode; }
-            internal set { m_mode = value; }
-        }
+        public string Mode { get; internal set; }
 
         /// <summary>
         /// Gets the authentication realm for HTTP Authentication.
         /// </summary>
-        public string Realm
-        {
-            get { return m_realm; }
-            internal set { m_realm = value; }
-        }
+        public string Realm { get; internal set; }
 
         /// <summary>
         /// Gets a boolean value indicating whether authentication is enabled or not. 
         /// </summary>
-        public bool Enabled
-        {
-            get { return m_enabled; }
-            internal set { m_enabled = value; }
-        }
+        public bool Enabled { get; internal set; }
 
         /// <summary>
         /// Describes the users configuration for authentication.
@@ -66,12 +71,91 @@ namespace OpenNETCF.Web.Configuration
 
         public AuthenticationCallbackHandler AuthenticationCallback { get; set; }
 
-        /// <summary>
-        /// Creates an instance of the AuthneticationConfiguration class. 
-        /// </summary>
-        public AuthenticationConfiguration()
+        private void ParseXml(XmlNode node)
         {
-            m_users = new UserCollection();
+            Mode = node.Attributes["Mode"].Value;
+
+            if (StringComparer.InvariantCultureIgnoreCase.Equals(Mode, "forms"))
+            {
+                FormsAuthentication.IsEnabled = true;
+            }
+
+            XmlAttribute attr = node.Attributes["Enabled"];
+            Enabled = false;
+            if (attr != null)
+            {
+                try
+                {
+                    Enabled = bool.Parse(attr.Value);
+                }
+                catch { }
+            }
+
+            attr = node.Attributes["Realm"];
+            Realm = "Padarn";
+            if (attr != null)
+            {
+                try
+                {
+                    Realm = attr.Value;
+                }
+                catch { }
+            }
+
+            if (!node.HasChildNodes)
+            {
+                return;
+            }
+
+            foreach (XmlNode child in node.ChildNodes)
+            {
+                switch (child.Name.FirstCharToLower())  // for backward compatibility
+                {
+                    case "users":
+                        foreach (XmlNode userNode in child.ChildNodes)
+                        {
+                            string name = userNode.AttributeOrEmpty("Name");
+                            string password = userNode.AttributeOrEmpty("Password");
+
+                            var user = new User { Name = name, Password = password };
+                            if (userNode.HasChildNodes)
+                            {
+                                IEnumerable<Role> roles = userNode.ChildNodes.GetAttributeList("Name")
+                                    .Select(roleName => new Role { Name = roleName });
+                                user.Roles.AddRange(roles);
+                            }
+
+                            Users.Add(user);
+                        }
+                        break;
+                    case "forms":
+                        //loginUrl="login.aspx"
+                        //name=".PADARNAUTH"
+                        //domain="testdomain"
+                        //defaultUrl="default.aspx"
+                        //path="/"
+                        //timeout="30"
+
+                        //slidingExpiration="true"
+                        //requireSSL="false"
+                        //protection="None"
+                        //enableCrossAppRedirects="false"
+                        //cookieless="UseCookies"    
+
+                        attr = child.Attributes["loginUrl"];
+                        if (attr != null)
+                        {
+                            FormsAuthentication.LoginUrl = attr.Value;
+                        }
+
+                        attr = child.Attributes["loginUrl"];
+                        if (attr != null)
+                        {
+                            FormsAuthentication.LoginUrl = attr.Value;
+                        }
+                        break;
+                }
+            }
         }
     }
 }

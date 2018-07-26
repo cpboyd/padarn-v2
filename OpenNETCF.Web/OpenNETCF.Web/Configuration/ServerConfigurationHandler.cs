@@ -155,7 +155,7 @@ namespace OpenNETCF.Web.Configuration
                             break;
 
                         case "authentication":
-                            cfg.Authentication = ReadAuthenticationConfig(node);
+                            cfg.Authentication = new AuthenticationConfiguration(node);
                             break;
 
                         case "authorization":
@@ -163,32 +163,15 @@ namespace OpenNETCF.Web.Configuration
                             break;
 
                         case "virtualDirectories":
-                            if (cfg.VirtualDirectories == null)
-                            {
-                                cfg.VirtualDirectories = new VirtualDirectoryMappingCollection();
-                            }
-                            ReadVirtualDirectoriesConfig(cfg, node);
+                            cfg.VirtualDirectories.AddRange(new VirtualDirectoryMappingCollection(node));
                             break;
 
                         case "cookies":
-                            var cookieConfig = new CookiesConfiguration();
                             XmlAttribute domainAttrib = node.Attributes["Domain"];
                             if (domainAttrib == null)
                                 break;
 
-                            cookieConfig.Domain = domainAttrib.Value;
-
-                            if (node.Attributes["RequireSSL"] != null)
-                            {
-                                cookieConfig.RequireSSL = Convert.ToBoolean(node.Attributes["RequireSSL"].Value);
-                            }
-
-                            if (node.Attributes["HttpOnlyCookies"] != null)
-                            {
-                                cookieConfig.HttpOnlyCookies = Convert.ToBoolean(node.Attributes["HttpOnlyCookies"].Value);
-                            }
-
-                            cfg.Cookies = cookieConfig;
+                            cfg.Cookies = new CookiesConfiguration(node);
                             break;
 
                         case "caching":
@@ -229,43 +212,6 @@ namespace OpenNETCF.Web.Configuration
             return cfg;
         }
 
-        private static void ReadVirtualDirectoriesConfig(ServerConfig cfg, XmlNode node)
-        {
-            if (node.HasChildNodes)
-            {
-                foreach (XmlNode childNode in node.ChildNodes)
-                {
-                    if (HandlerBase.IsIgnorableAlsoCheckForNonElement(childNode))
-                    {
-                        continue;
-                    }
-
-                    if (childNode.Name == "Directory")
-                    {
-                        XmlNode directoryNode = childNode;
-
-                        string virtualPath = HandlerBase.RemoveRequiredAttribute(
-                            directoryNode, "VirtualPath", false);
-                        string physicalPath = HandlerBase.RemoveRequiredAttribute(
-                            directoryNode, "PhysicalPath", false).RemoveTrailingSlash();
-
-                        string requiresAuthValue = HandlerBase.RemoveAttribute(
-                            directoryNode, "RequireAuthentication");
-                        var virtualDir = new VirtualDirectoryMapping(virtualPath, physicalPath)
-                        {
-                            RequiresAuthentication =
-                                !string.IsNullOrEmpty(requiresAuthValue) && Convert.ToBoolean(requiresAuthValue)
-                        };
-
-                        HandlerBase.CheckForUnrecognizedAttributes(directoryNode);
-
-                        cfg.VirtualDirectories.Add(virtualDir);
-                        continue;
-                    }
-                }
-            }
-        }
-
         // TODO:
         private static void ParseFormsAuthorization(XmlNode node)
         {
@@ -283,95 +229,6 @@ namespace OpenNETCF.Web.Configuration
                     }
                 }
             }
-        }
-
-        private static AuthenticationConfiguration ReadAuthenticationConfig(XmlNode node)
-        {
-            var auth = new AuthenticationConfiguration
-            {
-                Mode = node.Attributes["Mode"].Value
-            };
-
-            if (string.Compare(auth.Mode, "forms", true) == 0)
-            {
-                FormsAuthentication.IsEnabled = true;
-            }
-
-            XmlAttribute attr = node.Attributes["Enabled"];
-            auth.Enabled = false;
-            if (attr != null)
-            {
-                try
-                {
-                    auth.Enabled = bool.Parse(attr.Value);
-                }
-                catch { }
-            }
-
-            attr = node.Attributes["Realm"];
-            auth.Realm = "Padarn";
-            if (attr != null)
-            {
-                try
-                {
-                    auth.Realm = attr.Value;
-                }
-                catch { }
-            }
-
-            if (node.HasChildNodes)
-            {
-                foreach (XmlNode child in node.ChildNodes)
-                {
-                    switch (child.Name.FirstCharToLower())  // for backward compatibility
-                    {
-                        case "users":
-                            foreach (XmlNode userNode in child.ChildNodes)
-                            {
-                                string name = userNode.AttributeOrEmpty("Name");
-                                string password = userNode.AttributeOrEmpty("Password");
-
-                                var user = new User {Name = name, Password = password};
-                                if (userNode.HasChildNodes)
-                                {
-                                    IEnumerable<Role> roles = userNode.ChildNodes.GetAttributeList("Name")
-                                        .Select(roleName => new Role { Name = roleName });
-                                    user.Roles.AddRange(roles);
-                                }
-
-                                auth.Users.Add(user);
-                            }
-                            break;
-                        case "forms":
-                            //loginUrl="login.aspx"
-                            //name=".PADARNAUTH"
-                            //domain="testdomain"
-                            //defaultUrl="default.aspx"
-                            //path="/"
-                            //timeout="30"
-
-                            //slidingExpiration="true"
-                            //requireSSL="false"
-                            //protection="None"
-                            //enableCrossAppRedirects="false"
-                            //cookieless="UseCookies"    
-
-                            attr = child.Attributes["loginUrl"];
-                            if (attr != null)
-                            {
-                                FormsAuthentication.LoginUrl = attr.Value;
-                            }
-
-                            attr = child.Attributes["loginUrl"];
-                            if (attr != null)
-                            {
-                                FormsAuthentication.LoginUrl = attr.Value;
-                            }
-                            break;
-                    }
-                }
-            }
-            return auth;
         }
 
         private static void HandleInvalidAttributes()

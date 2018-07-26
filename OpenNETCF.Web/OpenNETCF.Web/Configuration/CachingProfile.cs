@@ -34,9 +34,9 @@ namespace OpenNETCF.Web.Configuration
             Duration = new TimeSpan(0, 0, 30);
             Location = CacheLocation.Client;
 
-            foreach(XmlAttribute attrib in descriptor.Attributes)
+            foreach (XmlAttribute attrib in descriptor.Attributes)
             {
-                switch(attrib.Name.ToLowerInvariant())
+                switch (attrib.Name.ToLowerInvariant())
                 {
                     case "extension":
                         // make all lower here to make comparisons later easier

@@ -17,17 +17,9 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-//-----------------------------------------------------------------------
-// <copyright company="OpenNETCF" file="VirtualDirectoryConfig.cs">
-// Copyright (c) 2008 OpenNETCF Consulting, LLC. All rights reserved.
-// </copyright>
-//-----------------------------------------------------------------------
-using System;
 
 namespace OpenNETCF.Web.Configuration
 {
-    using System.Collections.Generic;
-
     /// <summary>
     /// Mappings for Padarn virtual directories
     /// </summary>
@@ -35,7 +27,6 @@ namespace OpenNETCF.Web.Configuration
     {
         private readonly string physicalDirectory;
         private readonly string virtualDirectory;
-        private bool requiresAuth;
 
         /// <summary>
         /// Physical directory path
@@ -56,49 +47,19 @@ namespace OpenNETCF.Web.Configuration
         /// <summary>
         /// True if the virtual directory requires authentication, otherwise false
         /// </summary>
-        public bool RequiresAuthentication
-        {
-            get { return this.requiresAuth; }
-            internal set { this.requiresAuth = value; }
-        }
+        public bool RequiresAuthentication { get; internal set; }
 
         /// <summary>
         /// VirtualDirectoryMapping constructor
         /// </summary>
         /// <param name="virtualPath"></param>
-        /// <param name="phyiscalPath"></param>
-        public VirtualDirectoryMapping(string virtualPath, string phyiscalPath)
+        /// <param name="physicalPath"></param>
+        public VirtualDirectoryMapping(string virtualPath, string physicalPath)
         {
             this.virtualDirectory = virtualPath;
-            this.physicalDirectory = phyiscalPath;
+            this.physicalDirectory = physicalPath;
 
-            this.requiresAuth = false;
-        }
-    }
-
-    internal class VirtualDirectoryMappingCollection : List<VirtualDirectoryMapping>
-    {
-        public VirtualDirectoryMapping GetVirtualDirectory(string virtualPath)
-        {
-            return Find(mapping => string.Compare(mapping.VirtualDirectory, virtualPath, true) == 0);
-        }
-
-        public VirtualDirectoryMapping this[string virtualPath]
-        {
-            get { return Find(mapping => string.Compare(mapping.VirtualDirectory, virtualPath, true) == 0); }
-        }
-
-        public string FindPhysicalDirectoryForVirtualUrlPath(string url)
-        {
-            foreach (VirtualDirectoryMapping mapping in this)
-            {
-                if (url.IndexOf(mapping.VirtualDirectory, StringComparison.InvariantCultureIgnoreCase) > 0)
-                {
-                    return mapping.PhysicalDirectory;
-                }
-            }
-
-            return null;
+            this.RequiresAuthentication = false;
         }
     }
 }

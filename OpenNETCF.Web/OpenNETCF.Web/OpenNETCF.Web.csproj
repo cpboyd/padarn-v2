@@ -141,6 +141,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Configuration\VirtualDirectoryMapping.cs" />
     <Compile Include="Handlers\CodeBehindAssembly.cs" />
     <Compile Include="Configuration\AuthenticationConfiguration.cs" />
     <Compile Include="Configuration\CacheLocation.cs" />
@@ -158,7 +159,7 @@
     <Compile Include="Configuration\SessionConfiguration.cs" />
     <Compile Include="Configuration\User.cs" />
     <Compile Include="Configuration\UserCollection.cs" />
-    <Compile Include="Configuration\VirtualDirectoryConfig.cs" />
+    <Compile Include="Configuration\VirtualDirectoryMappingCollection.cs" />
     <Compile Include="Configuration\VirtualPathProviders.cs" />
     <Compile Include="Core\ExtensionAttribute.cs" />
     <Compile Include="Core\Extensions.cs" />

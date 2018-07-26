@@ -17,8 +17,8 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
 
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -29,40 +29,24 @@ namespace OpenNETCF.Web.Configuration
     /// </summary>
     public sealed class User
     {
-        private string m_username;
-        private string m_password;
-        private RoleCollection m_roles;
-
         /// <summary>
         /// The user's username.
         /// </summary>
-        public string Name
-        {
-            get { return m_username; }
-            set { m_username = value; }
-        }
+        public string Name { get; set; }
 
         /// <summary>
         /// The user's password.
         /// </summary>
-        public string Password
-        {
-            get { return m_password; }
-            set { m_password = value; }
-        }
+        public string Password { get; set; }
 
-        internal RoleCollection Roles
-        {
-            get { return m_roles; }
-            set { m_roles = value; }
-        }
+        internal RoleCollection Roles { get; set; }
 
         /// <summary>
         /// Creates an instance of the User class. 
         /// </summary>
         public User()
         {
-            m_roles = new RoleCollection();
+            Roles = new RoleCollection();
         }
     }
 }

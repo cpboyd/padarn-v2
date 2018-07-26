@@ -67,14 +67,8 @@ namespace OpenNETCF.Web.Configuration
                 Assembly asm;
                 try
                 {
-                    if (string.Compare(AppDomain.CurrentDomain.FriendlyName, Path.GetFileName(fileName), true) == 0)
-                    {
-                        asm = currentAssembly;
-                    }
-                    else
-                    {
-                        asm = Assembly.Load(fileName);
-                    }
+                    asm = StringComparer.InvariantCultureIgnoreCase.Equals(AppDomain.CurrentDomain.FriendlyName, Path.GetFileName(fileName))
+                        ? currentAssembly : Assembly.Load(fileName);
                 }
                 catch (Exception ex)
                 {

@@ -17,6 +17,10 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
+
+using System;
+using System.Xml;
+
 namespace OpenNETCF.Web.Configuration
 {
     /// <summary>
@@ -24,6 +28,27 @@ namespace OpenNETCF.Web.Configuration
     /// </summary>
     public sealed class CookiesConfiguration
     {
+        internal CookiesConfiguration() { }
+
+        internal CookiesConfiguration(XmlNode node)
+        {
+            XmlAttribute domainAttrib = node.Attributes["Domain"];
+            if (domainAttrib == null)
+                throw new XmlException("<cookies> tag must have a 'Domain' attribute");
+
+            Domain = domainAttrib.Value;
+
+            if (node.Attributes["RequireSSL"] != null)
+            {
+                RequireSSL = Convert.ToBoolean(node.Attributes["RequireSSL"].Value);
+            }
+
+            if (node.Attributes["HttpOnlyCookies"] != null)
+            {
+                HttpOnlyCookies = Convert.ToBoolean(node.Attributes["HttpOnlyCookies"].Value);
+            }
+        }
+
         /// <summary>
         /// Gets or sets a value indicating whether Secure Sockets Layer (SSL) communication is required. 
         /// </summary>

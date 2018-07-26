@@ -70,9 +70,10 @@ using System.Diagnostics;
             Cookies = new CookiesConfiguration();
             Session = new SessionConfiguration();
             Security = new SecurityConfig();
-            this.VirtualPathProviders = new VirtualPathProviders();
-            this.HttpHandlers = new List<HttpHandler>();
-            this.AssembliesToLoad = new List<string>();
+            VirtualDirectories = new VirtualDirectoryMappingCollection();
+            VirtualPathProviders = new VirtualPathProviders();
+            HttpHandlers = new List<HttpHandler>();
+            AssembliesToLoad = new List<string>();
             m_loadedAssemblies = new List<Assembly>();
 
             HostLocation = Path.GetDirectoryName(new Uri(Assembly.GetCallingAssembly().GetName().CodeBase).LocalPath);
@@ -145,7 +146,7 @@ using System.Diagnostics;
                     // find the WebServer node
                     foreach (XmlNode child in n.ChildNodes)
                     {
-                        if (string.Compare(child.Name, "WebServer", true) == 0)
+                        if (StringComparer.InvariantCultureIgnoreCase.Equals(child.Name, "WebServer"))
                         {
                             return Create(child);
                         }
@@ -247,6 +248,7 @@ using System.Diagnostics;
                             Assembly a = Assembly.LoadFrom(newName);
                             config.m_loadedAssemblies.Add(a);
                             Type[] t = a.GetTypes();
+                            Debug.WriteLine(t.ToString());
 
                         }
                         else
