@@ -18,6 +18,7 @@
 //
 #endregion
 
+using OpenNETCF.Web.Core;
 using OpenNETCF.Web.Helpers;
 using OpenNETCF.Web.Security;
 using System.Runtime.InteropServices;
@@ -486,7 +487,7 @@ namespace OpenNETCF.Web.Hosting
         {
             asp = asp.Trim();
 
-            switch (asp.ToLower())
+            switch (asp.ToLowerInvariant())
             {
                 case "server.getlasterror()":
                     return LastError.Message;
@@ -647,7 +648,7 @@ namespace OpenNETCF.Web.Hosting
 
         private IHttpHandler GetHandlerForFilename(string fileName, string mimeType, HttpMethod method)
         {
-            string extension = System.IO.Path.GetExtension(fileName).ToLower();
+            string extension = System.IO.Path.GetExtension(fileName).ToLowerInvariant();
 
             // Load the correct file handler
             IHttpHandler handler = GetCustomHandler(fileName, method);
@@ -812,7 +813,7 @@ namespace OpenNETCF.Web.Hosting
 
         private HttpCachePolicy CheckGlobalCachePolicy(string fileName)
         {
-            string fileExtension = System.IO.Path.GetExtension(fileName).ToLower();
+            string fileExtension = System.IO.Path.GetExtension(fileName).ToLowerInvariant();
 
             foreach (CachingProfile profile in ServerConfig.GetConfig().Caching.Profiles)
             {
@@ -1136,7 +1137,7 @@ namespace OpenNETCF.Web.Hosting
                     {
                         string localFile, mime, defaultDoc = null;
 
-                        if (!Path.ToLower().StartsWith("about:"))
+                    if (!Path.ToLowerInvariant().StartsWith("about:"))
                         {
                             string physicalPath = HostingEnvironment.MapPath(Path);
 
@@ -1536,7 +1537,7 @@ namespace OpenNETCF.Web.Hosting
             string credentials = challengeResponse.Substring(separator + 1);
             Authentication auth;
 
-            switch (mode.ToLower())
+            switch (mode.ToLowerInvariant())
             {
                 case "basic":
                     auth = new BasicAuthentication();
@@ -1573,7 +1574,7 @@ namespace OpenNETCF.Web.Hosting
             Status = "HTTP/1.1 401 UNAUTHORIZED";
             Authentication auth;
 
-            switch (ServerConfig.GetConfig().Authentication.Mode.ToLower())
+            switch (ServerConfig.GetConfig().Authentication.Mode.ToLowerInvariant())
             {
                 case "basic":
                     //responseHeaders.Append(String.Format("WWW-Authenticate: Basic realm=\"{0}\"\r\n", ServerConfig.GetConfig().Authentication.Realm));

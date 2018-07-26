@@ -21,6 +21,7 @@ using System;
 
 using System.Collections.Generic;
 using System.Text;
+using OpenNETCF.Web.Core;
 
 namespace OpenNETCF.Web.UI.WebControls
 {
@@ -99,7 +100,7 @@ namespace OpenNETCF.Web.UI.WebControls
 
             if (parms.Contains("textmode"))
             {
-                switch (((string)parms["textmode"]).ToLower())
+                switch (((string) parms["textmode"]).ToLowerInvariant())
                 {
                     case "password":
                         TextMode = TextBoxMode.Password;

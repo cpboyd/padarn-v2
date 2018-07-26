@@ -22,6 +22,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Collections;
+using OpenNETCF.Web.Core;
 
 namespace OpenNETCF.Web.UI.WebControls
 {
@@ -44,7 +45,7 @@ namespace OpenNETCF.Web.UI.WebControls
         /// <param name="tag"></param>
         protected WebControl(string tag)
         {
-            TagName = tag.ToLower();
+            TagName = tag.ToLowerInvariant();
         }
 
         /// <summary>
@@ -53,7 +54,7 @@ namespace OpenNETCF.Web.UI.WebControls
         /// <param name="tag"></param>
         public WebControl(HtmlTextWriterTag tag)
         {
-            TagName = tag.ToString().ToLower();
+            TagName = tag.AsText();
         }
 
         /// <summary>

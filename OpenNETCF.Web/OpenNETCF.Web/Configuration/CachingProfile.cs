@@ -20,8 +20,10 @@
 using System;
 
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using System.Xml;
+using OpenNETCF.Web.Core;
 
 namespace OpenNETCF.Web.Configuration
 {
@@ -34,11 +36,11 @@ namespace OpenNETCF.Web.Configuration
 
             foreach(XmlAttribute attrib in descriptor.Attributes)
             {
-                switch(attrib.Name.ToLower())
+                switch(attrib.Name.ToLowerInvariant())
                 {
                     case "extension":
                         // make all lower here to make comparisons later easier
-                        Extension = attrib.Value.ToLower();
+                        Extension = attrib.Value.ToLowerInvariant();
                         break;
                     case "duration":
                         Duration = TimeSpan.Parse(attrib.Value);

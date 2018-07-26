@@ -29,6 +29,7 @@ using System.Xml;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Globalization;
+using OpenNETCF.Web.Core;
 
 namespace OpenNETCF.Web
 {
@@ -324,7 +325,7 @@ namespace OpenNETCF.Web
                     }
                 }
             }
-            this._browsers.Add(browserName.ToLower(CultureInfo.InvariantCulture));
+            this._browsers.Add(browserName.ToLowerInvariant());
         }
 
         ///<summary>

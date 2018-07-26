@@ -24,6 +24,7 @@ using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 using OpenNETCF.Web.Configuration;
+using OpenNETCF.Web.Core;
 
 namespace OpenNETCF.Web.Security
 {
@@ -82,8 +83,7 @@ namespace OpenNETCF.Web.Security
             }
 
             // set the user info
-            var id = new GenericIdentity(User, this.AuthenticationMethod.ToLower());
-            id.IsAuthenticated = auth;
+            var id = new GenericIdentity(User, this.AuthenticationMethod.ToLowerInvariant()) {IsAuthenticated = auth};
             var principal = new GenericPrincipal(id);
             context.User = principal;
 

@@ -21,6 +21,7 @@ using System;
 
 using System.Collections.Generic;
 using System.Text;
+using OpenNETCF.Web.Core;
 
 namespace OpenNETCF.Web.Security
 {
@@ -67,13 +68,11 @@ namespace OpenNETCF.Web.Security
         protected string Authorization(HttpContext context, string authenticationMethod)
         {
             string requestedAuthMethod = context.Request.Headers["Authorization"];
-            if ((requestedAuthMethod == null) || (authenticationMethod.Length == 0))
+            if ((requestedAuthMethod == null) || (authenticationMethod.Length == 0) ||
+                !requestedAuthMethod.StartsWith(authenticationMethod, StringComparison.InvariantCultureIgnoreCase))
                 return null; // Anonymous request 
 
-            if (requestedAuthMethod.ToLower().StartsWith(authenticationMethod.ToLower()))
-                return requestedAuthMethod.Substring(authenticationMethod.Length + 1);
-            
-            return null;
+            return requestedAuthMethod.Substring(authenticationMethod.Length + 1);
         }
 
         public virtual void OnAuthenticateRequest(object sender, EventArgs e)

@@ -27,6 +27,7 @@ using System.Xml;
 using System.IO;
 using System.Diagnostics;
 using System.Collections.Specialized;
+using OpenNETCF.Web.Core;
 using OpenNETCF.Web.UI.WebControls;
 using OpenNETCF.Web.UI;
 
@@ -218,31 +219,29 @@ namespace OpenNETCF.Web.Parsers
 
         private void ParseAspControl(Page page, XmlNode node, XmlWriter writer)
         {
-            var name = node.LocalName.ToLower();
-            if (m_controlBuilders.ContainsKey(name))
-            {
-                Hashtable parms = new Hashtable();
-
-                foreach (XmlAttribute attrib in node.Attributes)
-                {
-                    parms.Add(attrib.Name.ToLower(), attrib.Value);
-                }
-
-                var builder = m_controlBuilders[name];
-
-                var control = Activator.CreateInstance(builder.ControlType) as WebControl;
-                control.SetParameters(parms);
-
-                control.Content = node.InnerText;
-
-                page.Controls.Add(control);
-
-                control.Render(writer);
-            }
-            else
+            var name = node.LocalName.ToLowerInvariant();
+            if (!m_controlBuilders.ContainsKey(name))
             {
                 throw new NotSupportedException(string.Format("Unsupported server control: '{0}'", name));
             }
+
+            var parms = new Hashtable();
+
+            foreach (XmlAttribute attrib in node.Attributes)
+            {
+                parms.Add(attrib.Name.ToLowerInvariant(), attrib.Value);
+            }
+
+            ControlBuilder builder = m_controlBuilders[name];
+
+            var control = Activator.CreateInstance(builder.ControlType) as WebControl;
+            control.SetParameters(parms);
+
+            control.Content = node.InnerText;
+
+            page.Controls.Add(control);
+
+            control.Render(writer);
         }
 
         private void Dump(XmlNode parent, int level)
