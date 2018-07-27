@@ -28,7 +28,7 @@ namespace OpenNETCF.Configuration
     /// <summary>
     /// Provides access to configuration settings in a specified configuration section. This class cannot be inherited.
     /// </summary>
-    internal static class ConfigurationSettings
+    public static class ConfigurationSettings
     {
         // The Configuration System
         private static IConfigurationSystem m_configSystem = null;

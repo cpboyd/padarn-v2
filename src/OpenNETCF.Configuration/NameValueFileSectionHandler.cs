@@ -27,7 +27,7 @@ namespace OpenNETCF.Configuration
 	/// <summary>
 	/// 
 	/// </summary>
-    internal class NameValueFileSectionHandler : IConfigurationSectionHandler
+	public class NameValueFileSectionHandler: IConfigurationSectionHandler
 	{
 		/// <summary>
 		/// 

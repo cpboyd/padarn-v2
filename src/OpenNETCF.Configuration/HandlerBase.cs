@@ -24,7 +24,7 @@ using System.Xml;
 
 namespace OpenNETCF.Configuration
 {
-	internal class HandlerBase
+	public class HandlerBase
 	{
 		private static XmlNode GetAndRemoveAttribute(XmlNode node, string attrib, bool fRequired)
 		{
@@ -175,7 +175,7 @@ namespace OpenNETCF.Configuration
 			return GetAndRemoveTypeAttributeInternal(node, attrib, true, ref val);
 		}
 
-		internal static void CheckForUnrecognizedAttributes(XmlNode node)
+		public static void CheckForUnrecognizedAttributes(XmlNode node)
 		{
 			if (node.Attributes.Count != 0)
 			{
@@ -187,7 +187,7 @@ namespace OpenNETCF.Configuration
 			}
 		}
 
-		internal static string RemoveAttribute(XmlNode node, string name)
+		public static string RemoveAttribute(XmlNode node, string name)
 		{
 			XmlNode xmlNode = node.Attributes.RemoveNamedItem(name);
 			if (xmlNode != null)
@@ -200,12 +200,12 @@ namespace OpenNETCF.Configuration
 			}
 		}
 
-		internal static string RemoveRequiredAttribute(XmlNode node, string name)
+        public static string RemoveRequiredAttribute(XmlNode node, string name)
 		{
 			return RemoveRequiredAttribute(node, name, false);
 		}
 
-		internal static string RemoveRequiredAttribute(XmlNode node, string name, bool allowEmpty)
+		public static string RemoveRequiredAttribute(XmlNode node, string name, bool allowEmpty)
 		{
 			object[] locals;
 
@@ -235,7 +235,7 @@ namespace OpenNETCF.Configuration
 			}
 		}
 
-		internal static bool IsIgnorableAlsoCheckForNonElement(XmlNode node)
+		public static bool IsIgnorableAlsoCheckForNonElement(XmlNode node)
 		{
 			if (node.NodeType == XmlNodeType.Comment || node.NodeType == XmlNodeType.Whitespace)
 			{

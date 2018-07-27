@@ -19,25 +19,25 @@
 #endregion
 
 using System;
-using System.Xml;
 
 namespace OpenNETCF.Configuration
 {
 	/// <summary>
-	/// Provides a section handler definition for configuration sections read and handled by systems other than OpenNETCF.Configuration. 
+	/// 
 	/// </summary>
-    internal class IgnoreSectionHandler : IConfigurationSectionHandler
+	public interface IConfigurationSystem
 	{
-		/// <summary>
-		/// 
+        /// <summary>
+        /// Returns the config object for the specified key.  
+        /// </summary>
+        /// <param name="configKey">Section name of config object to retrieve. </param>
+        /// <param name="context">Application provided context object that gets passed into the Create method of the IConfigurationSectionHandler</param>
+        /// <returns></returns>
+        object GetConfig(string configKey, object context);
+        
+        /// <summary>
+		/// Initializes the configuration system. 
 		/// </summary>
-		/// <param name="parent"></param>
-		/// <param name="configContext"></param>
-		/// <param name="section"></param>
-		/// <returns></returns>
-		public virtual object Create(object parent, object configContext, XmlNode section)
-		{
-			return null;
-		}
+		void Init();
 	}
 }

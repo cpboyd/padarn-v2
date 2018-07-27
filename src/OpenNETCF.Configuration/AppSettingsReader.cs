@@ -26,7 +26,7 @@ namespace OpenNETCF.Configuration
 	/// <summary>
 	/// Provides a method for reading values of a particular type from the .config file.
 	/// </summary>
-	internal class AppSettingsReader
+	public class AppSettingsReader
 	{
 		private NameValueCollection map;
 		private static Type stringType = typeof(string);

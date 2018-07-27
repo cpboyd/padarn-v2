@@ -20,25 +20,22 @@
 
 using System;
 using System.Collections;
+using System.Collections.Specialized;
 using System.Globalization;
 using System.Xml;
 
 namespace OpenNETCF.Configuration
 {
 	/// <summary>
-	/// Reads key-value pair configuration information for a configuration section.
+	/// Provides name-value pair configuration information from a configuration section.
 	/// </summary>
-	/// <example>
-	/// <code>
-	/// &lt;add key="name" value="text"> - sets key=text
-	/// &lt;remove key="name"> - removes the definition of key
-	/// &lt;clear/> - removes all definitions
-	/// </code>
-	/// </example>
-    internal class DictionarySectionHandler : IConfigurationSectionHandler
+	public class NameValueSectionHandler: IConfigurationSectionHandler
 	{
+		private const string defaultKeyAttribute = "key";
+		private const string defaultValueAttribute = "value";
+
 		/// <summary>
-		/// Make the name of the key attribute configurable by derived classes.
+		/// 
 		/// </summary>
 		protected virtual string KeyAttributeName
 		{
@@ -46,16 +43,11 @@ namespace OpenNETCF.Configuration
 		}
 
 		/// <summary>
-		/// Make the name of the value attribute configurable by derived classes.
+		/// 
 		/// </summary>
 		protected virtual string ValueAttributeName
 		{
 			get { return "value"; }
-		}
-
-		internal virtual bool ValueRequired
-		{
-			get { return false; }
 		}
 
 		/// <summary>
@@ -67,50 +59,48 @@ namespace OpenNETCF.Configuration
 		/// <returns></returns>
 		public virtual object Create(object parent, object context, XmlNode section)
 		{
-			Hashtable result;
+			return CreateStatic(parent, section, KeyAttributeName, ValueAttributeName);
+		}
 
-			// Create a shallow clone of the parent
+		internal static object CreateStatic(object parent, XmlNode section)
+		{
+			return CreateStatic(parent, section, "key", "value");
+		}
+
+		internal static object CreateStatic(object parent, XmlNode section, string keyAttriuteName, string valueAttributeName)
+		{
+			ReadOnlyNameValueCollection result;
+
 			if (parent == null)
 			{
-                result = new Hashtable(StringComparer.OrdinalIgnoreCase);
+                result = new ReadOnlyNameValueCollection(StringComparer.OrdinalIgnoreCase);
+
 			}
 			else
 			{
-				result = (Hashtable)((Hashtable)parent).Clone();
+				result = new ReadOnlyNameValueCollection((ReadOnlyNameValueCollection)parent);
 			}
-			// Process XML
 			HandlerBase.CheckForUnrecognizedAttributes(section);
 
 			foreach(XmlNode child in section.ChildNodes)
 			{
-				// Skip whitespace and comments; throw exception if non-element
 				if(HandlerBase.IsIgnorableAlsoCheckForNonElement(child))
-				{
 					continue;
-				}
 
-				// Handle <add>, <remove>, and <clear> tags
-				if(child.Name == "add")
+				if (child.Name == "add")
 				{
-					string key = HandlerBase.RemoveRequiredAttribute(child, KeyAttributeName);
-					string value = HandlerBase.RemoveAttribute(child, ValueAttributeName);
+					string key = HandlerBase.RemoveRequiredAttribute(child, keyAttriuteName);
+					string val = HandlerBase.RemoveRequiredAttribute(child, valueAttributeName, true);
 					HandlerBase.CheckForUnrecognizedAttributes(child);
-
-					if(value == null)
-					{
-						value = string.Empty;
-					}
-
-					result[key] = value;
+					result[key] = val;
 				}
-				else if(child.Name == "remove")
+				else if (child.Name == "remove")
 				{
-					string key = HandlerBase.RemoveRequiredAttribute(child, KeyAttributeName);
+					string key = HandlerBase.RemoveRequiredAttribute(child, keyAttriuteName);
 					HandlerBase.CheckForUnrecognizedAttributes(child);
-
 					result.Remove(key);
 				}
-				else if(child.Name == "clear")
+				else if (child.Name.Equals("clear"))
 				{
 					HandlerBase.CheckForUnrecognizedAttributes(child);
 					result.Clear();
@@ -120,8 +110,9 @@ namespace OpenNETCF.Configuration
 					HandlerBase.ThrowUnrecognizedElement(child);
 				}
 			}
+
+			result.SetReadOnly();
 			return result;
 		}
 	}
 }
-

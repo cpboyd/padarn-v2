@@ -21,7 +21,6 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Threading;
-using OpenNETCF.Web.Configuration;
 using System.Xml;
 
 namespace OpenNETCF.Configuration
@@ -90,11 +89,10 @@ namespace OpenNETCF.Configuration
 				if(_application == null) 
 				{
                     ConfigurationRecord machineConfig = null;
-                    bool machineConfigExists = false;
-                                        
-					string machineConfigFilename = MachineConfigurationFilePath;
+
+				    string machineConfigFilename = MachineConfigurationFilePath;
 					_application = machineConfig = new ConfigurationRecord();
-					machineConfigExists = machineConfig.Load(machineConfigFilename);
+					bool machineConfigExists = machineConfig.Load(machineConfigFilename);
 
                     if (!machineConfigExists)
                     {
@@ -107,9 +105,9 @@ namespace OpenNETCF.Configuration
 //                                                + "  </configSections>"
 //                                                + "</configuration>";
 #if(WindowsCE)
-                        string machineConfigXml = OpenNETCF.Web.Resources.machine_config;
+                        string machineConfigXml = OpenNETCF.Configuration.machineconfig.machine_config;
 #else
-                        string machineConfigXml = OpenNETCF.Web.Properties.Resources.machine_config;
+                        string machineConfigXml = OpenNETCF.Configuration.Properties.machineconfig.machine_config;
 #endif
                         bool machineConfigLoaded = machineConfig.LoadXml(machineConfigXml);
                     }
