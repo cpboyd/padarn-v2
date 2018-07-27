@@ -407,3 +407,6 @@ ASALocalRun/
 
 
 # End of https://www.gitignore.io/api/node,visualstudio
+
+# Allow server certificates in samples:
+!/samples/**/*.pfx

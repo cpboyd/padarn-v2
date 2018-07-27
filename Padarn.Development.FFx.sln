@@ -9,13 +9,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenNETCF.Web.FFx", "OpenNE
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenNETCF.Web.Extensions.FFx", "OpenNETCF.Web.Extensions\OpenNETCF.Web.Extensions.FFx.csproj", "{82D377B5-7A45-439C-BECB-7D008E7152B3}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test Project", "Test Project", "{1D39EDF1-5E3D-4F82-AD06-90C0D8654426}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{1D39EDF1-5E3D-4F82-AD06-90C0D8654426}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StaticContent", "Tests\FFx\StaticContent\StaticContent.csproj", "{88270A0E-7833-4612-9D46-0DAE5714B728}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StaticContent", "samples\FFx\StaticContent\StaticContent.csproj", "{88270A0E-7833-4612-9D46-0DAE5714B728}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeBehind", "Tests\FFx\CodeBehind\CodeBehind.csproj", "{CADDBDA1-4DFD-4413-83AD-8A5CA79E4B5C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeBehind", "samples\FFx\CodeBehind\CodeBehind.csproj", "{CADDBDA1-4DFD-4413-83AD-8A5CA79E4B5C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServerHost", "Tests\FFx\ServerHost\ServerHost.csproj", "{90911666-7752-4A54-A33C-B756804E1548}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServerHost", "samples\FFx\ServerHost\ServerHost.csproj", "{90911666-7752-4A54-A33C-B756804E1548}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

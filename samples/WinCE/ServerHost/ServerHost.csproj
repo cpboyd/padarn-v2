@@ -4,16 +4,17 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>9.0.30729</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{2814D07B-2B8A-446C-9D8A-22704A7790C0}</ProjectGuid>
-    <OutputType>Library</OutputType>
+    <ProjectGuid>{3D102874-8BB1-44C0-AFD0-26F41F550573}</ProjectGuid>
+    <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>OpenNETCF.Padarn</RootNamespace>
-    <AssemblyName>CodeBehind</AssemblyName>
+    <RootNamespace>ServerHost</RootNamespace>
+    <AssemblyName>ServerHost</AssemblyName>
     <ProjectTypeGuids>{4D628B5B-2FBC-4AA6-8C16-197242AEB884};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <PlatformFamilyName>WindowsCE</PlatformFamilyName>
     <PlatformID>E2BECB1F-8C8C-41ba-B736-9BE7D946A398</PlatformID>
     <OSVersion>5.0</OSVersion>
-    <DeployDirSuffix>\www\bin</DeployDirSuffix>
+    <DeployDirSuffix>
+    </DeployDirSuffix>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <NativePlatformName>Windows CE</NativePlatformName>
     <FormFactorID>
@@ -55,20 +56,27 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Default.cs" />
+    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\OpenNETCF.Web.Extensions\OpenNETCF.Web.Extensions.CF.csproj">
-      <Project>{5517ABE7-5582-4405-8F5B-C84FC6F11222}</Project>
-      <Name>OpenNETCF.Web.Extensions.CF</Name>
-      <Private>True</Private>
-    </ProjectReference>
     <ProjectReference Include="..\..\..\OpenNETCF.Web\OpenNETCF.Web\OpenNETCF.Web.csproj">
       <Project>{662C4633-A8FC-4D9A-85ED-8FDB9622229E}</Project>
-      <Name>OpenNETCF.Web %28Padarn\OpenNETCF.Web%29</Name>
-      <Private>False</Private>
+      <Name>OpenNETCF.Web</Name>
     </ProjectReference>
+    <ProjectReference Include="..\CodeBehind\CodeBehind.csproj">
+      <Project>{2814D07B-2B8A-446C-9D8A-22704A7790C0}</Project>
+      <Name>CodeBehind</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\StaticContent\StaticContent.csproj">
+      <Project>{3EDCC5A5-D1AD-46B5-886E-5AA7C4DAE9B0}</Project>
+      <Name>StaticContent</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="ServerHost.exe.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CompactFramework.CSharp.targets" />
   <ProjectExtensions>
