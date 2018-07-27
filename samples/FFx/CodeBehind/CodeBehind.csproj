@@ -43,11 +43,11 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\OpenNETCF.Web.Extensions\OpenNETCF.Web.Extensions.FFx.csproj">
+    <ProjectReference Include="..\..\..\src\OpenNETCF.Web.Extensions\OpenNETCF.Web.Extensions.FFx.csproj">
       <Project>{82d377b5-7a45-439c-becb-7d008e7152b3}</Project>
       <Name>OpenNETCF.Web.Extensions.FFx</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\OpenNETCF.Web\OpenNETCF.Web\OpenNETCF.Web.FFx.csproj">
+    <ProjectReference Include="..\..\..\src\OpenNETCF.Web\OpenNETCF.Web.FFx.csproj">
       <Project>{a71add39-cc93-4d74-83e4-f8b26fa0ec10}</Project>
       <Name>OpenNETCF.Web.FFx</Name>
       <Private>False</Private>

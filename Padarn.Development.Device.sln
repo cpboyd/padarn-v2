@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual Studio 2008
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenNETCF.Web", "OpenNETCF.Web\OpenNETCF.Web\OpenNETCF.Web.csproj", "{662C4633-A8FC-4D9A-85ED-8FDB9622229E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenNETCF.Web", "src\OpenNETCF.Web\OpenNETCF.Web.csproj", "{662C4633-A8FC-4D9A-85ED-8FDB9622229E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Padarn", "Padarn", "{C80EE44D-AF1E-4699-9FE6-275E4858AB17}"
 EndProject
@@ -13,7 +13,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StaticContent", "samples\Wi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeBehind", "samples\WinCE\CodeBehind\CodeBehind.csproj", "{2814D07B-2B8A-446C-9D8A-22704A7790C0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenNETCF.Web.Extensions.CF", "OpenNETCF.Web.Extensions\OpenNETCF.Web.Extensions.CF.csproj", "{5517ABE7-5582-4405-8F5B-C84FC6F11222}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenNETCF.Web.Extensions.CF", "src\OpenNETCF.Web.Extensions\OpenNETCF.Web.Extensions.CF.csproj", "{5517ABE7-5582-4405-8F5B-C84FC6F11222}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenNETCF.Extensions.CF", "..\extensions\OpenNETCF.Extensions.CF.csproj", "{8C471165-A242-437D-B117-02663D1E064B}"
 EndProject

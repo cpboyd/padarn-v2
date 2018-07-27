@@ -82,7 +82,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\OpenNETCF.Web\OpenNETCF.Web\OpenNETCF.Web.FFx.csproj">
+    <ProjectReference Include="..\OpenNETCF.Web\OpenNETCF.Web.FFx.csproj">
       <Project>{a71add39-cc93-4d74-83e4-f8b26fa0ec10}</Project>
       <Name>OpenNETCF.Web.FFx</Name>
     </ProjectReference>

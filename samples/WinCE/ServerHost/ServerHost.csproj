@@ -60,7 +60,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\OpenNETCF.Web\OpenNETCF.Web\OpenNETCF.Web.csproj">
+    <ProjectReference Include="..\..\..\src\OpenNETCF.Web\OpenNETCF.Web.csproj">
       <Project>{662C4633-A8FC-4D9A-85ED-8FDB9622229E}</Project>
       <Name>OpenNETCF.Web</Name>
     </ProjectReference>
