@@ -17,66 +17,64 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-
-using System;
-using System.Collections;
-
 namespace OpenNETCF.Web
 {
+    using System;
+    using System.Collections;
+
     internal class MimeMapping
     {
-        public const string DefaultType = "text/plain";
-        private static readonly Hashtable extensionToMimeMappingTable;
+        private static readonly Hashtable extensionToMimeMappingTable = new Hashtable(190, StringComparer.CurrentCultureIgnoreCase);
 
         static MimeMapping()
         {
-            extensionToMimeMappingTable = new Hashtable(190, StringComparer.CurrentCultureIgnoreCase)
-            {
-                {".*", DefaultType},
-                // Images:
-                {".bmp", "image/bmp"},
-                {".gif", "image/gif"},
-                {".ico", "image/x-icon"},
-                {".jpg", "image/jpeg"},
-                {".tif", "image/tiff"},
-                {".tiff", "image/tiff"},
-                {".png", "image/png"},
-                {".svg", "image/svg+xml"},
-                // Text:
-                {".html", "text/html"},
-                {".htm", "text/html"},
-                {".js", "application/javascript"},
-                {".json", "application/json"},
-                {".vb", "text/vbscript"},
-                {".txt", "text/plain"},
-                {".xml", "text/xml"},
-                {".aspx", "text/html"},
-                {".css", "text/css"},
-                // Binary:
-                {".pdf", "application/pdf"},
-                {".gz", "application/gzip"},
-                {".zip", "application/zip"}
-            };
+            AddMimeMapping(".*", "text/plain");
+
+            AddMimeMapping(".bmp", "image/bmp");
+            AddMimeMapping(".gif", "image/gif");
+            AddMimeMapping(".ico", "image/x-icon");
+            AddMimeMapping(".jpg", "image/jpeg");
+            AddMimeMapping(".tif", "image/tiff");
+            AddMimeMapping(".tiff", "image/tiff");
+            AddMimeMapping(".png", "image/png");
+
+            AddMimeMapping(".html", "text/html");
+            AddMimeMapping(".htm", "text/html");
+            AddMimeMapping(".js", "application/x-javascript");
+            AddMimeMapping(".vb", "text/vbscript");
+            AddMimeMapping(".txt", "text/plain");
+            AddMimeMapping(".xml", "text/xml");
+            AddMimeMapping(".aspx", "text/html");
+            AddMimeMapping(".css", "text/css");
+
+            AddMimeMapping(".pdf", "application/pdf");
+            AddMimeMapping(".zip", "application/x-zip-compressed");
         }
 
         private MimeMapping()
         {
         }
 
+        private static void AddMimeMapping(string extension, string mimeType)
+        {
+            extensionToMimeMappingTable.Add(extension, mimeType);
+        }
+
         internal static string GetMimeMapping(string fileName)
         {
-            if (fileName == null)
+            string text = null;
+
+            int startIndex = -1;
+            if (fileName != null)
             {
-                return DefaultType;
+                startIndex = fileName.LastIndexOf('.');
             }
 
-            string text = null;
-            int startIndex = fileName.LastIndexOf('.');
             if ((0 < startIndex) && (startIndex > fileName.LastIndexOf(System.IO.Path.DirectorySeparatorChar)))
             {
-                text = (string) extensionToMimeMappingTable[fileName.Substring(startIndex)];
+                text = (string)extensionToMimeMappingTable[fileName.Substring(startIndex)];
             }
-            return text ?? DefaultType;
+            return text ?? ((string)extensionToMimeMappingTable[".*"]);
         }
     }
 }
