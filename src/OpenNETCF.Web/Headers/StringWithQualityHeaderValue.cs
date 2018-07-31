@@ -52,15 +52,20 @@ namespace OpenNETCF.Web.Headers
             string value = array[0].Trim();
             for (int i = 1; i < array.Length; i++)
             {
-                string[] toParse = array[i].Split('=');
-                switch (toParse[0].Trim().ToLowerInvariant())
+                int index = array[i].IndexOf('=');
+                if (index < 1)
+                {
+                    continue;
+                }
+
+                switch (array[i].Substring(0, index).Trim().ToLowerInvariant())
                 {
                     case "q":
                         double quality = 1;
                         // Suppress any parsing errors and assume default quality.
                         try
                         {
-                            quality = Double.Parse(toParse[1]);
+                            quality = Double.Parse(array[i].Substring(index + 1));
                         }
                         catch { }
                         return new StringWithQualityHeaderValue(value, quality);
