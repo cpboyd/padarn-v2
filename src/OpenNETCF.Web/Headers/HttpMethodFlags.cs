@@ -27,7 +27,7 @@ namespace OpenNETCF.Web
     /// <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods">HTTP request methods</a>
     /// </summary>
     [Flags]
-    public enum HttpMethod
+    public enum HttpMethodFlags
     {
         /// <summary>
         /// Unknown HTTP method

@@ -21,6 +21,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.IO;
+using System.Text.RegularExpressions;
 using OpenNETCF.Web.Configuration;
 using System.Collections.Specialized;
 using System.Net;
@@ -41,7 +42,7 @@ namespace OpenNETCF.Web
         private string m_rawQueryString;
         private string m_path;
         private string m_httpVersion;
-        private HttpMethod m_httpMethod = HttpMethod.Unknown;
+        private string m_httpMethod;
 
         /// <summary>
         /// The offset in which to start reading the line data
@@ -268,60 +269,39 @@ namespace OpenNETCF.Web
             try
             {
                 ret = this.ReadLine(Encoding.ASCII, true);
-                String requestLine = null;
-                if (ret != null)
-                {
-                    requestLine = ret.Trim();
-
-                    int length = requestLine.Length;
-
-                    if (length >= 5 && String.Compare("GET ", requestLine.Substring(0, 4), true) == 0)
-                    {
-                        m_httpMethod = HttpMethod.GET;
-                    }
-                    else if (length >= 5 && String.Compare("POST", requestLine.Substring(0, 4), true) == 0)
-                    {
-                        m_httpMethod = HttpMethod.POST;
-                    }
-                    else if (requestLine.StartsWith("DELETE", StringComparison.InvariantCultureIgnoreCase))
-                    {
-                        m_httpMethod = HttpMethod.DELETE;
-                    }
-                    else if (requestLine.StartsWith("PUT", StringComparison.InvariantCultureIgnoreCase))
-                    {
-                        m_httpMethod = HttpMethod.PUT;
-                    }
-
-                    if (m_httpMethod != HttpMethod.Unknown)
-                    {
-                        requestLine = requestLine.Substring(m_httpMethod.ToString().Length + 1).TrimStart();
-                        string[] s = requestLine.Split(' ');
-                        length = s.Length;
-
-                        switch (length)
-                        {
-                            case 1:
-                                Path = s[0];
-                                break;
-                            case 2:
-                                Path = s[0];
-                                m_httpVersion = s[1];
-                                break;
-                            default:
-                                return ret;
-                        }
-
-                        int q = m_path.IndexOf('?');
-                        if (q != -1)
-                        {
-                            m_rawQueryString = m_path.Substring(q + 1);
-                            Path = Path.Substring(0, q);
-                        }
-                    }
-                }
-                else
+                if (ret == null)
                 {
                     System.Diagnostics.Debug.WriteLine("ret is null in ReadContentInfo()");
+                    return null;
+                }
+
+                string requestLine = ret.Trim();
+                string[] s = Regex.Split(requestLine, @"\s+");
+                int length = s.Length;
+                if (length < 1)
+                {
+                    return ret;
+                }
+                m_httpMethod = s[0];
+
+                switch (length)
+                {
+                    case 2:
+                        Path = s[1];
+                        break;
+                    case 3:
+                        Path = s[1];
+                        m_httpVersion = s[2];
+                        break;
+                    default:
+                        return ret;
+                }
+
+                int q = m_path.IndexOf('?');
+                if (q != -1)
+                {
+                    m_rawQueryString = m_path.Substring(q + 1);
+                    Path = Path.Substring(0, q);
                 }
             }
             catch (Exception ex)
@@ -445,11 +425,11 @@ namespace OpenNETCF.Web
             }
         }
 
-        public HttpMethod HttpMethod
+        public string HttpMethod
         {
             get
             {
-                if (m_httpMethod == HttpMethod.Unknown)
+                if (m_httpMethod == null)
                     ReadContentInfo();
                 return m_httpMethod;
             }

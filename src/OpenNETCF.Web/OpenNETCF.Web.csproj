@@ -168,6 +168,7 @@
     <Compile Include="Exceptions\ConfigurationErrorsException.cs" />
     <Compile Include="Exceptions\HttpRequestValidationException.cs" />
     <Compile Include="Headers\ContentEncoding.cs" />
+    <Compile Include="Headers\HttpMethodFlags.cs" />
     <Compile Include="Headers\StringWithQualityHeaderValue.cs" />
     <Compile Include="Helpers\CaseInsensitiveDictionary.cs" />
     <Compile Include="Helpers\CrossSiteScriptingValidation.cs" />
@@ -214,7 +215,7 @@
     <Compile Include="Exceptions\HttpUnhandledException.cs" />
     <Compile Include="HttpUtility.cs" />
     <Compile Include="Headers\HttpValueCollection.cs" />
-    <Compile Include="HttpMethod.cs" />
+    <Compile Include="Headers\HttpMethod.cs" />
     <Compile Include="MultipartContentItem.cs" />
     <Compile Include="Networking\INetworkInterface.cs" />
     <Compile Include="Networking\IP_ADAPTER_INFO.cs" />

@@ -266,7 +266,7 @@ namespace OpenNETCF.Web.Hosting
         /// <returns></returns>
         public override string GetHttpVerbName()
         {
-            return m_httpRawRequestContent.HttpMethod.ToString();
+            return m_httpRawRequestContent.HttpMethod;
         }
 
         /// <summary>
@@ -338,7 +338,7 @@ namespace OpenNETCF.Web.Hosting
                 }
 
                 // ensure the headers are terminated with \r\n\r\n
-                var index = m_responseHeaders.Length - 4;
+                int index = m_responseHeaders.Length - 4;
 
                 while ((index < m_responseHeaders.Length) && (m_responseHeaders[index] != '\r')) index++;
                 m_responseHeaders.Length = index;
@@ -641,22 +641,20 @@ namespace OpenNETCF.Web.Hosting
         {
             get
             {
-                return (m_httpRawRequestContent.Headers["HTTP_CONNECTION"] != null &&
-                    m_httpRawRequestContent.Headers["HTTP_CONNECTION"].Equals("keep-alive", StringComparison.OrdinalIgnoreCase));
+                return StringComparer.OrdinalIgnoreCase
+                    .Equals(m_httpRawRequestContent.Headers["HTTP_CONNECTION"], "keep-alive");
             }
         }
 
-        private IHttpHandler GetHandlerForFilename(string fileName, string mimeType, HttpMethod method)
+        private IHttpHandler GetHandlerForFilename(string fileName, string mimeType, HttpMethodFlags method)
         {
-            string extension = System.IO.Path.GetExtension(fileName).ToLowerInvariant();
-
             // Load the correct file handler
             IHttpHandler handler = GetCustomHandler(fileName, method);
 
             // TODO: ** check for custom HttpHandlers **
             if (handler == null)
             {
-
+                string extension = System.IO.Path.GetExtension(fileName).ToLowerInvariant();
                 switch (extension)
                 {
                     case ".aspx":
@@ -683,83 +681,85 @@ namespace OpenNETCF.Web.Hosting
 
         private Type CheckType(string typeName, ServerConfig config)
         {
-                    Type t;
+            Type t;
 
-                    lock (m_handlerTypeCache)
-                    {
+            lock (m_handlerTypeCache)
+            {
                 if (m_handlerTypeCache.ContainsKey(typeName))
-                        {
+                {
                     t = m_handlerTypeCache[typeName];
-                        }
-                        else
-                        {
+                }
+                else
+                {
                     t = Type.GetType(typeName);
-
-                            if (t == null)
-                            {
-                        t = config.GetType(typeName);
 
                     if (t == null)
                     {
-                        throw new HttpException(HttpErrorCode.InternalServerError,
-                                string.Format("Unable To load type '{0}'", typeName));
-                    }
-                            }
+                        t = config.GetType(typeName);
 
-                    m_handlerTypeCache.Add(typeName, t);
+                        if (t == null)
+                        {
+                            throw new HttpException(HttpErrorCode.InternalServerError,
+                                string.Format("Unable To load type '{0}'", typeName));
                         }
                     }
+
+                    m_handlerTypeCache.Add(typeName, t);
+                }
+            }
             return t;
         }
 
-        private IHttpHandler GetCustomHandler(string fileName, HttpMethod method)
+        private IHttpHandler GetCustomHandler(string fileName, HttpMethodFlags method)
         {
             IHttpHandler handler = null;
             string subPath = null;
 
             ServerConfig config = ServerConfig.GetConfig();
-            foreach (HttpHandler h in config.HttpHandlers)
+            foreach (HttpHandler h in config.HttpHandlers.Where(h => (h.Verb & method) == method))
             {
                 Match match = Regex.Match(fileName, h.Path, RegexOptions.IgnoreCase);
-                if (((h.Verb & method) == method) && match.Success)
+                if (!match.Success)
                 {
-                    subPath = fileName.Substring(match.Index + match.Length);
-                    Type t = CheckType(h.TypeName, config);
-                    try
-                    {
-                        lock (m_httpHandlerCache)
-                        {
-                            if (m_httpHandlerCache.ContainsKey(t))
-                            {
-                                handler = m_httpHandlerCache[t];
-                            }
-                            else
-                            {
-                                handler = (IHttpHandler) Activator.CreateInstance(t);
+                    continue;
+                }
 
-                                if (handler.IsReusable)
-                                {
-                                    m_httpHandlerCache.Add(t, handler);
-                                }
+                subPath = fileName.Substring(match.Index + match.Length);
+                Type t = CheckType(h.TypeName, config);
+                try
+                {
+                    lock (m_httpHandlerCache)
+                    {
+                        if (m_httpHandlerCache.ContainsKey(t))
+                        {
+                            handler = m_httpHandlerCache[t];
+                        }
+                        else
+                        {
+                            handler = (IHttpHandler)Activator.CreateInstance(t);
+
+                            if (handler.IsReusable)
+                            {
+                                m_httpHandlerCache.Add(t, handler);
                             }
                         }
-                        break;
                     }
-                    catch (Exception ex)
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine(ex.Message);
+
+                    if (Environment.OSVersion.Platform == PlatformID.Unix)
                     {
-                        Debug.WriteLine(ex.Message);
+                        Console.WriteLine(ex);
+                    }
 
-                        if (Environment.OSVersion.Platform == PlatformID.Unix)
-                        {
-                            Console.WriteLine(ex);
-                        }
-
-                        throw new HttpException(HttpErrorCode.InternalServerError,
-                            string.Format("Unable to create '{0}' handler for '{1}' method: {2}",
+                    throw new HttpException(HttpErrorCode.InternalServerError,
+                        string.Format("Unable to create '{0}' handler for '{1}' method: {2}",
                             t.Name,
-                            method.ToString(),
+                            method.GetVerbName(),
                             ex.ToString()));
-                    }
                 }
             }
 
@@ -1110,20 +1110,21 @@ namespace OpenNETCF.Web.Hosting
                         }
                     }
 
-                    HttpMethod method = (HttpMethod)Enum.Parse(typeof(HttpMethod), HttpContext.Current.Request.HttpMethod, true);
+                    HttpMethodFlags method = HttpMethod.ParseFlag(HttpContext.Current.Request.HttpMethod);
 
                     Debug.WriteLineIf(EnableTracing, string.Format("{0}: {1}", method, Path));
 
-                    // do we have a custom Httphandler handler for the path?
+                    // do we have a custom HttpHandler handler for the path?
                     IHttpHandler customHandler = GetCustomHandler(Path, method);
+                    IDisposable disposableHandler;
                     if (customHandler != null)
                     {
                         customHandler.ProcessRequest(HttpContext.Current);
 
-                        //Do the final flush to the server
+                        // Do the final flush to the server
                         FlushResponse(true);
 
-                        var disposableHandler = customHandler as IDisposable;
+                        disposableHandler = customHandler as IDisposable;
                         if (disposableHandler != null)
                         {
                             disposableHandler.Dispose();
@@ -1133,79 +1134,69 @@ namespace OpenNETCF.Web.Hosting
                     }
 
                     // check for virtual file
-                    if (!ProcessRequestForVirtualFile(Path))
-                    {
-                        string localFile, mime, defaultDoc = null;
+                    if (ProcessRequestForVirtualFile(Path))
+                        return;
+
+                    string localFile, mime, defaultDoc = null;
 
                     if (!Path.ToLowerInvariant().StartsWith("about:"))
+                    {
+                        string physicalPath = HostingEnvironment.MapPath(Path);
+
+                        localFile = ((Path.EndsWith("/")) || (string.IsNullOrEmpty(System.IO.Path.GetExtension(physicalPath))))
+                            ? System.IO.Path.Combine(physicalPath, GetDefaultDocument(physicalPath))
+                            : physicalPath;
+
+                        string r = System.IO.Path.GetFullPath(ServerConfig.GetConfig().DocumentRoot);
+                        localFile = GetCasedFileNameFromCaselessName(localFile);
+
+                        mime = MimeMapping.GetMimeMapping(localFile);
+
+                        if (!File.Exists(localFile))
                         {
-                            string physicalPath = HostingEnvironment.MapPath(Path);
-
-                            if ((Path.EndsWith("/")) || (string.IsNullOrEmpty(System.IO.Path.GetExtension(physicalPath))))
-                            {
-                                defaultDoc = GetDefaultDocument(physicalPath);
-                                localFile = System.IO.Path.Combine(physicalPath, defaultDoc);
-                            }
-                            else
-                            {
-                                localFile = physicalPath;
-                            }
-
-                            localFile = ((Path.EndsWith("/")) || (string.IsNullOrEmpty(System.IO.Path.GetExtension(physicalPath))))
-                                            ? System.IO.Path.Combine(physicalPath, GetDefaultDocument(physicalPath))
-                                            : physicalPath;
-
-                            var r = System.IO.Path.GetFullPath(ServerConfig.GetConfig().DocumentRoot);
-                            localFile = GetCasedFileNameFromCaselessName(localFile);
-
-                            mime = MimeMapping.GetMimeMapping(localFile);
-
-                            if (!File.Exists(localFile))
-                            {
-                                var name = UrlPath.FixVirtualPathSlashes(System.IO.Path.Combine(Path, defaultDoc ?? string.Empty));
-                                throw new HttpException(404, String.Format("The file '{0}' cannot be found.", name));
-                            }
-
-                            // validate the requested file is *beneath* the server root (no navigating above the root)
-                            if (!IsSubDirectoryOf(localFile, ServerConfig.GetConfig().DocumentRoot))
-                            {
-                                throw new HttpException(HttpErrorCode.NotFound, "Not found");
-                            }
-                        }
-                        else
-                        {
-                            localFile = Path.Substring(1);
-                            mime = "text/html";
+                            string name = UrlPath.FixVirtualPathSlashes(System.IO.Path.Combine(Path, defaultDoc ?? string.Empty));
+                            throw new HttpException(404, string.Format("The file '{0}' cannot be found.", name));
                         }
 
-                        ldi = new LogDataItem(m_headers, localFile, m_client.RemoteEndPoint.ToString(),
-                                              ServerConfig.GetConfig());
-
-                        var handler = GetHandlerForFilename(localFile, mime, method);
-
-                        LogPageAccess(ldi);
-
-                        HttpCachePolicy globalPolicy = CheckGlobalCachePolicy(localFile);
-                        if (globalPolicy != null) HttpContext.Current.Response.Cache = globalPolicy;
-
-                        // Now pass the request processing onto the relevant handler
-                        if (handler == null)
+                        // validate the requested file is *beneath* the server root (no navigating above the root)
+                        if (!IsSubDirectoryOf(localFile, ServerConfig.GetConfig().DocumentRoot))
                         {
-                            throw new HttpException(Resources.NoHttpHandler);
+                            throw new HttpException(HttpErrorCode.NotFound, "Not found");
                         }
+                    }
+                    else
+                    {
+                        localFile = Path.Substring(1);
+                        mime = "text/html";
+                    }
 
-                        handler.ProcessRequest(HttpContext.Current);
+                    ldi = new LogDataItem(m_headers, localFile, m_client.RemoteEndPoint.ToString(),
+                        ServerConfig.GetConfig());
 
-                        //Do the final flush to the server
-                        FlushResponse(true);
+                    IHttpHandler handler = GetHandlerForFilename(localFile, mime, method);
 
-                        EndOfRequest();
+                    LogPageAccess(ldi);
 
-                        var disposableHandler = handler as IDisposable;
-                        if (disposableHandler != null)
-                        {
-                            disposableHandler.Dispose();
-                        }
+                    HttpCachePolicy globalPolicy = CheckGlobalCachePolicy(localFile);
+                    if (globalPolicy != null) HttpContext.Current.Response.Cache = globalPolicy;
+
+                    // Now pass the request processing onto the relevant handler
+                    if (handler == null)
+                    {
+                        throw new HttpException(Resources.NoHttpHandler);
+                    }
+
+                    handler.ProcessRequest(HttpContext.Current);
+
+                    //Do the final flush to the server
+                    FlushResponse(true);
+
+                    EndOfRequest();
+
+                    disposableHandler = handler as IDisposable;
+                    if (disposableHandler != null)
+                    {
+                        disposableHandler.Dispose();
                     }
                 }
                 catch (Exception e)
@@ -1259,8 +1250,10 @@ namespace OpenNETCF.Web.Hosting
 
         public static string GetCasedFileNameFromCaselessName(string caselessName)
         {
-            // TODO: skip on Windows (since the case is not relevent)
-
+            // skip on Windows (since the case is not relevant)
+#if WindowsCE
+            return caselessName;
+#else
             // remove any relative pathing
             caselessName = System.IO.Path.GetFullPath(caselessName);
 
@@ -1310,6 +1303,7 @@ namespace OpenNETCF.Web.Hosting
             }
 
             return casedFile;
+#endif
         }
 
         private Exception LastError { get; set; }
@@ -1690,7 +1684,7 @@ namespace OpenNETCF.Web.Hosting
         /// <returns></returns>
         private HttpRawRequestContent GetPartialRawRequestContent(Server.SocketWrapperBase client)
         {
-            HttpRawRequestContent rawContent = new HttpRawRequestContent(
+            var rawContent = new HttpRawRequestContent(
                   HttpRuntimeConfig.GetConfig().RequestLengthDiskThresholdBytes,
                   3072/*Use 3k of memory then go to file if we go out of this threshold*/,
                   ((System.Net.IPEndPoint)client.RemoteEndPoint).Address);
@@ -1699,7 +1693,7 @@ namespace OpenNETCF.Web.Hosting
 
             //TODO: I don't like this magic number, needs to get cleaned up
             // was fixed in 12259, but may have introduced other bugs (reverted in 13136)
-            byte[] buffer = new byte[10240];
+            var buffer = new byte[10240];
 
             received = client.Receive(buffer);
 
@@ -1708,21 +1702,14 @@ namespace OpenNETCF.Web.Hosting
                 rawContent.AddBytes(buffer, 0, received);
                 rawContent.DoneAddingBytes();
 
-                if (rawContent.HttpMethod == HttpMethod.POST && rawContent.Headers["HTTP_CONTENT_LENGTH"] == null)
+                if (rawContent.HttpMethod == HttpMethod.Post && rawContent.Headers["HTTP_CONTENT_LENGTH"] == null)
                 {
                     //it's a post but the content length has not been downloaded yet.
                     int retryCount = 5;
                     rawContent = DownloadUntilContentLengthHeader(rawContent, client, ref retryCount);
                 }
                 //Check for the content length header to see if there is more data to download
-                if (rawContent.Headers["HTTP_CONTENT_LENGTH"] != null)
-                {
-                    m_partialDownload = true;
-                }
-                else
-                {
-                    m_partialDownload = false;
-                }
+                m_partialDownload = rawContent.Headers["HTTP_CONTENT_LENGTH"] != null;
             }
             else
             {
@@ -1787,13 +1774,10 @@ namespace OpenNETCF.Web.Hosting
         {
             string requestLine = m_httpRawRequestContent.ReadContentInfo();
             if (requestLine == null)
-                throw new InvalidOperationException(String.Format(Resources.UnsupportedMethod, requestLine));
-            if (m_httpRawRequestContent.HttpMethod == HttpMethod.Unknown ||
-                m_httpRawRequestContent.HttpVersion == null ||
-                m_httpRawRequestContent.Path == null)
-                return false;
-            else
-                return true;
+                throw new InvalidOperationException(string.Format(Resources.UnsupportedMethod, requestLine));
+            return m_httpRawRequestContent.HttpMethod != null &&
+                m_httpRawRequestContent.HttpVersion != null &&
+                m_httpRawRequestContent.Path != null;
 
         }
 
@@ -1813,7 +1797,6 @@ namespace OpenNETCF.Web.Hosting
         {
             get { return m_httpRawRequestContent; }
         }
-
 
         #endregion // Private Methods
     }

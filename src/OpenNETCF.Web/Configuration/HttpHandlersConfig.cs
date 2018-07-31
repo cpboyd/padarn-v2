@@ -1,4 +1,4 @@
-#region License
+﻿#region License
 // Copyright ©2017 Tacke Consulting (dba OpenNETCF)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
@@ -43,15 +43,8 @@ namespace OpenNETCF.Web.Configuration
             foreach (XmlNode node in list)
             {
                 string verb = node.Attributes["verb"].Value;
-                HttpMethod method;
-                if (verb != "*")
-                {
-                    method = (HttpMethod) Enum.Parse(typeof(HttpMethod), verb, true);
-                }
-                else
-                {
-                    method = HttpMethod.ANY;
-                }
+                // TODO: Better handling for custom HTTP methods
+                HttpMethodFlags method = HttpMethod.GetFlags(verb);
 
                 this.Add(new HttpHandler(method, node.Attributes["path"].Value, node.Attributes["type"].Value));
             }
@@ -61,11 +54,11 @@ namespace OpenNETCF.Web.Configuration
 
     internal class HttpHandler
     {
-        readonly HttpMethod _verb;
+        readonly HttpMethodFlags _verb;
         readonly string _path;
         readonly string _type;
 
-        internal HttpHandler(HttpMethod verb, string path, string typeName)
+        internal HttpHandler(HttpMethodFlags verb, string path, string typeName)
         {
 
             _verb = verb;
@@ -77,7 +70,7 @@ namespace OpenNETCF.Web.Configuration
         {
             get { return _type; }
         }
-        public HttpMethod Verb
+        public HttpMethodFlags Verb
         {
             get { return _verb; }
         }
