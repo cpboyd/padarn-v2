@@ -1,4 +1,4 @@
-#region License
+﻿#region License
 // Copyright ©2017 Tacke Consulting (dba OpenNETCF)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
@@ -19,16 +19,13 @@
 #endregion
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Collections;
 
 namespace OpenNETCF.Collections.Specialized
 {
-    public class CaseInsensitiveDictionary<T> : IDictionary<string, T>,
-                                         ICollection<KeyValuePair<string, T>>,
-                                         IEnumerable<KeyValuePair<string, T>>,
-                                         IEnumerable
-
+    public class CaseInsensitiveDictionary<T> : IDictionary<string, T>
     {
         internal class CaselessStringComparer : IEqualityComparer<string>
         {
@@ -93,14 +90,7 @@ namespace OpenNETCF.Collections.Specialized
 
         public bool Contains(KeyValuePair<string, T> item)
         {
-            if (!ContainsKey(item.Key)) return false;
-
-            foreach (var i in m_items.Values)
-            {
-                if (i.Equals(item)) return true;
-            }
-
-            return false;
+            return ContainsKey(item.Key) && m_items.Values.Any(i => i.Equals(item));
         }
 
         public void CopyTo(KeyValuePair<string, T>[] array, int arrayIndex)
@@ -108,11 +98,11 @@ namespace OpenNETCF.Collections.Specialized
             int count = array.Length - arrayIndex;
             if (count > m_items.Count) count = m_items.Count;
 
-            using (var e = m_items.GetEnumerator())
+            using (Dictionary<string, T>.Enumerator e = m_items.GetEnumerator())
             {
                 for (int i = 0; i < count; i++)
                 {
-                    array[i] = new KeyValuePair<string, T>(e.Current.Key, e.Current.Value);
+                    array[arrayIndex + i] = new KeyValuePair<string, T>(e.Current.Key, e.Current.Value);
                     e.MoveNext();
                 }
             }
@@ -130,9 +120,7 @@ namespace OpenNETCF.Collections.Specialized
 
         public bool Remove(KeyValuePair<string, T> item)
         {
-            if (!ContainsKey(item.Key)) return false;
-
-            return m_items.Remove(item.Key);
+            return ContainsKey(item.Key) && m_items.Remove(item.Key);
         }
 
         public IEnumerator<KeyValuePair<string, T>> GetEnumerator()
