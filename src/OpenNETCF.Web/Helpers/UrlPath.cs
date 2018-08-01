@@ -20,6 +20,7 @@
 using System;
 using System.Collections;
 using System.IO;
+using System.Linq;
 using System.Text;
 using OpenNETCF.Web.Hosting;
 
@@ -32,22 +33,17 @@ namespace OpenNETCF.Web.Helpers
 
     internal static class UrlPath
     {
-        private readonly static char[] trims = new char[] { '/' }; 
+        private readonly static char[] trims = { '/' };
         private readonly static char[] slashChars;
 
         static UrlPath()
         {
-            slashChars = new char[] { '\\', '/' };
+            slashChars = new[] { '\\', '/' };
         }
 
         public static bool IsVirtualDirectory(string urlDirectory)
         {
-            if (System.String.IsNullOrEmpty(urlDirectory))
-            {
-                return false;
-            }
-
-            if (ServerConfig.GetConfig().VirtualDirectories == null)
+            if (string.IsNullOrEmpty(urlDirectory) || (ServerConfig.GetConfig().VirtualDirectories == null))
             {
                 return false;
             }
@@ -56,16 +52,7 @@ namespace OpenNETCF.Web.Helpers
 
             if (urlDirectory.IndexOf('/') > 0)
             {
-                string[] directories = urlDirectory.Split('/');
-
-                foreach (string directory in directories)
-                {
-                    if (IsVirtualDirectory(directory))
-                    {
-                        return true;
-                    }
-                }
-                return false;
+                return urlDirectory.Split('/').Any(IsVirtualDirectory);
             }
 
             return (ServerConfig.GetConfig().VirtualDirectories[urlDirectory] != null);
@@ -108,11 +95,7 @@ namespace OpenNETCF.Web.Helpers
 
         internal static bool IsRooted(string basepath)
         {
-            if (!string.IsNullOrEmpty(basepath) && (basepath[0] != '/'))
-            {
-                return (basepath[0x0] == '\\');
-            }
-            return true;
+            return string.IsNullOrEmpty(basepath) || (basepath[0] == '/') || (basepath[0x0] == '\\');
         }
 
         internal static string MakeVirtualPathAppAbsolute(string virtualPath)
@@ -164,8 +147,8 @@ namespace OpenNETCF.Web.Helpers
                     to = to.Substring(0, index);
                 }
             }
-            Uri fromUri = new Uri("file://foo" + from);
-            Uri toUri = new Uri("file://foo" + to);
+            var fromUri = new Uri("file://foo" + from);
+            var toUri = new Uri("file://foo" + to);
             if (fromUri.Equals(toUri))
             {
                 int finalSlashIndex = to.LastIndexOfAny(slashChars);
@@ -191,26 +174,16 @@ namespace OpenNETCF.Web.Helpers
             }
             return (relativePath + queryString + toUri.Fragment);
         }
+
         internal static bool IsAppRelativePath(string path)
         {
-            if (String.IsNullOrEmpty(path))
+            if (string.IsNullOrEmpty(path) || (path[0] != '~'))
             {
                 return false;
             }
 
             int length = path.Length;
-
-            if (path[0] != '~')
-            {
-                return false;
-            }
-            
-            if ((length != 1) && (path[1] != System.IO.Path.DirectorySeparatorChar))
-            {
-                return (path[1] == '/');
-            }
-
-            return true;
+            return (length == 1) || (path[1] == Path.DirectorySeparatorChar) || (path[1] == '/');
         }
 
         internal static string ReduceVirtualPath(string path)
@@ -230,8 +203,8 @@ namespace OpenNETCF.Web.Helpers
                 }
                 startIndex++;
             }
-            ArrayList list = new ArrayList();
-            StringBuilder builder = new StringBuilder();
+            var list = new ArrayList();
+            var builder = new StringBuilder();
             startIndex = 0x0;
             do
             {

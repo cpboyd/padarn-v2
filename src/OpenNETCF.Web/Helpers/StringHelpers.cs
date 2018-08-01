@@ -34,11 +34,7 @@ namespace OpenNETCF.WindowsCE
             {
                 return null;
             }
-            if (s.IndexOf('\0') > -1)
-            {
-                return s.Replace("\0", string.Empty);
-            }
-            return s;
+            return s.IndexOf('\0') < 0 ? s : s.Replace("\0", string.Empty);
         }
 
         internal static bool EqualsIgnoreCase(string s1, string s2)

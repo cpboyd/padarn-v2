@@ -17,10 +17,8 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-//                                                                   
-// Copyright (c) 2007-2009 OpenNETCF Consulting, LLC                        
-//                        
-#if WINDOWSCE                                             
+
+#if WindowsCE
 namespace OpenNETCF.WindowsCE
 {
     using System;
@@ -108,10 +106,9 @@ namespace OpenNETCF.WindowsCE
                 case "SmartPhone":
                     return WindowsMobileEdition.Classic;
                 case "PocketPC":
-                    if (!HasPhone())
-                        return WindowsMobileEdition.Standard;
-                    else
-                        return WindowsMobileEdition.Professional;
+                    return HasPhone()
+                        ? WindowsMobileEdition.Professional
+                        : WindowsMobileEdition.Standard;
                 default:
                     return WindowsMobileEdition.Classic;
             }
@@ -136,7 +133,7 @@ namespace OpenNETCF.WindowsCE
 
             public static string GetSystemParameter(uint uiParam)
             {
-                StringBuilder sb = new StringBuilder(128);
+                var sb = new StringBuilder(128);
                 if (SystemParametersInfo(uiParam, (uint)sb.Capacity, sb, 0) == 0)
                     throw new ApplicationException("Failed to get system parameter");
                 return sb.ToString();

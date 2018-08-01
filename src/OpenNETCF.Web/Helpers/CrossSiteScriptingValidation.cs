@@ -26,7 +26,7 @@ namespace OpenNETCF.Web
     internal static class CrossSiteScriptingValidation
     {
         // Fields
-        private static char[] startingChars = new char[] { '<', '&' };
+        private static char[] startingChars = { '<', '&' };
 
         // Methods
         private static bool IsAtoZ(char c)
@@ -41,11 +41,7 @@ namespace OpenNETCF.Web
             while (true)
             {
                 int num2 = s.IndexOfAny(startingChars, startIndex);
-                if (num2 < 0)
-                {
-                    return false;
-                }
-                if (num2 == (s.Length - 1))
+                if ((num2 < 0) || (num2 == (s.Length - 1)))
                 {
                     return false;
                 }
@@ -78,11 +74,7 @@ namespace OpenNETCF.Web
             {
                 return false;
             }
-            if (s.IndexOf(':') == -1)
-            {
-                return false;
-            }
-            return true;
+            return s.IndexOf(':') != -1;
         }
     }
 }
