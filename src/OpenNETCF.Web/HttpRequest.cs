@@ -18,16 +18,16 @@
 //
 #endregion
 
-    using System.Collections.Specialized;
-    using System.Text;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System;
+using System.Collections.Specialized;
+using System.Text;
+using System.Collections;
+using System.Collections.Generic;
+using System;
 using System.Linq;
-    using OpenNETCF.WindowsCE;
-    using System.IO;
-    using OpenNETCF.Security;
-    using OpenNETCF.Security.Principal;
+using OpenNETCF.WindowsCE;
+using System.IO;
+using OpenNETCF.Security;
+using OpenNETCF.Security.Principal;
 using OpenNETCF.Web.Headers;
 
 namespace OpenNETCF.Web
@@ -119,12 +119,9 @@ namespace OpenNETCF.Web
                 {
                     m_queryString = new HttpValueCollection();
                     byte[] queryStringBytes = this.QueryStringBytes;
-                    if (queryStringBytes != null)
+                    if (queryStringBytes != null && queryStringBytes.Length != 0)
                     {
-                        if (queryStringBytes.Length != 0)
-                        {
-                            this.m_queryString.FillFromEncodedBytes(queryStringBytes, this.QueryStringEncoding, true);
-                        }
+                        this.m_queryString.FillFromEncodedBytes(queryStringBytes, this.QueryStringEncoding, true);
                     }
                 }
                 return m_queryString;
@@ -136,14 +133,9 @@ namespace OpenNETCF.Web
         /// </summary>
         public bool IsAuthenticated
         {
-            get 
+            get
             {
-                if (LogonUserIdentity != null)
-                {
-                    return LogonUserIdentity.IsAuthenticated;
-                }
-
-                return false;
+                return LogonUserIdentity != null && LogonUserIdentity.IsAuthenticated;
             }
         }
 
@@ -168,15 +160,7 @@ namespace OpenNETCF.Web
                 string remoteaddr = m_wr.GetRemoteAddress();
 
                 System.Net.IPHostEntry hostent = System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName());
-                foreach (System.Net.IPAddress address in hostent.AddressList)
-                {
-                    if (string.Compare(address.ToString(), remoteaddr) == 0)
-                    {
-                        return true;
-                    }
-                }
-
-                return false;
+                return hostent.AddressList.Any(address => string.Equals(address.ToString(), remoteaddr));
             }
         }
 
@@ -201,7 +185,7 @@ namespace OpenNETCF.Web
                     m_contentEncoding = (encoding == null)
                         ? Encoding.UTF8
                         : Encoding.GetEncoding(encoding);
-                    }
+                }
 
                 return m_contentEncoding;
             }
@@ -403,14 +387,9 @@ namespace OpenNETCF.Web
                 if (_inputStream == null)
                 {
                     HttpRawRequestContent data = this.RawPostContent;
-                    if (data != null)
-                    {
-                        _inputStream = new HttpInputStream(data, data.LengthOfHeaders, data.Length - data.LengthOfHeaders);
-                    }
-                    else
-                    {
-                        _inputStream = new HttpInputStream(null, 0, 0);
-                    }
+                    _inputStream = (data == null)
+                        ? new HttpInputStream(null, 0, 0)
+                        : new HttpInputStream(data, data.LengthOfHeaders, data.Length - data.LengthOfHeaders);
                 }
 
                 return _inputStream;
@@ -449,11 +428,8 @@ namespace OpenNETCF.Web
             get
             {
                 Encoding contentEncoding = this.ContentEncoding;
-                if (!contentEncoding.Equals(Encoding.Unicode))
-                {
-                    return contentEncoding;
-                }
-                return Encoding.UTF8;
+                return contentEncoding.Equals(Encoding.Unicode)
+                    ? Encoding.UTF8 : contentEncoding;
             }
         }
 
@@ -465,13 +441,8 @@ namespace OpenNETCF.Web
             }
 
             // Parse the items which are comma delimited
-            var list = s.Split(',')
+            return s.Split(',')
                 .Select(x => StringWithQualityHeaderValue.Parse(x));
-                // TODO: Performance vs benefit for ordering by quality?
-                //.OrderByDescending(x => x.Quality);
-
-            // Make sure there is something in the list
-            return list.Any() ? null : list;
         }
 
         /// <summary>
@@ -485,7 +456,7 @@ namespace OpenNETCF.Web
             for (int i = 0; i < count; i++)
             {
                 string key = nvc.GetKey(i);
-                if ((key == null))
+                if (key == null)
                 {
                     string str2 = nvc.Get(i);
                     if (!string.IsNullOrEmpty(str2))
@@ -505,97 +476,89 @@ namespace OpenNETCF.Web
         private void ValidateString(string s, string valueName, string collectionName)
         {
             s = StringHelper.RemoveNullCharacters(s);
-            int matchIndex = 0;
+            int matchIndex;
             if (CrossSiteScriptingValidation.IsDangerousString(s, out matchIndex))
             {
-                string str = valueName + "=\"";
-                int startIndex = matchIndex - 10;
-                if (startIndex <= 0)
-                {
-                    startIndex = 0;
-                }
-                else
-                {
-                    str = str + "...";
-                }
-                int length = matchIndex + 20;
-                if (length >= s.Length)
-                {
-                    length = s.Length;
-                    str = str + s.Substring(startIndex, length - startIndex) + "\"";
-                }
-                else
-                {
-                    str = str + s.Substring(startIndex, length - startIndex) + "...\"";
-                }
+                //string str = valueName + "=\"";
+                //int startIndex = matchIndex - 10;
+                //if (startIndex <= 0)
+                //{
+                //    startIndex = 0;
+                //}
+                //else
+                //{
+                //    str = str + "...";
+                //}
+                //int length = matchIndex + 20;
+                //if (length >= s.Length)
+                //{
+                //    length = s.Length;
+                //    str = str + s.Substring(startIndex, length - startIndex) + "\"";
+                //}
+                //else
+                //{
+                //    str = str + s.Substring(startIndex, length - startIndex) + "...\"";
+                //}
                 throw new HttpRequestValidationException(Resources.Dangerous_input_detected);
             }
         }
 
         private void FillInFormCollection()
         {
-            if ((this.m_wr != null) && this.ContentLength > 0)
+            if ((m_wr == null) || (ContentLength <= 0) || (ContentType == null))
             {
-                string contentType = this.ContentType;
-                if (contentType != null)
+                return;
+            }
+
+            if (ContentType.StartsWith("application/x-www-form-urlencoded", StringComparison.OrdinalIgnoreCase))
+            {
+                if (this.RawPostContent == null)
+                    return;
+
+                byte[] bytes = this.RawPostContent.GetAsByteArray();
+                if (bytes == null)
+                    return;
+
+                try
                 {
-                    if (contentType.StartsWith("application/x-www-form-urlencoded", StringComparison.OrdinalIgnoreCase))
-                    {
-                        byte[] bytes = null;
-                        if (this.RawPostContent != null)
-                        {
-                            bytes = this.RawPostContent.GetAsByteArray();
-                            if (bytes != null)
-                            {
-                                try
-                                {
-                                    this.m_form.FillFromEncodedBytes(bytes, this.ContentEncoding, false);
-                                }
-                                catch (Exception exception)
-                                {
-                                    throw new HttpException(Resources.Invalid_urlencoded_form_data, exception);
-                                }
-                            }
-                        }
-                    }
-                    else if (ContentType.StartsWith("multipart/form-data", StringComparison.OrdinalIgnoreCase))
-                    {
-                        List<MultipartContentItem> multipartContent = this.GetMultipartContent();
-                        if (multipartContent != null)
-                        {
-                            for (int i = 0; i < multipartContent.Count; i++)
-                            {
-                                if (multipartContent[i].IsFormItem)
-                                {
-                                    this.m_form.Add(multipartContent[i].Name, multipartContent[i].GetAsString(this.ContentEncoding));
-                                }
-                            }
-                        }
-                    }
+                    this.m_form.FillFromEncodedBytes(bytes, this.ContentEncoding, false);
+                }
+                catch (Exception exception)
+                {
+                    throw new HttpException(Resources.Invalid_urlencoded_form_data, exception);
+                }
+            }
+            else if (ContentType.StartsWith("multipart/form-data", StringComparison.OrdinalIgnoreCase))
+            {
+                List<MultipartContentItem> multipartContent = this.GetMultipartContent();
+                if (multipartContent == null)
+                    return;
+
+                foreach (MultipartContentItem item in multipartContent.Where(item => item.IsFormItem))
+                {
+                    this.m_form.Add(item.Name, item.GetAsString(this.ContentEncoding));
                 }
             }
         }
 
         private void FillInFilesCollection()
         {
-            if (this.ContentType == null)
+            if ((m_wr == null) || (ContentType == null))
             {
                 return;
             }
-            if ((this.m_wr != null) && this.ContentType.StartsWith("multipart/form-data", StringComparison.OrdinalIgnoreCase))
+
+            if (ContentType.StartsWith("multipart/form-data", StringComparison.OrdinalIgnoreCase))
             {
                 List<MultipartContentItem> multipartContent = this.GetMultipartContent();
-                if (multipartContent != null)
+                if (multipartContent == null)
+                    return;
+
+                foreach (MultipartContentItem item in multipartContent.Where(item => item.IsFile))
                 {
-                    for (int i = 0; i < multipartContent.Count; i++)
-                    {
-                        if (multipartContent[i].IsFile)
-                        {
-                            HttpPostedFile asPostedFile = multipartContent[i].GetAsPostedFile();
-                            ValidateString(asPostedFile.FileName, "filename", "Request.Files");
-                            this.m_files.AddFile(multipartContent[i].Name, asPostedFile);
-                        }
-                    }
+                    HttpPostedFile asPostedFile = item.GetAsPostedFile();
+                    ValidateString(asPostedFile.FileName, "filename", "Request.Files");
+                    this.m_files.AddFile(item.Name, asPostedFile);
                 }
             }
         }
@@ -625,28 +588,30 @@ namespace OpenNETCF.Web
 
                 string cookieString = cookieHeader.Substring(startIndex, pos - startIndex).Trim();
                 startIndex = pos + 1;
-                if (cookieString.Length != 0)
+                if (cookieString.Length == 0)
                 {
-                    HttpCookie tmpCookie = CreateCookieFromString(cookieString);
-                    if (cookie != null)
-                    {
-                        string name = tmpCookie.Name;
-                        if (!String.IsNullOrEmpty(name) && name[0] == '$')
-                        {
-                            if (StringHelper.EqualsIgnoreCase(name, "$Path"))
-                            {
-                                cookie.Path = tmpCookie.Value;
-                            }
-                            else if (StringHelper.EqualsIgnoreCase(name, "$Domain"))
-                            {
-                                cookie.Domain = tmpCookie.Value;
-                            }
-                            continue;
-                        }
-                    }
-                    cookieCollection.AddCookie(tmpCookie, true);
-                    cookie = tmpCookie;
+                    continue;
                 }
+
+                HttpCookie tmpCookie = CreateCookieFromString(cookieString);
+                if (cookie != null)
+                {
+                    string name = tmpCookie.Name;
+                    if (!string.IsNullOrEmpty(name) && name[0] == '$')
+                    {
+                        if (StringHelper.EqualsIgnoreCase(name, "$Path"))
+                        {
+                            cookie.Path = tmpCookie.Value;
+                        }
+                        else if (StringHelper.EqualsIgnoreCase(name, "$Domain"))
+                        {
+                            cookie.Domain = tmpCookie.Value;
+                        }
+                        continue;
+                    }
+                }
+                cookieCollection.AddCookie(tmpCookie, true);
+                cookie = tmpCookie;
             }
 
             // Handle includeResponse
@@ -687,7 +652,7 @@ namespace OpenNETCF.Web
         private byte[] GetMultipartBoundary()
         {
             //Get the boundary as a byte[]
-            var boundaryText = ExtractGetBoundaryTextFromContentType(this.ContentType);
+            string boundaryText = ExtractGetBoundaryTextFromContentType(this.ContentType);
             return Encoding.ASCII.GetBytes(boundaryText);
         }
 
@@ -704,34 +669,26 @@ namespace OpenNETCF.Web
             }
 
             //The beginning on the boundary items has two extra dashes
-            var boundaryText = "--";
+            string boundaryText = "--";
             boundaryIndex += BOUNDARY_ATTRIBUTE.Length;
 
             // boundary text *may* be quote delimited in some implementations
             if (contentType[boundaryIndex] == '"')
             {
                 boundaryIndex++;
-                var end = contentType.IndexOf('"', boundaryIndex);
+                int end = contentType.IndexOf('"', boundaryIndex);
                 if (end > 0)
                 {
-                    boundaryText += contentType.Substring(boundaryIndex, end - boundaryIndex);
+                    return boundaryText + contentType.Substring(boundaryIndex, end - boundaryIndex);
                 }
-                else
-                {
-                    boundaryText += contentType.Substring(boundaryIndex);
-                }
-            }
-            else
-            {
-                boundaryText += contentType.Substring(boundaryIndex);
             }
 
-            return boundaryText;
+            return boundaryText + contentType.Substring(boundaryIndex);
         }
 
         internal static HttpCookie CreateCookieFromString(string s)
         {
-            HttpCookie cookie = new HttpCookie();
+            var cookie = new HttpCookie();
 
             int length = (s != null) ? s.Length : 0;
             int startIndex = 0;
@@ -763,7 +720,7 @@ namespace OpenNETCF.Web
                     }
                     flag = false;
                 }
-                
+
                 endOfNameIndex = s.IndexOf('=', startIndex);
 
                 if (((endOfNameIndex < 0) && (index == length)) && (valueCount == 0))

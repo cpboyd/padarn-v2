@@ -1,4 +1,4 @@
-#region License
+﻿#region License
 // Copyright ©2017 Tacke Consulting (dba OpenNETCF)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
@@ -47,10 +47,10 @@ namespace OpenNETCF.Web
         /// <summary>
         /// The offset in which to start reading the line data
         /// </summary>
-        private int m_startofLine = 0;
-        private int m_endofLine = 0;
+        private int m_startofLine;
+        private int m_endofLine;
 
-        private static readonly char[] s_ColonOrNL = new char[] { ':'/*, '\n' */};
+        private static readonly char[] s_ColonOrNL = { ':'/*, '\n' */};
 
         private IPAddress m_remoteClient;
         internal HttpRawRequestContent(int fileThreshold, int expectedLength, IPAddress remoteClient, HttpRawRequestContent rawRequest)
@@ -64,6 +64,7 @@ namespace OpenNETCF.Web
             AddBytes(rawRequest.GetAsByteArray(), 0, rawRequest.Length);
             rawRequest.Dispose();
         }
+
         internal HttpRawRequestContent(int fileThreshold, int expectedLength, IPAddress remoteClient)
         {
             m_remoteClient = remoteClient;
@@ -86,34 +87,36 @@ namespace OpenNETCF.Web
             {
                 throw new InvalidOperationException();
             }
-            if (length > 0)
+            if (length < 1)
             {
-                if (this.m_file == null)
-                {
-                    if ((this.m_length + length) <= this.m_data.Length)
-                    {
-                        Array.Copy(data, offset, this.m_data, this.m_length, length);
-                        this.m_length += length;
-                        return;
-                    }
-                    if ((this.m_length + length) <= this.m_fileThreshold)
-                    {
-                        byte[] destinationArray = new byte[this.m_fileThreshold];
-                        if (this.m_length > 0)
-                        {
-                            Array.Copy(this.m_data, 0, destinationArray, 0, this.m_length);
-                        }
-                        Array.Copy(data, offset, destinationArray, this.m_length, length);
-                        this.m_data = destinationArray;
-                        this.m_length += length;
-                        return;
-                    }
-                    this.m_file = new TempFile();
-                    this.m_file.AddBytes(this.m_data, 0, this.m_length);
-                }
-                this.m_file.AddBytes(data, offset, length);
-                this.m_length += length;
+                return;
             }
+
+            if (this.m_file == null)
+            {
+                if ((this.m_length + length) <= this.m_data.Length)
+                {
+                    Array.Copy(data, offset, this.m_data, this.m_length, length);
+                    this.m_length += length;
+                    return;
+                }
+                if ((this.m_length + length) <= this.m_fileThreshold)
+                {
+                    var destinationArray = new byte[this.m_fileThreshold];
+                    if (this.m_length > 0)
+                    {
+                        Array.Copy(this.m_data, 0, destinationArray, 0, this.m_length);
+                    }
+                    Array.Copy(data, offset, destinationArray, this.m_length, length);
+                    this.m_data = destinationArray;
+                    this.m_length += length;
+                    return;
+                }
+                this.m_file = new TempFile();
+                this.m_file.AddBytes(this.m_data, 0, this.m_length);
+            }
+            this.m_file.AddBytes(data, offset, length);
+            this.m_length += length;
         }
 
         internal void CopyBytes(int offset, byte[] buffer, int bufferOffset, int length)
@@ -122,27 +125,28 @@ namespace OpenNETCF.Web
             {
                 throw new InvalidOperationException();
             }
-            if (this.m_file != null)
-            {
-                if ((offset >= this.m_chunkOffset) && ((offset + length) < (this.m_chunkOffset + this.m_chunkLength)))
-                {
-                    Array.Copy(this.m_data, offset - this.m_chunkOffset, buffer, bufferOffset, length);
-                }
-                else if (length <= this.m_data.Length)
-                {
-                    this.m_chunkLength = this.m_file.GetBytes(offset, this.m_data.Length, this.m_data, 0);
-                    this.m_chunkOffset = offset;
-                    Array.Copy(this.m_data, offset - this.m_chunkOffset, buffer, bufferOffset, length);
-                }
-                else
-                {
-                    this.m_file.GetBytes(offset, length, buffer, bufferOffset);
-                }
-            }
-            else
+
+            if (this.m_file == null)
             {
                 Array.Copy(this.m_data, offset, buffer, bufferOffset, length);
+                return;
             }
+
+            if ((offset >= this.m_chunkOffset) && ((offset + length) < (this.m_chunkOffset + this.m_chunkLength)))
+            {
+                Array.Copy(this.m_data, offset - this.m_chunkOffset, buffer, bufferOffset, length);
+                return;
+            }
+
+            if (length <= this.m_data.Length)
+            {
+                this.m_chunkLength = this.m_file.GetBytes(offset, this.m_data.Length, this.m_data, 0);
+                this.m_chunkOffset = offset;
+                Array.Copy(this.m_data, offset - this.m_chunkOffset, buffer, bufferOffset, length);
+                return;
+            }
+
+            this.m_file.GetBytes(offset, length, buffer, bufferOffset);
         }
 
         public void Dispose()
@@ -186,7 +190,7 @@ namespace OpenNETCF.Web
             {
                 return new byte[0];
             }
-            byte[] buffer = new byte[length];
+            var buffer = new byte[length];
             this.CopyBytes(offset, buffer, 0, length);
             return buffer;
         }
@@ -197,27 +201,26 @@ namespace OpenNETCF.Web
             {
                 throw new InvalidOperationException();
             }
-            if (this.m_file != null)
-            {
-                int num = offset;
-                int num2 = length;
-                byte[] buffer = new byte[(num2 > this.m_fileThreshold) ? this.m_fileThreshold : num2];
-                while (num2 > 0)
-                {
-                    int num3 = (num2 > this.m_fileThreshold) ? this.m_fileThreshold : num2;
-                    int count = this.m_file.GetBytes(num, num3, buffer, 0);
-                    if (count == 0)
-                    {
-                        return;
-                    }
-                    stream.Write(buffer, 0, count);
-                    num += count;
-                    num2 -= count;
-                }
-            }
-            else
+            if (this.m_file == null)
             {
                 stream.Write(this.m_data, offset, length);
+                return;
+            }
+
+            int num = offset;
+            int num2 = length;
+            var buffer = new byte[(num2 > this.m_fileThreshold) ? this.m_fileThreshold : num2];
+            while (num2 > 0)
+            {
+                int num3 = (num2 > this.m_fileThreshold) ? this.m_fileThreshold : num2;
+                int count = this.m_file.GetBytes(num, num3, buffer, 0);
+                if (count == 0)
+                {
+                    return;
+                }
+                stream.Write(buffer, 0, count);
+                num += count;
+                num2 -= count;
             }
         }
 
@@ -334,34 +337,27 @@ namespace OpenNETCF.Web
             {
                 if (m_lengthOfHeaders == -1)
                 {
-                    for (int x = 0; x < this.Length; x++)
+                    for (int x = 0; x < this.Length - 3; x++)
                     {
-                        if (this[x] == '\r')
+                        if ((this[x] == '\r') && (this[++x] == '\n') &&
+                            (this[++x] == '\r') && (this[++x] == '\n'))
                         {
-                            if ((x + 1 < this.Length) && (this[++x] == '\n')
-                                && (this[++x] == '\r')
-                                && (this[++x] == '\n'))
-                            {
-                                //we found the end of the headers so return the length
-                                m_lengthOfHeaders = ++x;
-                                break;
-                            }
+                            //we found the end of the headers so return the length
+                            m_lengthOfHeaders = ++x;
+                            break;
                         }
                     }
                 }
                 return m_lengthOfHeaders;
             }
         }
+
         private NameValueCollection GetHeaders()
         {
-
-            string line;
-            string key;
-            string value;
-            NameValueCollection headers = new NameValueCollection();
+            var headers = new NameValueCollection();
 
             //the first line is the content information so just read that line
-            line = ReadLine(Encoding.ASCII, true);
+            string line = ReadLine(Encoding.ASCII, true);
 
             while ((line = ReadLine(Encoding.ASCII)) != null && line.Length > 0)
             {
@@ -372,14 +368,14 @@ namespace OpenNETCF.Web
                 }
 
                 // the key must be "massaged" to standard server variable notation
-                key = "HTTP_" + line.Substring(0, sep).ToUpper().Replace('-', '_');
-                value = line.Substring(sep + 1).Trim();
+                string key = "HTTP_" + line.Substring(0, sep).ToUpper().Replace('-', '_');
+                string value = line.Substring(sep + 1).Trim();
 
                 headers[key] = value;
             }
 
             // add the HTTP_REMOTE_ADDR header
-            headers["HTTP_REMOTE_ADDR"] = m_remoteClient.ToString().ToString();
+            headers["HTTP_REMOTE_ADDR"] = m_remoteClient.ToString();
             headers["REQUEST_URI"] = this.Path;
 
             return headers;
@@ -468,6 +464,7 @@ namespace OpenNETCF.Web
                 return m_rawQueryString;
             }
         }
+
         // Nested Types
         private class TempFile : IDisposable
         {
