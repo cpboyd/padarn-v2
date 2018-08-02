@@ -1,4 +1,4 @@
-#region License
+﻿#region License
 // Copyright ©2017 Tacke Consulting (dba OpenNETCF)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
@@ -17,12 +17,11 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
 
-using System.Collections.Generic;
-using System.Text;
+using System;
 using System.Collections;
 using System.Globalization;
+using System.Text;
 
 namespace OpenNETCF.Web.Parsers
 {
@@ -50,13 +49,14 @@ namespace OpenNETCF.Web.Parsers
 
         private const int BUILDER_CAPACITY = 2000;
 
-        protected static JSON instance = new JSON();
+        protected static JSON Instance = new JSON();
+
+        protected string lastDecode = "";
 
         /// <summary>
         /// On decoding, this value holds the position at which the parse failed (-1 = no error).
         /// </summary>
         protected int lastErrorIndex = -1;
-        protected string lastDecode = "";
 
         /// <summary>
         /// Parses the string json into a value
@@ -66,28 +66,19 @@ namespace OpenNETCF.Web.Parsers
         public static object JsonDecode(string json)
         {
             // save the string for debug information
-            JSON.instance.lastDecode = json;
+            Instance.lastDecode = json;
 
-            if (json != null)
-            {
-                char[] charArray = json.ToCharArray();
-                int index = 0;
-                bool success = true;
-                object value = JSON.instance.ParseValue(charArray, ref index, ref success);
-                if (success)
-                {
-                    JSON.instance.lastErrorIndex = -1;
-                }
-                else
-                {
-                    JSON.instance.lastErrorIndex = index;
-                }
-                return value;
-            }
-            else
+            if (json == null)
             {
                 return null;
             }
+
+            char[] charArray = json.ToCharArray();
+            int index = 0;
+            bool success = true;
+            object value = Instance.ParseValue(charArray, ref index, ref success);
+            Instance.lastErrorIndex = success ? -1 : index;
+            return value;
         }
 
         /// <summary>
@@ -97,8 +88,8 @@ namespace OpenNETCF.Web.Parsers
         /// <returns>A JSON encoded string, or null if object 'json' is not serializable</returns>
         public static string JsonEncode(object json)
         {
-            StringBuilder builder = new StringBuilder(BUILDER_CAPACITY);
-            bool success = JSON.instance.SerializeValue(json, builder);
+            var builder = new StringBuilder(BUILDER_CAPACITY);
+            bool success = Instance.SerializeValue(json, builder);
             return (success ? builder.ToString() : null);
         }
 
@@ -108,7 +99,7 @@ namespace OpenNETCF.Web.Parsers
         /// <returns></returns>
         public static bool LastDecodeSuccessful()
         {
-            return (JSON.instance.lastErrorIndex == -1);
+            return (Instance.lastErrorIndex == -1);
         }
 
         /// <summary>
@@ -117,7 +108,7 @@ namespace OpenNETCF.Web.Parsers
         /// <returns></returns>
         public static int GetLastErrorIndex()
         {
-            return JSON.instance.lastErrorIndex;
+            return Instance.lastErrorIndex;
         }
 
         /// <summary>
@@ -127,31 +118,28 @@ namespace OpenNETCF.Web.Parsers
         /// <returns></returns>
         public static string GetLastErrorSnippet()
         {
-            if (JSON.instance.lastErrorIndex == -1)
+            if (Instance.lastErrorIndex == -1)
             {
                 return "";
             }
-            else
-            {
-                int startIndex = JSON.instance.lastErrorIndex - 5;
-                int endIndex = JSON.instance.lastErrorIndex + 15;
-                if (startIndex < 0)
-                {
-                    startIndex = 0;
-                }
-                if (endIndex >= JSON.instance.lastDecode.Length)
-                {
-                    endIndex = JSON.instance.lastDecode.Length - 1;
-                }
 
-                return JSON.instance.lastDecode.Substring(startIndex, endIndex - startIndex + 1);
+            int startIndex = Instance.lastErrorIndex - 5;
+            int endIndex = Instance.lastErrorIndex + 15;
+            if (startIndex < 0)
+            {
+                startIndex = 0;
             }
+            if (endIndex >= Instance.lastDecode.Length)
+            {
+                endIndex = Instance.lastDecode.Length - 1;
+            }
+
+            return Instance.lastDecode.Substring(startIndex, endIndex - startIndex + 1);
         }
 
         protected Hashtable ParseObject(char[] json, ref int index)
         {
-            Hashtable table = new Hashtable();
-            int token;
+            var table = new Hashtable();
 
             // {
             NextToken(json, ref index);
@@ -159,46 +147,42 @@ namespace OpenNETCF.Web.Parsers
             bool done = false;
             while (!done)
             {
-                token = LookAhead(json, index);
-                if (token == JSON.TOKEN_NONE)
+                int token = LookAhead(json, index);
+                switch (token)
                 {
-                    return null;
-                }
-                else if (token == JSON.TOKEN_COMMA)
-                {
-                    NextToken(json, ref index);
-                }
-                else if (token == JSON.TOKEN_CURLY_CLOSE)
-                {
-                    NextToken(json, ref index);
-                    return table;
-                }
-                else
-                {
-
-                    // name
-                    string name = ParseString(json, ref index);
-                    if (name == null)
-                    {
+                    case TOKEN_NONE:
                         return null;
-                    }
+                    case TOKEN_COMMA:
+                        NextToken(json, ref index);
+                        break;
+                    case TOKEN_CURLY_CLOSE:
+                        NextToken(json, ref index);
+                        return table;
+                    default:
+                        // name
+                        string name = ParseString(json, ref index);
+                        if (name == null)
+                        {
+                            return null;
+                        }
 
-                    // :
-                    token = NextToken(json, ref index);
-                    if (token != JSON.TOKEN_COLON)
-                    {
-                        return null;
-                    }
+                        // :
+                        token = NextToken(json, ref index);
+                        if (token != TOKEN_COLON)
+                        {
+                            return null;
+                        }
 
-                    // value
-                    bool success = true;
-                    object value = ParseValue(json, ref index, ref success);
-                    if (!success)
-                    {
-                        return null;
-                    }
+                        // value
+                        bool success = true;
+                        object value = ParseValue(json, ref index, ref success);
+                        if (!success)
+                        {
+                            return null;
+                        }
 
-                    table[name] = value;
+                        table[name] = value;
+                        break;
                 }
             }
 
@@ -207,7 +191,7 @@ namespace OpenNETCF.Web.Parsers
 
         protected ArrayList ParseArray(char[] json, ref int index)
         {
-            ArrayList array = new ArrayList();
+            var array = new ArrayList();
 
             // [
             NextToken(json, ref index);
@@ -216,29 +200,26 @@ namespace OpenNETCF.Web.Parsers
             while (!done)
             {
                 int token = LookAhead(json, index);
-                if (token == JSON.TOKEN_NONE)
+                switch (token)
                 {
-                    return null;
-                }
-                else if (token == JSON.TOKEN_COMMA)
-                {
-                    NextToken(json, ref index);
-                }
-                else if (token == JSON.TOKEN_SQUARED_CLOSE)
-                {
-                    NextToken(json, ref index);
-                    break;
-                }
-                else
-                {
-                    bool success = true;
-                    object value = ParseValue(json, ref index, ref success);
-                    if (!success)
-                    {
+                    case TOKEN_NONE:
                         return null;
-                    }
+                    case TOKEN_COMMA:
+                        NextToken(json, ref index);
+                        break;
+                    case TOKEN_SQUARED_CLOSE:
+                        NextToken(json, ref index);
+                        return array;
+                    default:
+                        bool success = true;
+                        object value = ParseValue(json, ref index, ref success);
+                        if (!success)
+                        {
+                            return null;
+                        }
 
-                    array.Add(value);
+                        array.Add(value);
+                        break;
                 }
             }
 
@@ -249,24 +230,24 @@ namespace OpenNETCF.Web.Parsers
         {
             switch (LookAhead(json, index))
             {
-                case JSON.TOKEN_STRING:
+                case TOKEN_STRING:
                     return ParseString(json, ref index);
-                case JSON.TOKEN_NUMBER:
+                case TOKEN_NUMBER:
                     return ParseNumber(json, ref index);
-                case JSON.TOKEN_CURLY_OPEN:
+                case TOKEN_CURLY_OPEN:
                     return ParseObject(json, ref index);
-                case JSON.TOKEN_SQUARED_OPEN:
+                case TOKEN_SQUARED_OPEN:
                     return ParseArray(json, ref index);
-                case JSON.TOKEN_TRUE:
+                case TOKEN_TRUE:
                     NextToken(json, ref index);
                     return Boolean.Parse("TRUE");
-                case JSON.TOKEN_FALSE:
+                case TOKEN_FALSE:
                     NextToken(json, ref index);
                     return Boolean.Parse("FALSE");
-                case JSON.TOKEN_NULL:
+                case TOKEN_NULL:
                     NextToken(json, ref index);
                     return null;
-                case JSON.TOKEN_NONE:
+                case TOKEN_NONE:
                     break;
             }
 
@@ -277,103 +258,82 @@ namespace OpenNETCF.Web.Parsers
         protected string ParseString(char[] json, ref int index)
         {
             string s = "";
-            char c;
 
             EatWhitespace(json, ref index);
 
             // "
-            c = json[index++];
+            char c = json[index++];
 
-            bool complete = false;
-            while (!complete)
+            while (index < json.Length)
             {
-
-                if (index == json.Length)
-                {
-                    break;
-                }
 
                 c = json[index++];
                 if (c == '"')
                 {
-                    complete = true;
-                    break;
+                    return s;
                 }
-                else if (c == '\\')
+
+                if (c == '\\')
                 {
 
                     if (index == json.Length)
                     {
                         break;
                     }
+
                     c = json[index++];
-                    if (c == '"')
+                    switch (c)
                     {
-                        s += '"';
-                    }
-                    else if (c == '\\')
-                    {
-                        s += '\\';
-                    }
-                    else if (c == '/')
-                    {
-                        s += '/';
-                    }
-                    else if (c == 'b')
-                    {
-                        s += '\b';
-                    }
-                    else if (c == 'f')
-                    {
-                        s += '\f';
-                    }
-                    else if (c == 'n')
-                    {
-                        s += '\n';
-                    }
-                    else if (c == 'r')
-                    {
-                        s += '\r';
-                    }
-                    else if (c == 't')
-                    {
-                        s += '\t';
-                    }
-                    else if (c == 'u')
-                    {
-                        int remainingLength = json.Length - index;
-                        if (remainingLength >= 4)
-                        {
+                        case '"':
+                            s += '"';
+                            break;
+                        case '\\':
+                            s += '\\';
+                            break;
+                        case '/':
+                            s += '/';
+                            break;
+                        case 'b':
+                            s += '\b';
+                            break;
+                        case 'f':
+                            s += '\f';
+                            break;
+                        case 'n':
+                            s += '\n';
+                            break;
+                        case 'r':
+                            s += '\r';
+                            break;
+                        case 't':
+                            s += '\t';
+                            break;
+                        case 'u':
+                            int remainingLength = json.Length - index;
+                            if (remainingLength < 4)
+                            {
+                                return null;
+                            }
+
                             // fetch the next 4 chars
-                            char[] unicodeCharArray = new char[4];
+                            var unicodeCharArray = new char[4];
                             Array.Copy(json, index, unicodeCharArray, 0, 4);
                             // parse the 32 bit hex into an integer codepoint
                             uint codePoint = UInt32.Parse(new string(unicodeCharArray), NumberStyles.HexNumber);
                             // convert the integer codepoint to a unicode char and add to string
-                            s += ConvertFromUtf32((int)codePoint);
+                            s += ConvertFromUtf32((int) codePoint);
                             // skip 4 chars
                             index += 4;
-                        }
-                        else
-                        {
                             break;
-                        }
                     }
-
                 }
                 else
                 {
                     s += c;
                 }
-
             }
 
-            if (!complete)
-            {
-                return null;
-            }
-
-            return s;
+            return null;
         }
 
         private static string ConvertFromUtf32(int utf32)
@@ -382,18 +342,18 @@ namespace OpenNETCF.Web.Parsers
             {
                 throw new ArgumentOutOfRangeException("utf32", "utf32 must be from 0 to 0x10FFFF.");
             }
-            else if ((0xD800 <= utf32) && (utf32 <= 0xDFFF))
+            if ((0xD800 <= utf32) && (utf32 <= 0xDFFF))
             {
                 throw new ArgumentOutOfRangeException("utf32", "utf32 must not be in surrogate pair range.");
             }
-            else if (utf32 < 0x10000)
+            if (utf32 < 0x10000)
             {
                 return new string((char)utf32, 1);
             }
 
             utf32 -= 0x10000;
-            
-            return new string(new char[] {(char) ((utf32 >> 10) + 0xD800), (char) ((utf32 % 0x0400) + 0xDC00)});
+
+            return new string(new[] { (char)((utf32 >> 10) + 0xD800), (char)((utf32 % 0x0400) + 0xDC00) });
         }
 
 
@@ -403,7 +363,7 @@ namespace OpenNETCF.Web.Parsers
 
             int lastIndex = GetLastIndexOfNumber(json, index);
             int charLength = (lastIndex - index) + 1;
-            char[] numberCharArray = new char[charLength];
+            var numberCharArray = new char[charLength];
 
             Array.Copy(json, index, numberCharArray, 0, charLength);
             index = lastIndex + 1;
@@ -446,7 +406,7 @@ namespace OpenNETCF.Web.Parsers
 
             if (index == json.Length)
             {
-                return JSON.TOKEN_NONE;
+                return TOKEN_NONE;
             }
 
             char c = json[index];
@@ -454,17 +414,17 @@ namespace OpenNETCF.Web.Parsers
             switch (c)
             {
                 case '{':
-                    return JSON.TOKEN_CURLY_OPEN;
+                    return TOKEN_CURLY_OPEN;
                 case '}':
-                    return JSON.TOKEN_CURLY_CLOSE;
+                    return TOKEN_CURLY_CLOSE;
                 case '[':
-                    return JSON.TOKEN_SQUARED_OPEN;
+                    return TOKEN_SQUARED_OPEN;
                 case ']':
-                    return JSON.TOKEN_SQUARED_CLOSE;
+                    return TOKEN_SQUARED_CLOSE;
                 case ',':
-                    return JSON.TOKEN_COMMA;
+                    return TOKEN_COMMA;
                 case '"':
-                    return JSON.TOKEN_STRING;
+                    return TOKEN_STRING;
                 case '0':
                 case '1':
                 case '2':
@@ -476,9 +436,9 @@ namespace OpenNETCF.Web.Parsers
                 case '8':
                 case '9':
                 case '-':
-                    return JSON.TOKEN_NUMBER;
+                    return TOKEN_NUMBER;
                 case ':':
-                    return JSON.TOKEN_COLON;
+                    return TOKEN_COLON;
             }
             index--;
 
@@ -494,7 +454,7 @@ namespace OpenNETCF.Web.Parsers
                     json[index + 4] == 'e')
                 {
                     index += 5;
-                    return JSON.TOKEN_FALSE;
+                    return TOKEN_FALSE;
                 }
             }
 
@@ -507,7 +467,7 @@ namespace OpenNETCF.Web.Parsers
                     json[index + 3] == 'e')
                 {
                     index += 4;
-                    return JSON.TOKEN_TRUE;
+                    return TOKEN_TRUE;
                 }
             }
 
@@ -520,11 +480,11 @@ namespace OpenNETCF.Web.Parsers
                     json[index + 3] == 'l')
                 {
                     index += 4;
-                    return JSON.TOKEN_NULL;
+                    return TOKEN_NULL;
                 }
             }
 
-            return JSON.TOKEN_NONE;
+            return TOKEN_NONE;
         }
 
         protected bool SerializeObjectOrArray(object objectOrArray, StringBuilder builder)
@@ -533,14 +493,11 @@ namespace OpenNETCF.Web.Parsers
             {
                 return SerializeObject((Hashtable)objectOrArray, builder);
             }
-            else if (objectOrArray is ArrayList)
+            if (objectOrArray is ArrayList)
             {
                 return SerializeArray((ArrayList)objectOrArray, builder);
             }
-            else
-            {
-                return false;
-            }
+            return false;
         }
 
         protected bool SerializeObject(Hashtable anObject, StringBuilder builder)
@@ -578,10 +535,8 @@ namespace OpenNETCF.Web.Parsers
             builder.Append("[");
 
             bool first = true;
-            for (int i = 0; i < anArray.Count; i++)
+            foreach (object value in anArray)
             {
-                object value = anArray[i];
-
                 if (!first)
                 {
                     builder.Append(", ");
@@ -617,7 +572,7 @@ namespace OpenNETCF.Web.Parsers
             {
                 SerializeNumber(Convert.ToDouble(value), builder);
             }
-            else if ((value is Boolean) && ((Boolean)value == true))
+            else if ((value is Boolean) && (Boolean)value)
             {
                 builder.Append("true");
             }
@@ -641,48 +596,42 @@ namespace OpenNETCF.Web.Parsers
             builder.Append("\"");
 
             char[] charArray = aString.ToCharArray();
-            for (int i = 0; i < charArray.Length; i++)
+            foreach (char c in charArray)
             {
-                char c = charArray[i];
-                if (c == '"')
+                switch (c)
                 {
-                    builder.Append("\\\"");
-                }
-                else if (c == '\\')
-                {
-                    builder.Append("\\\\");
-                }
-                else if (c == '\b')
-                {
-                    builder.Append("\\b");
-                }
-                else if (c == '\f')
-                {
-                    builder.Append("\\f");
-                }
-                else if (c == '\n')
-                {
-                    builder.Append("\\n");
-                }
-                else if (c == '\r')
-                {
-                    builder.Append("\\r");
-                }
-                else if (c == '\t')
-                {
-                    builder.Append("\\t");
-                }
-                else
-                {
-                    int codepoint = Convert.ToInt32(c);
-                    if ((codepoint >= 32) && (codepoint <= 126))
-                    {
-                        builder.Append(c);
-                    }
-                    else
-                    {
-                        builder.Append("\\u" + Convert.ToString(codepoint, 16).PadLeft(4, '0'));
-                    }
+                    case '"':
+                        builder.Append(@"\""");
+                        break;
+                    case '\\':
+                        builder.Append(@"\\");
+                        break;
+                    case '\b':
+                        builder.Append(@"\b");
+                        break;
+                    case '\f':
+                        builder.Append(@"\f");
+                        break;
+                    case '\n':
+                        builder.Append(@"\n");
+                        break;
+                    case '\r':
+                        builder.Append(@"\r");
+                        break;
+                    case '\t':
+                        builder.Append(@"\t");
+                        break;
+                    default:
+                        int codepoint = Convert.ToInt32(c);
+                        if ((codepoint >= 32) && (codepoint <= 126))
+                        {
+                            builder.Append(c);
+                        }
+                        else
+                        {
+                            builder.Append(@"\u" + Convert.ToString(codepoint, 16).PadLeft(4, '0'));
+                        }
+                        break;
                 }
             }
 

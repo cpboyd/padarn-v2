@@ -17,39 +17,38 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
 
+using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Collections;
 using System.Xml;
-using System.IO;
-using System.Diagnostics;
-using System.Collections.Specialized;
 using OpenNETCF.Web.Core;
-using OpenNETCF.Web.UI.WebControls;
 using OpenNETCF.Web.UI;
+using OpenNETCF.Web.UI.WebControls;
 
 namespace OpenNETCF.Web.Parsers
 {
     internal class PageParser
     {
-        private Dictionary<string, ControlBuilder> m_controlBuilders = new Dictionary<string, ControlBuilder>();
-
         private static PageParser m_instance;
-
-        private const string CodeBehind = "CodeBehind";
-        private const string Inherits = "Inherits";
-        private const string AutoEventWireup = "AutoEventWireup";
+        private readonly Dictionary<string, ControlBuilder> m_controlBuilders;
+        private Page m_currentPage;
+        private object m_syncRoot = new object();
 
         private PageParser()
         {
             // TODO: load up all of the control builders
-            m_controlBuilders.Add("button", new BasicControlBuilder<Button>("input"));
-            m_controlBuilders.Add("label", new BasicControlBuilder<Label>("span"));
-            m_controlBuilders.Add("textbox", new BasicControlBuilder<TextBox>("input"));
-            m_controlBuilders.Add("linkbutton", new BasicControlBuilder<LinkButton>("a"));
+            m_controlBuilders = new Dictionary<string, ControlBuilder>
+            {
+                {"button", new BasicControlBuilder<Button>("input")},
+                {"label", new BasicControlBuilder<Label>("span")},
+                {"textbox", new BasicControlBuilder<TextBox>("input")},
+                {"linkbutton", new BasicControlBuilder<LinkButton>("a")}
+            };
         }
 
         internal static PageParser GetParser()
@@ -70,55 +69,51 @@ namespace OpenNETCF.Web.Parsers
             return content;
         }
 
-        private object m_syncRoot = new object();
-        private Page m_currentPage;
-
         internal string Parse(Page page, string content)
         {
             lock (m_syncRoot)
             {
                 m_currentPage = page;
 
-                if (content.Length > 0)
+                if (string.IsNullOrEmpty(content))
                 {
-                    XmlDocument doc = new XmlDocument();
-
-                    NameTable nt = new NameTable();
-                    XmlNamespaceManager nsmgr = new XmlNamespaceManager(nt);
-                    nsmgr.AddNamespace("asp", "http://www.w3.org/1999/xhtml");
-                    XmlParserContext context = new XmlParserContext(null, nsmgr, null, XmlSpace.None);
-                    XmlReaderSettings xset = new XmlReaderSettings();
-                    xset.ConformanceLevel = ConformanceLevel.Fragment;
-                    XmlReader rd = XmlReader.Create(new StringReader(content), xset, context);
-                    doc.Load(rd);
-
-                    //            Dump(doc.FirstChild, 0);
-
-                    content = ParseDocument(page, doc);
-
-                    //page = ParseAspControls(page);
-
-                    return string.Format("\r\n\r\n{0}\r\n\r\n{1}", page.DTDHeader, content);
+                    return string.Empty;
                 }
 
-                return string.Empty;
+                var doc = new XmlDocument();
+
+                var nt = new NameTable();
+                var nsmgr = new XmlNamespaceManager(nt);
+                nsmgr.AddNamespace("asp", "http://www.w3.org/1999/xhtml");
+                var context = new XmlParserContext(null, nsmgr, null, XmlSpace.None);
+                var xset = new XmlReaderSettings { ConformanceLevel = ConformanceLevel.Fragment };
+                XmlReader rd = XmlReader.Create(new StringReader(content), xset, context);
+                doc.Load(rd);
+
+                //Dump(doc.FirstChild, 0);
+
+                content = ParseDocument(page, doc);
+
+                //page = ParseAspControls(page);
+
+                return string.Format("\r\n\r\n{0}\r\n\r\n{1}", page.DTDHeader, content);
             }
         }
 
         private string ParseDocument(Page page, XmlDocument doc)
         {
-            var htmlNode = doc.FirstChild;
+            XmlNode htmlNode = doc.FirstChild;
             // TODO: validate this is the "html" node?
 
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
 
-            XmlWriterSettings settings = new XmlWriterSettings
+            var settings = new XmlWriterSettings
             {
                 OmitXmlDeclaration = true,
                 Indent = true
-            };                 
+            };
 
-            using(XmlWriter writer = XmlWriter.Create(sb, settings))
+            using (XmlWriter writer = XmlWriter.Create(sb, settings))
             {
                 writer.WriteStartElement(htmlNode.LocalName, htmlNode.NamespaceURI);
                 ParseNode(page, htmlNode, false, writer);
@@ -160,8 +155,8 @@ namespace OpenNETCF.Web.Parsers
             {
                 Debug.WriteLine(node.Name);
 
-                bool currentNodeIsServer = node.Attributes == null ? false : node.Attributes["runat"] != null;
-                bool server = runatServer ? true : currentNodeIsServer;
+                bool currentNodeIsServer = (node.Attributes != null) && (node.Attributes["runat"] != null);
+                bool server = runatServer || currentNodeIsServer;
 
 
                 if (server && node.Prefix == "asp")
@@ -171,7 +166,7 @@ namespace OpenNETCF.Web.Parsers
                 else if (currentNodeIsServer && node.LocalName == "form")
                 {
                     writer.WriteStartElement("form");
-                    var id = node.Attributes["id"].Value;
+                    string id = node.Attributes["id"].Value;
                     writer.WriteAttributeString("name", id);
                     writer.WriteAttributeString("id", id);
                     writer.WriteAttributeString("method", "post");
@@ -193,33 +188,31 @@ namespace OpenNETCF.Web.Parsers
                         writer.WriteRaw(node.InnerText);
                         continue;
                     }
-                    else
+
+                    writer.WriteStartElement(node.Prefix, node.LocalName, null);
+
+                    foreach (XmlAttribute attr in node.Attributes)
                     {
-                        writer.WriteStartElement(node.Prefix, node.LocalName, null);
-
-                        foreach (XmlAttribute attr in node.Attributes)
+                        if (server && (attr.Name == "runat"))
                         {
-                            if (server && (attr.Name == "runat"))
-                            {
-                                continue;
-                            }
-                            writer.WriteAttributeString(attr.Name, attr.Value);
+                            continue;
                         }
-
-                        if (node.HasChildNodes)
-                        {
-                            ParseNode(page, node, server, writer);
-                        }
-
-                        writer.WriteFullEndElement();
+                        writer.WriteAttributeString(attr.Name, attr.Value);
                     }
+
+                    if (node.HasChildNodes)
+                    {
+                        ParseNode(page, node, server, writer);
+                    }
+
+                    writer.WriteFullEndElement();
                 }
             }
         }
 
         private void ParseAspControl(Page page, XmlNode node, XmlWriter writer)
         {
-            var name = node.LocalName.ToLowerInvariant();
+            string name = node.LocalName.ToLowerInvariant();
             if (!m_controlBuilders.ContainsKey(name))
             {
                 throw new NotSupportedException(string.Format("Unsupported server control: '{0}'", name));
@@ -246,7 +239,7 @@ namespace OpenNETCF.Web.Parsers
 
         private void Dump(XmlNode parent, int level)
         {
-            string spacer = new string(' ', level * 4);
+            var spacer = new string(' ', level * 4);
 
             foreach (XmlNode node in parent.ChildNodes)
             {
@@ -266,8 +259,8 @@ namespace OpenNETCF.Web.Parsers
 
         internal string StripDocType(string source, out string docType)
         {
-            string regex = "<!DOCTYPE(.*?)>";
-            var matches = Regex.Matches(source, regex, RegexOptions.IgnoreCase | RegexOptions.Multiline);
+            const string regex = "<!DOCTYPE(.*?)>";
+            MatchCollection matches = Regex.Matches(source, regex, RegexOptions.IgnoreCase | RegexOptions.Multiline);
 
             docType = string.Empty;
 
@@ -289,14 +282,14 @@ namespace OpenNETCF.Web.Parsers
         {
             info = new AspxInfo();
 
-            string regex = "<%(.*?)%>";
-            var matches = Regex.Matches(source, regex, RegexOptions.IgnoreCase | RegexOptions.Multiline);
+            const string regex = "<%(.*?)%>";
+            MatchCollection matches = Regex.Matches(source, regex, RegexOptions.IgnoreCase | RegexOptions.Multiline);
 
             foreach (Match match in matches)
             {
                 if (match.Value.StartsWith("<%@ Page"))
                 {
-                    info = ParsePageInfo(match.Value);
+                    info = new AspxInfo(match.Value);
                     source = source.Replace(match.Value, string.Empty);
                 }
                 else
@@ -308,53 +301,10 @@ namespace OpenNETCF.Web.Parsers
             return source;
         }
 
-        private AspxInfo ParsePageInfo(string tag)
-        {
-            var info = new AspxInfo();
-
-            string[] tokens = tag.Split(' ');
-            int index = 1;
-            int count = tokens.Length;
-
-            for (int i = index; i < count; i++)
-            {
-                if (tokens[i].IndexOf("=") > -1)
-                {
-                    // We have a name-value pair
-                    string name = tokens[i].Substring(0, tokens[i].IndexOf("="));
-                    string value = tokens[i].Substring(tokens[i].IndexOf("=") + 2).Trim('"');
-
-
-                    switch (name)
-                    {
-                        case Inherits:
-                            info.CodeBehindTypeName = value;
-                            break;
-                        case CodeBehind:
-                            info.CodeBehindAssemblyName = value;
-                            break;
-                        case AutoEventWireup:
-                            try
-                            {
-                                info.AutoEventWireup = bool.Parse(value);
-                            }
-                            catch
-                            {
-                                info.AutoEventWireup = true;
-                            }
-                            break;
-                    }
-                }
-            }
-
-            return info;
-        }
-
         private string ParseASP(string tag)
         {
             // TODO:
             return "<pre>[translated asp]</pre>";
         }
-
     }
 }
