@@ -26,12 +26,7 @@ namespace OpenNETCF.Web.Hosting
     /// </summary>
     public abstract class VirtualPathProvider
     {
-        private VirtualPathProvider _previous;
-
-        protected internal VirtualPathProvider Previous
-        {
-            get { return this._previous; }
-        }
+        protected internal VirtualPathProvider Previous { get; private set; }
 
         /// <summary>
         /// Initializes the VirtualPathProvider instance. 
@@ -40,7 +35,7 @@ namespace OpenNETCF.Web.Hosting
 
         internal virtual void Initialize(VirtualPathProvider previous)
         {
-            this._previous = previous;
+            this.Previous = previous;
             this.Initialize();
         }
 
@@ -51,12 +46,7 @@ namespace OpenNETCF.Web.Hosting
         /// <returns><b>true</b> if the directory exists in the virtual file system; otherwise, <b>false</b>.</returns>
         public virtual bool DirectoryExists(string virtualDir)
         {
-            if (this._previous == null)
-            {
-                return false;
-            }
-
-            return this._previous.DirectoryExists(virtualDir);
+            return (Previous != null) && Previous.DirectoryExists(virtualDir);
         }
 
         /// <summary>
@@ -66,12 +56,7 @@ namespace OpenNETCF.Web.Hosting
         /// <returns><b>true</b> if the file exists in the virtual file system; otherwise, <b>false</b>.</returns>
         public virtual bool FileExists(string virtualPath)
         {
-            if (this._previous == null)
-            {
-                return false;
-            }
-
-            return this._previous.FileExists(virtualPath);
+            return (Previous != null) && Previous.FileExists(virtualPath);
         }
 
         /// <summary>
@@ -81,12 +66,7 @@ namespace OpenNETCF.Web.Hosting
         /// <returns>A descendent of the VirtualDirectory class that represents a directory in the virtual file system.</returns>
         public virtual VirtualDirectory GetDirectory(string virtualDir)
         {
-            if (this._previous == null)
-            {
-                return null;
-            }
-
-            return this._previous.GetDirectory(virtualDir);
+            return (Previous == null) ? null : Previous.GetDirectory(virtualDir);
         }
 
         /// <summary>
@@ -96,12 +76,7 @@ namespace OpenNETCF.Web.Hosting
         /// <returns>A descendent of the VirtualFile class that represents a file in the virtual file system.</returns>
         public virtual VirtualFile GetFile(string virtualPath)
         {
-            if (this._previous == null)
-            {
-                return null;
-            }
-
-            return this._previous.GetFile(virtualPath);
+            return (Previous == null) ? null : Previous.GetFile(virtualPath);
         }
 
         /// <summary>
@@ -112,12 +87,7 @@ namespace OpenNETCF.Web.Hosting
         /// <returns></returns>
         public virtual string GetFileHash(string virtualPath, IEnumerable virtualPathDependencies)
         {
-            if (this._previous == null)
-            {
-                return null;
-            }
-
-            return this._previous.GetFileHash(virtualPath, virtualPathDependencies);
+            return (Previous == null) ? null : Previous.GetFileHash(virtualPath, virtualPathDependencies);
         }
     }
 }

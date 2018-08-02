@@ -34,6 +34,16 @@ namespace OpenNETCF.Web.Core
             return t.GetInterfaces().Any(type => type == typeof(T));
         }
 
+        public static bool EndsWith(this string str, char c)
+        {
+            return (str[str.Length - 1] == c);
+        }
+
+        public static string ToUpperInvariant(this string str)
+        {
+            return str.ToUpper(CultureInfo.InvariantCulture);
+        }
+
         public static string ToLowerInvariant(this string str)
         {
             return str.ToLower(CultureInfo.InvariantCulture);

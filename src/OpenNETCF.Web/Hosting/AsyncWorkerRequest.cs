@@ -1,4 +1,4 @@
-#region License
+﻿#region License
 // Copyright ©2017 Tacke Consulting (dba OpenNETCF)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
@@ -51,7 +51,7 @@ namespace OpenNETCF.Web.Hosting
         private const string TRACE = "TRACE";
 #endif
 
-        private bool  EnableTracing { get; set; }
+        private bool EnableTracing { get; set; }
 
         #region Fields
 
@@ -122,7 +122,7 @@ namespace OpenNETCF.Web.Hosting
         internal AsyncWorkerRequest(Socket socket, Stream output, ILogProvider logProvider)
             : this(new HttpSocket(), output, logProvider)
         {
-            ((HttpSocket) m_client).Create(socket);
+            ((HttpSocket)m_client).Create(socket);
         }
 
         /// <summary>
@@ -150,15 +150,15 @@ namespace OpenNETCF.Web.Hosting
 
             try
             {
-                //Get the request binary contents
+                // Get the request binary contents
                 try
                 {
                     if (m_client.Connected)
                     {
                         m_httpRawRequestContent = GetPartialRawRequestContent(m_client);
-                        if (m_client.Connected && m_httpRawRequestContent.Length == 0  && m_client.Available > 0 )
+                        if (m_client.Connected && m_httpRawRequestContent.Length == 0 && m_client.Available > 0)
                         {
-                            //try again since we should not have a 0 length on the request
+                            // try again since we should not have a 0 length on the request
                             int retries = 5;
                             while (retries-- != 0 && m_client.Connected)
                             {
@@ -177,7 +177,7 @@ namespace OpenNETCF.Web.Hosting
                 {
                     if (e.ErrorCode == 10054)
                     {
-                        //An existing connection was forcibly closed by the remote host
+                        // An existing connection was forcibly closed by the remote host
                         CloseConnection();
                         return;
                     }
@@ -188,9 +188,9 @@ namespace OpenNETCF.Web.Hosting
 
 
                 //if the raw content is null or we have no data just close the connection
-                if (m_httpRawRequestContent == null 
+                if (m_httpRawRequestContent == null
                     || m_httpRawRequestContent.Length == 0
-                    || m_httpRawRequestContent.Path == null )
+                    || m_httpRawRequestContent.Path == null)
                 {
                     CloseConnection();
                 }
@@ -447,7 +447,7 @@ namespace OpenNETCF.Web.Hosting
         {
             try
             {
-                bool finalFlush = (bool)ar.AsyncState;
+                var finalFlush = (bool)ar.AsyncState;
                 m_output.EndWrite(ar);
                 m_output.Flush();
                 m_response.SetLength(0);
@@ -464,12 +464,12 @@ namespace OpenNETCF.Web.Hosting
         private void TranslateResponseASP()
         {
             string regex = "<%=(.*?)%>";
-            StringBuilder input = new StringBuilder();
+            var input = new StringBuilder();
 
             input.Append(Encoding.UTF8.GetString(m_response.ToArray(), 0, (int)m_response.Length));
 
             string source = input.ToString();
-            var matches = Regex.Matches(source, regex, RegexOptions.IgnoreCase | RegexOptions.Multiline);
+            MatchCollection matches = Regex.Matches(source, regex, RegexOptions.IgnoreCase | RegexOptions.Multiline);
 
             if (matches.Count == 0) return;
 
@@ -779,19 +779,16 @@ namespace OpenNETCF.Web.Hosting
         {
             // TODO: cache these
             ServerConfig config = ServerConfig.GetConfig();
-            string virtualRoot = String.Empty;
+            string virtualRoot = string.Empty;
 
             if (config.VirtualDirectories != null)
             {
                 virtualRoot = config.VirtualDirectories.FindPhysicalDirectoryForVirtualUrlPath(Path);
             }
 
-            if (String.IsNullOrEmpty(virtualRoot))
-            {
-                return System.IO.Path.GetFullPath(ServerConfig.GetConfig().DocumentRoot);
-            }
-
-            return virtualRoot;
+            return string.IsNullOrEmpty(virtualRoot)
+                ? System.IO.Path.GetFullPath(ServerConfig.GetConfig().DocumentRoot)
+                : virtualRoot;
         }
 
         private void LogPageAccess(LogDataItem ldi)
@@ -819,11 +816,11 @@ namespace OpenNETCF.Web.Hosting
             {
                 if (profile.Extension == fileExtension)
                 {
-                    HttpCachePolicy policy = new HttpCachePolicy();
+                    var policy = new HttpCachePolicy();
 
                     policy.SetMaxAge(profile.Duration);
-                    
-                    switch(profile.Location)
+
+                    switch (profile.Location)
                     {
                         case CacheLocation.Client:
                             policy.SetCacheability(HttpCacheability.Private);
@@ -847,88 +844,70 @@ namespace OpenNETCF.Web.Hosting
 
         private void HandleNonFormsAuthentication()
         {
-            if ((!HasAuthorizationHeader) || (!AuthenticateRequest()))
+            if (HasAuthorizationHeader && AuthenticateRequest())
             {
-                if (!HasAuthorizationHeader)
-                {
-                    m_requestCount = 0;
-                }
-                else if (m_lastRequestFrom == HttpContext.Current.Request.UserHostAddress)
-                {
-                    m_requestCount++;
-                    Debug.WriteLineIf(EnableTracing, string.Format("{0} requests from {1}", m_requestCount, m_lastRequestFrom));
-                    if (m_requestCount >= 3)
-                    {
-                        m_requestCount = 0;
-                        m_lastRequestFrom = string.Empty;
-                        throw new HttpException(HttpErrorCode.Unauthorized, "Unauthorized");
-                    }
-
-                }
-                else
-                {
-                    m_lastRequestFrom = HttpContext.Current.Request.UserHostAddress;
-                }
-
-                SendAuthRequest();
-                FlushResponse(true);
                 return;
             }
+
+            if (!HasAuthorizationHeader)
+            {
+                m_requestCount = 0;
+            }
+            else if (m_lastRequestFrom == HttpContext.Current.Request.UserHostAddress)
+            {
+                m_requestCount++;
+                Debug.WriteLineIf(EnableTracing, string.Format("{0} requests from {1}", m_requestCount, m_lastRequestFrom));
+                if (m_requestCount >= 3)
+                {
+                    m_requestCount = 0;
+                    m_lastRequestFrom = string.Empty;
+                    throw new HttpException(HttpErrorCode.Unauthorized, "Unauthorized");
+                }
+
+            }
+            else
+            {
+                m_lastRequestFrom = HttpContext.Current.Request.UserHostAddress;
+            }
+
+            SendAuthRequest();
+            FlushResponse(true);
         }
 
         private void HandleFormsAuthentication()
         {
-            bool redirectToLogin = true;
-
             // is this a page that requires auth?
-            var absolutePath = HostingEnvironment.MapPath(Path);
-            if (string.Compare(absolutePath, FormsAuthentication.LoginUrlServerPath, true) == 0)
+            string absolutePath = HostingEnvironment.MapPath(Path);
+            if (StringComparer.InvariantCultureIgnoreCase.Equals(absolutePath, FormsAuthentication.LoginUrlServerPath))
             {
-                redirectToLogin = false;
-            }
-            else
-            {
-                // are we already authenticated
-                var authCookie = HttpContext.Current.Request.Cookies[FormsAuthentication.FormsCookieName];
-
-                if (authCookie != null)
-                {
-                    // verify the cookie domain
-                    if (authCookie.Domain == FormsAuthentication.CookieDomain)
-                    {
-                        // verify it hasn't expired
-                        if (authCookie.Expires > DateTime.Now)
-                        {
-                            redirectToLogin = false;
-
-                            // reset expiration
-                            if (FormsAuthentication.SlidingExpiration)
-                            {
-                                FormsAuthentication.SetAuthCookie(authCookie["UID"], false);
-//                                HttpContext.Current.Response.Cookies[FormsAuthentication.FormsCookieName]
-                                authCookie.Expires = DateTime.Now.AddMinutes(30);
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (redirectToLogin)
-            {
-                if (string.IsNullOrEmpty(Path))
-                {
-                    FormsAuthentication.ReturnUrl = FormsAuthentication.DefaultUrl;
-                }
-                else
-                {
-                    FormsAuthentication.ReturnUrl = Path;
-                }
-                var authUrl = string.Format("{0}?ReturnURL={1}", FormsAuthentication.LoginUrl, Path);
-                HttpContext.Current.Response.Redirect(authUrl);
-                FlushResponse(true);
                 return;
             }
 
+            // are we already authenticated
+            HttpCookie authCookie = HttpContext.Current.Request.Cookies[FormsAuthentication.FormsCookieName];
+            if (authCookie != null &&
+                // verify the cookie domain
+                authCookie.Domain == FormsAuthentication.CookieDomain &&
+                // verify it hasn't expired
+                authCookie.Expires > DateTime.Now)
+            {
+                // reset expiration
+                if (FormsAuthentication.SlidingExpiration)
+                {
+                    FormsAuthentication.SetAuthCookie(authCookie["UID"], false);
+                    //                                HttpContext.Current.Response.Cookies[FormsAuthentication.FormsCookieName]
+                    authCookie.Expires = DateTime.Now.AddMinutes(30);
+                }
+
+                return;
+            }
+
+            // Redirect to login
+            FormsAuthentication.ReturnUrl = string.IsNullOrEmpty(Path)
+                ? FormsAuthentication.DefaultUrl : Path;
+            string authUrl = string.Format("{0}?ReturnURL={1}", FormsAuthentication.LoginUrl, Path);
+            HttpContext.Current.Response.Redirect(authUrl);
+            FlushResponse(true);
         }
 
         private void HandleRequestException(Exception e, LogDataItem ldi)
@@ -945,62 +924,65 @@ namespace OpenNETCF.Web.Hosting
 
             if (e is HttpException)
             {
-                HttpException err = e as HttpException;
+                var err = e as HttpException;
 
                 // see if we have a custom error page:
                 exceptionPage = GetCustomErrorPage((HttpErrorCode)err.GetHttpCode());
 
-                if (err.GetHttpCode() == (int)HttpErrorCode.NotFound)
+                switch (err.GetHttpCode())
                 {
-                    Status = StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusFileNotFound);
-                    if (exceptionPage == null)
-                    {
-                        exceptionPage = string.Format(StringHelper.ConvertVerbatimLineEndings(Resources.ContextualErrorTemplate), Resources.FileNotFoundTitle, e.Message, Resources.FileNotFoundDesc);
-                    }
-                }
-                else if (err.GetHttpCode() == (int)HttpErrorCode.Unauthorized)
-                {
-                    Status = StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusUnauthorized);
-                    if (exceptionPage == null)
-                    {
-                        exceptionPage = string.Format(StringHelper.ConvertVerbatimLineEndings(Resources.ContextualErrorTemplate), Resources.UnauthorizedTitle, Resources.UnuthorizedMessage, Resources.UnauthorizedDesc);
-                    }
-                }
-                else if (e.InnerException != null)
-                {
-                    if (e.InnerException.Message == Resources.Max_request_length_exceeded)
-                    {
-                        Status = StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusInternalServerError);
+                    case (int)HttpErrorCode.NotFound:
+                        Status = StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusFileNotFound);
                         if (exceptionPage == null)
                         {
-                            exceptionPage = string.Format(StringHelper.ConvertVerbatimLineEndings(Resources.ContextualErrorTemplate), Resources.MaxRequestLengthErrorTitle, e.Message, Resources.MaxRequestLengthErrorDesc);
+                            exceptionPage = string.Format(StringHelper.ConvertVerbatimLineEndings(Resources.ContextualErrorTemplate), Resources.FileNotFoundTitle, e.Message, Resources.FileNotFoundDesc);
                         }
-                    }
-                    else if (e.InnerException.Message == Resources.DiskError)
-                    {
-                        Status = StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusInternalServerError);
+                        break;
+                    case (int)HttpErrorCode.Unauthorized:
+                        Status = StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusUnauthorized);
                         if (exceptionPage == null)
                         {
-                            exceptionPage = string.Format(StringHelper.ConvertVerbatimLineEndings(Resources.ContextualErrorTemplate), Resources.DiskErrorTitle, e.Message, Resources.DiskErrorDesc);
+                            exceptionPage = string.Format(StringHelper.ConvertVerbatimLineEndings(Resources.ContextualErrorTemplate), Resources.UnauthorizedTitle, Resources.UnuthorizedMessage, Resources.UnauthorizedDesc);
                         }
-                    }
-                    else if (e.InnerException is OutOfMemoryException)
-                    {
-                        Status = StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusInternalServerError);
-                        if (exceptionPage == null)
+                        break;
+                    default:
+                        if (e.InnerException != null)
                         {
-                            exceptionPage = string.Format(StringHelper.ConvertVerbatimLineEndings(Resources.ContextualErrorTemplate), Resources.OutOfMemoryErrorTitle, e.Message, Resources.OutOfMemoryErrorDesc);
+                            if (e.InnerException.Message == Resources.Max_request_length_exceeded)
+                            {
+                                Status = StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusInternalServerError);
+                                if (exceptionPage == null)
+                                {
+                                    exceptionPage = string.Format(StringHelper.ConvertVerbatimLineEndings(Resources.ContextualErrorTemplate), Resources.MaxRequestLengthErrorTitle, e.Message, Resources.MaxRequestLengthErrorDesc);
+                                }
+                            }
+                            else if (e.InnerException.Message == Resources.DiskError)
+                            {
+                                Status = StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusInternalServerError);
+                                if (exceptionPage == null)
+                                {
+                                    exceptionPage = string.Format(StringHelper.ConvertVerbatimLineEndings(Resources.ContextualErrorTemplate), Resources.DiskErrorTitle, e.Message, Resources.DiskErrorDesc);
+                                }
+                            }
+                            else if (e.InnerException is OutOfMemoryException)
+                            {
+                                Status = StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusInternalServerError);
+                                if (exceptionPage == null)
+                                {
+                                    exceptionPage = string.Format(StringHelper.ConvertVerbatimLineEndings(Resources.ContextualErrorTemplate), Resources.OutOfMemoryErrorTitle, e.Message, Resources.OutOfMemoryErrorDesc);
+                                }
+                            }
                         }
-                    }
-                }
-                else
-                {
-                    // pass along the error
-                    Status = GetStatusForErrorCode((HttpErrorCode)((e as HttpException).GetHttpCode()));
-                    if (exceptionPage == null)
-                    {
-                        exceptionPage = string.Format(Resources.ErrorPage, Path, String.Format(Resources.UnhandledExceptionDesc, Path), String.Format("{0}: {1}", e.GetType().FullName, e.Message), ParseStackTrace(e.StackTrace));
-                    }
+                        else
+                        {
+                            // pass along the error
+                            Status = GetStatusForErrorCode((HttpErrorCode)((e as HttpException).GetHttpCode()));
+                            if (exceptionPage == null)
+                            {
+                                exceptionPage = string.Format(Resources.ErrorPage, Path, string.Format(Resources.UnhandledExceptionDesc, Path), string.Format("{0}: {1}", e.GetType().FullName, e.Message), ParseStackTrace(e.StackTrace));
+                            }
+                        }
+                        break;
                 }
             }
             else if (e is System.IO.FileNotFoundException)
@@ -1011,18 +993,15 @@ namespace OpenNETCF.Web.Hosting
             else if (e is TypeLoadException)
             {
                 Status = StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusInternalServerError);
-                exceptionPage = String.Format(StringHelper.ConvertVerbatimLineEndings(Resources.ContextualErrorTemplate),
+                exceptionPage = string.Format(StringHelper.ConvertVerbatimLineEndings(Resources.ContextualErrorTemplate),
                                               Resources.TypeLoadTitle, e.Message, Resources.TypeLoadDesc);
             }
             else // Unhandled Exception
             {
                 Status = StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusInternalServerError);
                 // see if we have a custom error page:
-                exceptionPage = GetCustomErrorPage(HttpErrorCode.InternalServerError);
-                if (exceptionPage == null)
-                {
-                    exceptionPage = string.Format(Resources.ErrorPage, Path, String.Format(Resources.UnhandledExceptionDesc, Path), String.Format("{0}: {1}", e.GetType().FullName, e.Message), ParseStackTrace(e.StackTrace));
-                }
+                exceptionPage = GetCustomErrorPage(HttpErrorCode.InternalServerError) ??
+                                string.Format(Resources.ErrorPage, Path, string.Format(Resources.UnhandledExceptionDesc, Path), String.Format("{0}: {1}", e.GetType().FullName, e.Message), ParseStackTrace(e.StackTrace));
             }
 
             byte[] b = Encoding.UTF8.GetBytes(exceptionPage);
@@ -1096,7 +1075,7 @@ namespace OpenNETCF.Web.Hosting
                     }
 
                     // create the session now (we needed the headers for the cookies)
-//                    HttpContext.Current.InitializeSession();
+                    //HttpContext.Current.InitializeSession();
 
                     if (AuthenticationEnabled || RequestRequiresAuthentication())
                     {
@@ -1223,7 +1202,7 @@ namespace OpenNETCF.Web.Hosting
 
         private bool IsSubDirectoryOf(string candidate, string other)
         {
-            var isChild = false;
+            bool isChild = false;
             try
             {
                 var candidateInfo = new DirectoryInfo(candidate);
@@ -1236,12 +1215,13 @@ namespace OpenNETCF.Web.Hosting
                         isChild = true;
                         break;
                     }
-                    else candidateInfo = candidateInfo.Parent;
+
+                    candidateInfo = candidateInfo.Parent;
                 }
             }
             catch (Exception error)
             {
-                var message = String.Format("Unable to check directories {0} and {1}: {2}", candidate, other, error);
+                string message = string.Format("Unable to check directories {0} and {1}: {2}", candidate, other, error);
                 Trace.WriteLine(message);
             }
 
@@ -1257,13 +1237,13 @@ namespace OpenNETCF.Web.Hosting
             // remove any relative pathing
             caselessName = System.IO.Path.GetFullPath(caselessName);
 
-            var searchFile = System.IO.Path.GetFileName(caselessName);
-            var searchPath = System.IO.Path.GetDirectoryName(caselessName);
+            string searchFile = System.IO.Path.GetFileName(caselessName);
+            string searchPath = System.IO.Path.GetDirectoryName(caselessName);
 
             // crop any drive name
             string driveName;
 
-            var index = searchPath.IndexOf(':');
+            int index = searchPath.IndexOf(':');
             if (index > 0)
             {
                 // the colon plus the first backslash
@@ -1277,15 +1257,19 @@ namespace OpenNETCF.Web.Hosting
             }
 
             // get the directory list - being platform-agnostic (works on linux or windows)
-            var directoryList = searchPath.Split(new char[] { System.IO.Path.DirectorySeparatorChar }).Where(s => !string.IsNullOrEmpty(s));
+            IEnumerable<string> directoryList = searchPath
+                .Split(System.IO.Path.DirectorySeparatorChar)
+                .Where(s => !string.IsNullOrEmpty(s));
 
             // put in the drive name if the OS supports it
             string buildPath = driveName;
 
             // build up a case-sensitive path
-            foreach (var dir in directoryList)
+            foreach (string dir in directoryList)
             {
-                var casedDirectory = Directory.GetDirectories(buildPath).FirstOrDefault(d => string.Compare(System.IO.Path.GetFileName(d), dir, true) == 0);
+                string dir1 = dir;
+                string casedDirectory = Directory.GetDirectories(buildPath)
+                    .FirstOrDefault(d => StringComparer.InvariantCultureIgnoreCase.Equals(System.IO.Path.GetFileName(d), dir1));
 
                 if (casedDirectory == null)
                 {
@@ -1295,12 +1279,8 @@ namespace OpenNETCF.Web.Hosting
                 buildPath = casedDirectory;
             }
 
-            var casedFile = Directory.GetFiles(buildPath).FirstOrDefault(f => string.Compare(System.IO.Path.GetFileName(f), searchFile, true) == 0);
-
-            if (casedFile == null)
-            {
-                return null;
-            }
+            string casedFile = Directory.GetFiles(buildPath)
+                .FirstOrDefault(f => StringComparer.InvariantCultureIgnoreCase.Equals(System.IO.Path.GetFileName(f), searchFile));
 
             return casedFile;
 #endif
@@ -1310,21 +1290,19 @@ namespace OpenNETCF.Web.Hosting
 
         private string GetCustomErrorPage(HttpErrorCode errorCode)
         {
-            string[] extensions = new string[] { "htm", "html", "aspx" };
-             
-            var folder = ServerConfig.GetConfig().CustomErrorFolder;
-            if (folder == null) return null;
-            if (!Directory.Exists(folder)) return null;
+            var extensions = new[] { "htm", "html", "aspx" };
+
+            string folder = ServerConfig.GetConfig().CustomErrorFolder;
+            if ((folder == null) || !Directory.Exists(folder))
+            {
+                return null;
+            }
 
             string path = System.IO.Path.Combine(folder, string.Format("{0}.", (int)errorCode));
 
             string returnPage = null;
-            foreach (var ext in extensions)
+            foreach (string checkPath in extensions.Select(ext => path + ext).Where(File.Exists))
             {
-                string checkPath = path + ext;
-
-                if (!File.Exists(checkPath)) continue;
-
                 try
                 {
                     using (TextReader reader = File.OpenText(checkPath))
@@ -1421,12 +1399,13 @@ namespace OpenNETCF.Web.Hosting
 
         private string ParseStackTrace(string stackTrace)
         {
-            StringBuilder builder = new StringBuilder();
+            var builder = new StringBuilder();
 
-            string[] calls = stackTrace.Split('\n');
-            foreach (string call in calls)
+            IEnumerable<string> calls = stackTrace
+                .Split('\n')
+                .Select(call => call.Trim('\r'));
+            foreach (string line in calls)
             {
-                string line = call.Trim('\r');
                 builder.AppendFormat(System.Globalization.CultureInfo.InvariantCulture, "{0}<br/>", line);
 
                 if (line.EndsWith("Page_Load()"))
@@ -1440,17 +1419,19 @@ namespace OpenNETCF.Web.Hosting
 
         private void LogError(string errorInfo, LogDataItem ldi)
         {
-            if (m_logProvider != null)
+            if (m_logProvider == null)
             {
-                try
-                {
-                    m_logProvider.LogPadarnError(errorInfo, ldi);
-                }
-                catch
-                {
-                    // swallow logging exceptions to prevent a bad logging plug-in from tearing us down
-                    // TODO: maybe log these errors somewhere?
-                }
+                return;
+            }
+
+            try
+            {
+                m_logProvider.LogPadarnError(errorInfo, ldi);
+            }
+            catch
+            {
+                // swallow logging exceptions to prevent a bad logging plug-in from tearing us down
+                // TODO: maybe log these errors somewhere?
             }
         }
 
@@ -1459,34 +1440,22 @@ namespace OpenNETCF.Web.Hosting
             // Crawl the request path and check each virtual directory 
             string normalizedPath = this.Path.Trim('/');
 
-            if (String.IsNullOrEmpty(normalizedPath))
+            if (string.IsNullOrEmpty(normalizedPath))
             {
                 return false;
             }
 
-            string[] directories = normalizedPath.Split('/');
-
-            foreach (string directory in directories)
-            {
-                if (UrlPath.IsVirtualDirectory(directory))
-                {
-                    VirtualDirectoryMapping dir =
-                        ServerConfig.GetConfig().VirtualDirectories[directory];
-                    if (dir.RequiresAuthentication)
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
+            return normalizedPath.Split('/')
+                .Where(UrlPath.IsVirtualDirectory)
+                .Select(directory => ServerConfig.GetConfig().VirtualDirectories[directory])
+                .Any(dir => dir.RequiresAuthentication);
         }
 
         private static string GetDefaultDocument(string physicalPath)
         {
             string defaultDocument = "default.html";
 
-            var conf = ServerConfig.GetConfig();
+            ServerConfig conf = ServerConfig.GetConfig();
             if (conf == null)
             {
                 if (Environment.OSVersion.Platform == PlatformID.Unix)
@@ -1506,7 +1475,7 @@ namespace OpenNETCF.Web.Hosting
                 foreach (string document in conf.DefaultDocuments)
                 {
                     string localFile = GetCasedFileNameFromCaselessName(System.IO.Path.Combine(physicalPath, document));
-                    if(localFile != null)
+                    if (localFile != null)
                     {
                         defaultDocument = document;
                         break;
@@ -1523,7 +1492,7 @@ namespace OpenNETCF.Web.Hosting
                 return false;
             int separator = challengeResponse.IndexOf(' ');
             string mode = challengeResponse.Substring(0, separator);
-            if (string.Compare(mode, ServerConfig.GetConfig().Authentication.Mode, true) != 0)
+            if (!StringComparer.InvariantCultureIgnoreCase.Equals(mode, ServerConfig.GetConfig().Authentication.Mode))
             {
                 return false;
             }
@@ -1540,7 +1509,7 @@ namespace OpenNETCF.Web.Hosting
                     auth = new DigestAuthentication();
                     break;
                 default:
-                    throw new NotSupportedException(String.Format("Authorization type {0} is not supported.", mode));
+                    throw new NotSupportedException(string.Format("Authorization type {0} is not supported.", mode));
             }
 
             return auth.AcceptCredentials(HttpContext.Current, credentials);
@@ -1571,7 +1540,7 @@ namespace OpenNETCF.Web.Hosting
             switch (ServerConfig.GetConfig().Authentication.Mode.ToLowerInvariant())
             {
                 case "basic":
-                    //responseHeaders.Append(String.Format("WWW-Authenticate: Basic realm=\"{0}\"\r\n", ServerConfig.GetConfig().Authentication.Realm));
+                    //responseHeaders.Append(string.Format("WWW-Authenticate: Basic realm=\"{0}\"\r\n", ServerConfig.GetConfig().Authentication.Realm));
                     auth = new BasicAuthentication();
                     break;
                 case "digest":
@@ -1590,18 +1559,13 @@ namespace OpenNETCF.Web.Hosting
             get
             {
                 AuthenticationConfiguration authCfg;
-                if ((authCfg = ServerConfig.GetConfig().Authentication) != null)
-                {
-                    return authCfg.Enabled;
-                }
-
-                return false;
+                return ((authCfg = ServerConfig.GetConfig().Authentication) != null) && authCfg.Enabled;
             }
         }
 
         private bool HasAuthorizationHeader
         {
-            get { return !String.IsNullOrEmpty(m_headers["HTTP_AUTHORIZATION"]); }
+            get { return !string.IsNullOrEmpty(m_headers["HTTP_AUTHORIZATION"]); }
         }
 
         /// <summary>
@@ -1611,7 +1575,7 @@ namespace OpenNETCF.Web.Hosting
         private HttpRawRequestContent GetEntireRawContent()
         {
             int length = HttpContext.Current.Request.ContentLength;
-            Debug.WriteLineIf(EnableTracing, String.Format("Content-Length: {0}\nMax Request Length: {1}", length, HttpRuntimeConfig.GetConfig().MaxRequestLengthBytes), TRACE);
+            Debug.WriteLineIf(EnableTracing, string.Format("Content-Length: {0}\nMax Request Length: {1}", length, HttpRuntimeConfig.GetConfig().MaxRequestLengthBytes), TRACE);
             //check to max sure we have not exceeded the maxlength
             if (length > HttpRuntimeConfig.GetConfig().MaxRequestLengthBytes)
             {
@@ -1651,8 +1615,8 @@ namespace OpenNETCF.Web.Hosting
                     m_output.Flush();
                 }
 
-                //Loop until we get all the content downloaded
-                int received = 0, totalReceived = 0;
+                // Loop until we get all the content downloaded
+                int totalReceived = 0;
                 buffer = new byte[10240];
                 while (m_httpRawRequestContent.Length < totalLength)
                 {
@@ -1660,10 +1624,10 @@ namespace OpenNETCF.Web.Hosting
 
                     if (m_client.Available > 0)
                     {
-                        received = m_client.Receive(buffer);
+                        int received = m_client.Receive(buffer);
                         m_httpRawRequestContent.AddBytes(buffer, 0, received);
                         totalReceived += received;
-                        Debug.WriteLineIf(EnableTracing, String.Format("Bytes received: {0}", totalReceived), TRACE);
+                        Debug.WriteLineIf(EnableTracing, string.Format("Bytes received: {0}", totalReceived), TRACE);
                     }
                     else
                     {

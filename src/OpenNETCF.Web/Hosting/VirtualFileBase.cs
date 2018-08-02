@@ -37,7 +37,6 @@ namespace OpenNETCF.Web.Hosting
         /// When overridden in a derived class, gets a value indicating whether the VirtualFileBase instance represents a virtual file or a virtual directory.
         /// </summary>
         public abstract bool IsDirectory { get; }
-        
 
         /// <summary>
         /// Gets the display name of the virtual resource. 
