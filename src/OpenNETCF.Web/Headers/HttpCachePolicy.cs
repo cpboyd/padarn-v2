@@ -17,8 +17,8 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
+
 using System;
-using System.Collections.Generic;
 using System.Text;
 using OpenNETCF.Web.Configuration;
 
@@ -29,11 +29,11 @@ namespace OpenNETCF.Web
     /// </summary>
     public class HttpCachePolicy
     {
-        private bool m_noStore = false;
-        private bool m_noTransform = false;
-        private int m_maxAge = -1;
-        private string m_cacheExtension = null;
+        private string m_cacheExtension;
         private HttpCacheability m_cacheability = HttpCacheability.Private;
+        private int m_maxAge = -1;
+        private bool m_noStore;
+        private bool m_noTransform;
 
         internal HttpCachePolicy()
         {
@@ -43,19 +43,19 @@ namespace OpenNETCF.Web
         {
             if (profile.Duration.Ticks > 0)
             {
-                this.SetMaxAge(profile.Duration);
+                SetMaxAge(profile.Duration);
             }
 
             switch (profile.Location)
             {
                 case CacheLocation.Client:
-                    this.SetCacheability(HttpCacheability.Private);
+                    SetCacheability(HttpCacheability.Private);
                     break;
                 case CacheLocation.Downstream:
-                    this.SetCacheability(HttpCacheability.Public);
+                    SetCacheability(HttpCacheability.Public);
                     break;
                 case CacheLocation.None:
-                    this.SetCacheability(HttpCacheability.NoCache);
+                    SetCacheability(HttpCacheability.NoCache);
                     break;
             }
         }
@@ -107,7 +107,7 @@ namespace OpenNETCF.Web
         /// </remarks>
         public void SetNoTransforms()
         {
-            m_noTransform = true; 
+            m_noTransform = true;
         }
 
         /// <summary>
@@ -121,7 +121,7 @@ namespace OpenNETCF.Web
 
         internal string GetHeaderString()
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
 
             switch (m_cacheability)
             {
@@ -140,7 +140,7 @@ namespace OpenNETCF.Web
                     throw new ArgumentOutOfRangeException("Server caching is not currently supported by Padarn");
             }
 
-            if(m_cacheExtension != null)
+            if (m_cacheExtension != null)
             {
                 sb.Append("=" + m_cacheExtension);
             }
@@ -150,7 +150,7 @@ namespace OpenNETCF.Web
                 AppendHeaderValue(sb, "no-store");
             }
 
-            if(m_noTransform)
+            if (m_noTransform)
             {
                 AppendHeaderValue(sb, "no-transform");
             }

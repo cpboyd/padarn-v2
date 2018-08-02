@@ -18,27 +18,27 @@
 //
 #endregion
 
-using OpenNETCF.Web.Core;
-using OpenNETCF.Web.Helpers;
-using OpenNETCF.Web.Security;
-using System.Runtime.InteropServices;
-using System.Linq;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
+using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using OpenNETCF.Web.Configuration;
+using OpenNETCF.Web.Core;
+using OpenNETCF.Web.Helpers;
+using OpenNETCF.Web.Logging;
+using OpenNETCF.Web.Security;
 using OpenNETCF.Web.Server;
 using OpenNETCF.WindowsCE;
-using OpenNETCF.Web.Logging;
-using System.Net;
-using System.Diagnostics;
-using System.Reflection;
-using System.Text.RegularExpressions;
 
 namespace OpenNETCF.Web.Hosting
 {
@@ -55,7 +55,7 @@ namespace OpenNETCF.Web.Hosting
 
         #region Fields
 
-        private Server.SocketWrapperBase m_client;
+        private SocketWrapperBase m_client;
         private Stream m_output;
         private bool m_headersSent;
         private string m_serverHeader;
@@ -64,13 +64,13 @@ namespace OpenNETCF.Web.Hosting
         private MemoryStream m_response;
         private bool m_partialDownload = true;
         private ILogProvider m_logProvider;
-        private bool m_headersCleared = false;
+        private bool m_headersCleared;
 
         private static Dictionary<Type, IHttpHandler> m_httpHandlerCache = new Dictionary<Type, IHttpHandler>();
 
         internal NameValueCollection m_headers;
 
-        private static readonly char[] s_ColonOrNL = new char[] { ':', '\n' };
+        private static readonly char[] s_ColonOrNL = { ':', '\n' };
 
         #endregion // Fields
 
@@ -82,7 +82,7 @@ namespace OpenNETCF.Web.Hosting
         /// <returns>true if the connection is an SSL connection; otherwise, false.</returns>
         public override bool IsSecure()
         {
-            return m_client is OpenNETCF.Web.Server.HttpsSocket;
+            return m_client is HttpsSocket;
         }
 
         /// <summary>
@@ -91,7 +91,7 @@ namespace OpenNETCF.Web.Hosting
         /// <param name="client"></param>
         /// <param name="output"></param>
         /// <param name="logProvider"></param>
-        internal AsyncWorkerRequest(Server.SocketWrapperBase client, Stream output, ILogProvider logProvider)
+        internal AsyncWorkerRequest(SocketWrapperBase client, Stream output, ILogProvider logProvider)
         {
             m_logProvider = logProvider;
             m_logProvider.LogRuntimeInfo(ZoneFlags.WorkerRequest, "+AsyncWorkerRequest");
@@ -130,7 +130,7 @@ namespace OpenNETCF.Web.Hosting
         /// </summary>
         /// <param name="client"></param>
         /// <param name="logProvider"></param>
-        internal AsyncWorkerRequest(Server.SocketWrapperBase client, ILogProvider logProvider)
+        internal AsyncWorkerRequest(SocketWrapperBase client, ILogProvider logProvider)
             : this(client, client.CreateNetworkStream(), logProvider)
         {
         }
@@ -239,7 +239,7 @@ namespace OpenNETCF.Web.Hosting
         /// <returns></returns>
         public override string GetLocalAddress()
         {
-            return ((System.Net.IPEndPoint)m_client.LocalEndPoint).Address.ToString();
+            return ((IPEndPoint)m_client.LocalEndPoint).Address.ToString();
         }
 
         /// <summary>
@@ -275,7 +275,7 @@ namespace OpenNETCF.Web.Hosting
         /// <returns></returns>
         public override string GetRemoteAddress()
         {
-            return ((System.Net.IPEndPoint)m_client.RemoteEndPoint).Address.ToString();
+            return ((IPEndPoint)m_client.RemoteEndPoint).Address.ToString();
         }
 
         /// <summary>
@@ -363,7 +363,7 @@ namespace OpenNETCF.Web.Hosting
                 {
                     // this is seen occasionally - need to protect it
                     // todo: what do we do when this occurs?  for now rethrow
-                    if (System.Runtime.InteropServices.Marshal.GetHRForException(ioEx) == -2146232800)
+                    if (Marshal.GetHRForException(ioEx) == -2146232800)
                     {
                         //An existing connection was forcibly closed by the remote host
                         //Unable to write data to the transport connection.
@@ -463,7 +463,7 @@ namespace OpenNETCF.Web.Hosting
 
         private void TranslateResponseASP()
         {
-            string regex = "<%=(.*?)%>";
+            const string regex = "<%=(.*?)%>";
             var input = new StringBuilder();
 
             input.Append(Encoding.UTF8.GetString(m_response.ToArray(), 0, (int)m_response.Length));
@@ -579,10 +579,9 @@ namespace OpenNETCF.Web.Hosting
 
         internal override byte[] GetQueryStringRawBytes()
         {
-            if (m_httpRawRequestContent.RawQueryString != null)
-                return Encoding.UTF8.GetBytes(m_httpRawRequestContent.RawQueryString);
-            else
-                return new byte[0];
+            return (m_httpRawRequestContent.RawQueryString == null)
+                ? new byte[0]
+                : Encoding.UTF8.GetBytes(m_httpRawRequestContent.RawQueryString);
         }
 
         /// <summary>
@@ -600,9 +599,7 @@ namespace OpenNETCF.Web.Hosting
         /// <returns>true if the client connection is still active; otherwise, false.</returns>
         public override bool IsClientConnected()
         {
-            if (m_client == null) return false;
-
-            return m_client.Connected;
+            return (m_client != null) && m_client.Connected;
         }
 
         #endregion
@@ -618,7 +615,7 @@ namespace OpenNETCF.Web.Hosting
             m_responseHeaders = new StringBuilder();
         }
 
-        private static string m_versionString = null;
+        private static string m_versionString;
 
         /// <summary>
         /// Sets the default headers.  Called from ctor and before closing the connection to see if keep alive is available
@@ -763,7 +760,7 @@ namespace OpenNETCF.Web.Hosting
                 }
             }
 
-            return handler == null ? null : new HttpHandlerResult(handler, subPath);
+            return (handler == null) ? null : new HttpHandlerResult(handler, subPath);
         }
 
         private bool FileNameIsInPath(string fileName, string path)
@@ -779,12 +776,10 @@ namespace OpenNETCF.Web.Hosting
         {
             // TODO: cache these
             ServerConfig config = ServerConfig.GetConfig();
-            string virtualRoot = string.Empty;
 
-            if (config.VirtualDirectories != null)
-            {
-                virtualRoot = config.VirtualDirectories.FindPhysicalDirectoryForVirtualUrlPath(Path);
-            }
+            string virtualRoot = (config.VirtualDirectories == null)
+                ? string.Empty
+                : config.VirtualDirectories.FindPhysicalDirectoryForVirtualUrlPath(Path);
 
             return string.IsNullOrEmpty(virtualRoot)
                 ? System.IO.Path.GetFullPath(ServerConfig.GetConfig().DocumentRoot)
@@ -793,18 +788,18 @@ namespace OpenNETCF.Web.Hosting
 
         private void LogPageAccess(LogDataItem ldi)
         {
-            if (m_logProvider != null)
+            if (m_logProvider == null)
+                return;
+
+            try
             {
-                try
-                {
-                    m_logProvider.LogPageAccess(ldi);
-                }
-                catch (Exception ex)
-                {
-                    // swallow logging exceptions to prevent a bad logging plug-in from tearing us down
-                    // TODO: maybe log these errors somewhere?
-                    LogError("Exception trying to log page access: " + ex.Message, ldi);
-                }
+                m_logProvider.LogPageAccess(ldi);
+            }
+            catch (Exception ex)
+            {
+                // swallow logging exceptions to prevent a bad logging plug-in from tearing us down
+                // TODO: maybe log these errors somewhere?
+                LogError("Exception trying to log page access: " + ex.Message, ldi);
             }
         }
 
@@ -812,31 +807,11 @@ namespace OpenNETCF.Web.Hosting
         {
             string fileExtension = System.IO.Path.GetExtension(fileName).ToLowerInvariant();
 
-            foreach (CachingProfile profile in ServerConfig.GetConfig().Caching.Profiles)
-            {
-                if (profile.Extension == fileExtension)
-                {
-                    var policy = new HttpCachePolicy();
-
-                    policy.SetMaxAge(profile.Duration);
-
-                    switch (profile.Location)
-                    {
-                        case CacheLocation.Client:
-                            policy.SetCacheability(HttpCacheability.Private);
-                            break;
-                        case CacheLocation.Downstream:
-                            policy.SetCacheability(HttpCacheability.Public);
-                            break;
-                        case CacheLocation.None:
-                            policy.SetCacheability(HttpCacheability.NoCache);
-                            break;
-                    }
-
-                    return new HttpCachePolicy(profile);
-                }
-            }
-            return null;
+            return (
+                from profile in ServerConfig.GetConfig().Caching.Profiles
+                where profile.Extension == fileExtension
+                select new HttpCachePolicy(profile)
+                ).FirstOrDefault();
         }
 
         private static string m_lastRequestFrom;
@@ -985,7 +960,7 @@ namespace OpenNETCF.Web.Hosting
                         break;
                 }
             }
-            else if (e is System.IO.FileNotFoundException)
+            else if (e is FileNotFoundException)
             {
                 Status = StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusFileNotFound);
                 exceptionPage = string.Format(StringHelper.ConvertVerbatimLineEndings(Resources.ContextualErrorTemplate), Resources.CodeBehindNotFoundTitle, e.Message, Resources.CodeBehindNotFoundDesc);
@@ -1406,7 +1381,7 @@ namespace OpenNETCF.Web.Hosting
                 .Select(call => call.Trim('\r'));
             foreach (string line in calls)
             {
-                builder.AppendFormat(System.Globalization.CultureInfo.InvariantCulture, "{0}<br/>", line);
+                builder.AppendFormat(CultureInfo.InvariantCulture, "{0}<br/>", line);
 
                 if (line.EndsWith("Page_Load()"))
                 {
@@ -1590,7 +1565,7 @@ namespace OpenNETCF.Web.Hosting
                 //Create a new raw content to download the data
                 m_httpRawRequestContent = new HttpRawRequestContent(HttpRuntimeConfig.GetConfig().RequestLengthDiskThresholdBytes,
                                 3024,
-                              ((System.Net.IPEndPoint)m_client.RemoteEndPoint).Address,
+                              ((IPEndPoint)m_client.RemoteEndPoint).Address,
                               m_httpRawRequestContent);
 
                 //Temp buffer
@@ -1646,12 +1621,12 @@ namespace OpenNETCF.Web.Hosting
         /// </summary>
         /// <param name="client"></param>
         /// <returns></returns>
-        private HttpRawRequestContent GetPartialRawRequestContent(Server.SocketWrapperBase client)
+        private HttpRawRequestContent GetPartialRawRequestContent(SocketWrapperBase client)
         {
             var rawContent = new HttpRawRequestContent(
                   HttpRuntimeConfig.GetConfig().RequestLengthDiskThresholdBytes,
                   3072/*Use 3k of memory then go to file if we go out of this threshold*/,
-                  ((System.Net.IPEndPoint)client.RemoteEndPoint).Address);
+                  ((IPEndPoint)client.RemoteEndPoint).Address);
 
             int received = -1;
 
@@ -1684,14 +1659,14 @@ namespace OpenNETCF.Web.Hosting
             return rawContent;
         }
 
-        private HttpRawRequestContent DownloadUntilContentLengthHeader(HttpRawRequestContent content, Server.SocketWrapperBase client, ref int retryCount)
+        private HttpRawRequestContent DownloadUntilContentLengthHeader(HttpRawRequestContent content, SocketWrapperBase client, ref int retryCount)
         {
             HttpRawRequestContent newContent = null;
             if (retryCount < 0)
             {
                 newContent = new HttpRawRequestContent(HttpRuntimeConfig.GetConfig().RequestLengthDiskThresholdBytes,
                 3072/*Use 3k of memory then go to file if we go out of this threshold*/,
-                ((System.Net.IPEndPoint)client.RemoteEndPoint).Address);
+                ((IPEndPoint)client.RemoteEndPoint).Address);
                 newContent.DoneAddingBytes();
             }
             else
@@ -1702,7 +1677,7 @@ namespace OpenNETCF.Web.Hosting
                 {
                     newContent = new HttpRawRequestContent(HttpRuntimeConfig.GetConfig().RequestLengthDiskThresholdBytes,
                       3072/*Use 3k of memory then go to file if we go out of this threshold*/,
-                      ((System.Net.IPEndPoint)client.RemoteEndPoint).Address);
+                      ((IPEndPoint)client.RemoteEndPoint).Address);
                     byte[] buffer = content.GetAsByteArray();
                     newContent.AddBytes(buffer, 0, buffer.Length);
                     content.Dispose();
