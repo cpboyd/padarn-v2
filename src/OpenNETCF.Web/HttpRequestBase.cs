@@ -17,10 +17,8 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
 
-using System.Collections.Generic;
-using System.Text;
+using System;
 using System.Collections.Specialized;
 
 namespace OpenNETCF.Web
@@ -39,7 +37,7 @@ namespace OpenNETCF.Web
         /// </summary>
         public virtual NameValueCollection Headers
         {
-            get { throw new NotImplementedException(); } 
+            get { throw new NotImplementedException(); }
         }
 
         /// <summary>
@@ -47,7 +45,7 @@ namespace OpenNETCF.Web
         /// </summary>
         public virtual NameValueCollection QueryString
         {
-            get { throw new NotImplementedException(); } 
+            get { throw new NotImplementedException(); }
         }
 
         /// <summary>
@@ -63,21 +61,21 @@ namespace OpenNETCF.Web
         /// </summary>
         public virtual NameValueCollection Form
         {
-            get { throw new NotImplementedException(); } 
+            get { throw new NotImplementedException(); }
         }
 
         /// <summary>
         /// When overridden in a derived class, gets the virtual path of the current request.
         /// </summary>
-        public virtual string Path 
+        public virtual string Path
         {
-            get { throw new NotImplementedException(); } 
+            get { throw new NotImplementedException(); }
         }
 
         /// <summary>
         /// When overridden in a derived class, gets the virtual root path of the Padarn application on the server
         /// </summary>
-        public virtual string ApplicationPath 
+        public virtual string ApplicationPath
         {
             get { throw new NotImplementedException(); }
         }

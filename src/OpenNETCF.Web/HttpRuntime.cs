@@ -17,16 +17,13 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-//                                                                   
-// Copyright (c) 2007-2009 OpenNETCF Consulting, LLC                        
-//                                                                     
+
+using System;
+using System.Diagnostics;
+using OpenNETCF.Web.Logging;
+
 namespace OpenNETCF.Web
 {
-    using System;
-    using OpenNETCF.Web.Logging;
-    using System.Threading;
-    using System.Diagnostics;
-
     /// <summary>
     /// Provides a set of Padarn run-time services for the current application.
     /// </summary>
@@ -40,7 +37,7 @@ namespace OpenNETCF.Web
         {
             // Developer note:  This method is actually never called inside Padarn, the internal version below is (since we need the log provider)
 
-            if(wr == null)
+            if (wr == null)
             {
                 throw new ArgumentNullException("wr");
             }
@@ -76,19 +73,19 @@ namespace OpenNETCF.Web
             {
                 ctx = new HttpContext(wr, false);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 if (logProvider != null)
                 {
-                    logProvider.LogPadarnError(string.Format("HttpRuntime.ProcessRequest threw an {0} while creating an HttpContext: {1}", ex.GetType().Name, ex.Message), null); 
+                    logProvider.LogPadarnError(string.Format("HttpRuntime.ProcessRequest threw an {0} while creating an HttpContext: {1}", ex.GetType().Name, ex.Message), null);
                 }
 
                 // TODO: Send 400 Bad Request (RFC 2616 10.4.1)
             }
 
             // Returns an instance of the DefaultHttpHandler
-            IHttpHandler applicationInstance = HttpApplicationFactory.GetApplicationInstance(wr); 
-            if(applicationInstance == null)
+            IHttpHandler applicationInstance = HttpApplicationFactory.GetApplicationInstance(wr);
+            if (applicationInstance == null)
             {
                 logProvider.LogPadarnError("HttpRuntime.ProcessRequest received a null IHttpHandler from the application factory", null);
                 throw new NullReferenceException("applicationInstance");
@@ -99,10 +96,10 @@ namespace OpenNETCF.Web
                 applicationInstance.ProcessRequest(ctx);
                 FinishRequest(ctx.WorkerRequest, ctx, null);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 logProvider.LogPadarnError(string.Format("HttpRuntime.ProcessRequest threw an {0} while processing the request: {1}", ex.GetType().Name, ex.Message), null);
-                if (System.Diagnostics.Debugger.IsAttached)
+                if (Debugger.IsAttached)
                 {
                     //System.Diagnostics.Debugger.Break();
                 }

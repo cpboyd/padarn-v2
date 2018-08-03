@@ -60,7 +60,7 @@ namespace OpenNETCF.Web.UI
                     sb.Append(attrib.Key);
                     if (attrib.Value != null)
                     {
-                        sb.Append(string.Format("=\"{1}\"", attrib.Value));
+                        sb.AppendFormat("=\"{1}\"", attrib.Value);
                     }
                 }
 
@@ -78,7 +78,7 @@ namespace OpenNETCF.Web.UI
         {
             get
             {
-                //                if (IsEmpty) return string.Empty;
+                //if (IsEmpty) return string.Empty;
 
                 return string.Format("</{0}>", TagName);
             }

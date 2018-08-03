@@ -17,23 +17,20 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
 
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Xml;
 
 namespace OpenNETCF.Web.Configuration
 {
     internal class HttpHandlersConfigSection : List<HttpHandler>
     {
-        public IEnumerable<string> AssemblyNames { get; private set; }
-
         internal HttpHandlersConfigSection(XmlNode section, XmlNamespaceManager nsMgr)
         {
             ParseSection(section, nsMgr);
         }
+
+        public IEnumerable<string> AssemblyNames { get; private set; }
 
         private void ParseSection(XmlNode section, XmlNamespaceManager nsMgr)
         {
@@ -46,7 +43,7 @@ namespace OpenNETCF.Web.Configuration
                 // TODO: Better handling for custom HTTP methods
                 HttpMethodFlags method = HttpMethod.GetFlags(verb);
 
-                this.Add(new HttpHandler(method, node.Attributes["path"].Value, node.Attributes["type"].Value));
+                Add(new HttpHandler(method, node.Attributes["path"].Value, node.Attributes["type"].Value));
             }
         }
     }
@@ -54,9 +51,9 @@ namespace OpenNETCF.Web.Configuration
 
     internal class HttpHandler
     {
-        readonly HttpMethodFlags _verb;
         readonly string _path;
         readonly string _type;
+        readonly HttpMethodFlags _verb;
 
         internal HttpHandler(HttpMethodFlags verb, string path, string typeName)
         {

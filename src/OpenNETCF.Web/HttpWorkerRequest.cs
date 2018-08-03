@@ -17,21 +17,15 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-//                                                                   
-// Copyright (c) 2007-2008 OpenNETCF Consulting, LLC                        
-//                                                                     
 
-using System.Text;
-using OpenNETCF.Web.Helpers;
+using System;
+using System.Globalization;
+using System.IO;
+using System.Reflection;
+using OpenNETCF.Web.Hosting;
 
 namespace OpenNETCF.Web
 {
-    using System.Globalization;
-    using Configuration;
-    using System;
-    using System.Reflection;
-    using System.IO;
-
     /// <summary>
     /// This abstract class defines the base worker methods and enumerations used by PS managed code to process requests.
     /// </summary>
@@ -127,21 +121,27 @@ namespace OpenNETCF.Web
         #region Virtual methods
 
         /// <summary>
-        /// When overridden in a derived class, returns the name of the client computer.
-        /// </summary>
-        /// <returns>The name of the client computer.</returns>
-        public virtual string GetRemoteName()
-        {
-            return GetRemoteAddress();
-        }
-
-        /// <summary>
         /// Provides access to the response stream.
         /// </summary>
         /// <returns>The response stream.</returns>
         public virtual Stream ResponseStream
         {
             get { throw new HttpException("Response stream is not available."); }
+        }
+
+        internal virtual string Status
+        {
+            get { return string.Empty; }
+            set { string s = value; } // TODO: Check this is correct
+        }
+
+        /// <summary>
+        /// When overridden in a derived class, returns the name of the client computer.
+        /// </summary>
+        /// <returns>The name of the client computer.</returns>
+        public virtual string GetRemoteName()
+        {
+            return GetRemoteAddress();
         }
 
         /// <summary>
@@ -197,7 +197,7 @@ namespace OpenNETCF.Web
         [Obsolete("Use HostingEnvironment.MapPath instead.", false)]
         public virtual string MapPath(string virtualPath)
         {
-            return Hosting.HostingEnvironment.MapPath(virtualPath);
+            return HostingEnvironment.MapPath(virtualPath);
         }
 
         internal virtual string GetLocalPortAsString()
@@ -232,12 +232,6 @@ namespace OpenNETCF.Web
         /// <param name="contentLength">The length of the response, in bytes.</param>
         public virtual void SendCalculatedContentLength(int contentLength)
         {
-        }
-
-        internal virtual string Status
-        {
-            get { return string.Empty;}
-            set { string s = value; } // TODO: Check this is correct
         }
 
         /// <summary>

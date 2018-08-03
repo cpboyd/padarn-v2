@@ -17,10 +17,8 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
 
-using System.Collections.Generic;
-using System.Text;
+using System.Collections.Specialized;
 
 namespace OpenNETCF.Web
 {
@@ -43,17 +41,17 @@ namespace OpenNETCF.Web
             m_request = httpRequest;
         }
 
-        public override System.Collections.Specialized.NameValueCollection Headers
+        public override NameValueCollection Headers
         {
             get { return m_request.Headers; }
         }
 
-        public override System.Collections.Specialized.NameValueCollection QueryString
+        public override NameValueCollection QueryString
         {
             get { return m_request.QueryString; }
         }
 
-        public override System.Collections.Specialized.NameValueCollection Form
+        public override NameValueCollection Form
         {
             get { return m_request.Form; }
         }

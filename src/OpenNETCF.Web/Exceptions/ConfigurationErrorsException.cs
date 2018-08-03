@@ -17,9 +17,8 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
+
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 #if !WindowsCE
 using System.Configuration;
@@ -58,7 +57,7 @@ namespace OpenNETCF.Configuration
         public ConfigurationErrorsException(string message, Exception inner, string filename, int line)
             : base(message, inner)
         {
-            this.Init(filename, line);
+            Init(filename, line);
         }
 
         private void Init(string filename, int line)
@@ -68,15 +67,9 @@ namespace OpenNETCF.Configuration
             {
                 line = 0;
             }
-            this._firstFilename = filename;
-            this._firstLine = line;
+            _firstFilename = filename;
+            _firstLine = line;
         }
-
- 
-
- 
-
-
     }
 }
 #pragma warning restore 612, 618

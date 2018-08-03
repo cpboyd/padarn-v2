@@ -17,9 +17,6 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-//                                                                   
-// Copyright (c) 2007-2008 OpenNETCF Consulting, LLC                        
-//                                                                     
 
 namespace OpenNETCF.Web
 {
@@ -37,5 +34,5 @@ namespace OpenNETCF.Web
         /// 
         /// </summary>
         void Init(HttpContext context);
-    }   
+    }
 }

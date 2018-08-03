@@ -17,10 +17,8 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
 
-using System.Collections.Generic;
-using System.Text;
+using System;
 
 namespace OpenNETCF.Web.Routing
 {
@@ -30,11 +28,6 @@ namespace OpenNETCF.Web.Routing
     public class Route : RouteBase
     {
         /// <summary>
-        /// Gets or sets custom values that are passed to the route handler, but which are not used to determine whether the route matches a URL pattern.
-        /// </summary>
-        public RouteValueDictionary DataTokens { get; set; }
-
-        /// <summary>
         /// Initializes a new instance of the Route class, by using the specified URL pattern and handler class. 
         /// </summary>
         /// <param name="url"></param>
@@ -43,6 +36,11 @@ namespace OpenNETCF.Web.Routing
         {
             throw new NotImplementedException();
         }
+
+        /// <summary>
+        /// Gets or sets custom values that are passed to the route handler, but which are not used to determine whether the route matches a URL pattern.
+        /// </summary>
+        public RouteValueDictionary DataTokens { get; set; }
 
         /// <summary>
         /// Returns information about the requested route. (Overrides RouteBase.GetRouteData(HttpContextBase).)

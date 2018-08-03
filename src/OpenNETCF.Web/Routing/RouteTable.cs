@@ -17,10 +17,8 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
 
-using System.Collections.Generic;
-using System.Text;
+using System;
 
 namespace OpenNETCF.Web.Routing
 {
@@ -40,7 +38,7 @@ namespace OpenNETCF.Web.Routing
         /// <summary>
         /// Gets a collection of objects that derive from the RouteBase class.
         /// </summary>
-        public static RouteCollection Routes 
+        public static RouteCollection Routes
         {
             get
             {

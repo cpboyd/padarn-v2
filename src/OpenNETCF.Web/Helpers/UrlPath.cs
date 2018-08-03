@@ -17,11 +17,13 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
+
 using System;
 using System.Collections;
 using System.IO;
 using System.Linq;
 using System.Text;
+using OpenNETCF.Web.Configuration;
 using OpenNETCF.Web.Hosting;
 
 // disable warnings about obsoletes
@@ -29,8 +31,6 @@ using OpenNETCF.Web.Hosting;
 
 namespace OpenNETCF.Web.Helpers
 {
-    using OpenNETCF.Web.Configuration;
-
     internal static class UrlPath
     {
         private readonly static char[] trims = { '/' };

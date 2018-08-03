@@ -103,7 +103,7 @@ namespace OpenNETCF.Web
 
             if (pageType == null)
             {
-                throw new TypeLoadException(String.Format("Could not load Page class '{0}!{1}'", aspx.CodeBehindAssemblyName, aspx.CodeBehindTypeName));
+                throw new TypeLoadException(string.Format("Could not load Page class '{0}!{1}'", aspx.CodeBehindAssemblyName, aspx.CodeBehindTypeName));
             }
 
             var instance = CreatePageInstance(pageType);

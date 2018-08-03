@@ -17,15 +17,12 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-// <copyright company="OpenNETCF" file="HttpCookieCollection.cs">
-//     Copyright (c) 2008-2010 OpenNETCF Consulting, LLC.
-// </copyright>
+
+using System;
+using System.Collections.Specialized;
 
 namespace OpenNETCF.Web
 {
-    using System;
-    using System.Collections.Specialized;
-
     /// <summary>
     /// Provides a type-safe way to manipulate HTTP cookies.
     /// </summary>
@@ -167,11 +164,11 @@ namespace OpenNETCF.Web
         /// <returns></returns>
         public HttpCookie Get(string name)
         {
-            HttpCookie cookie = (HttpCookie)base.BaseGet(name);
+            var cookie = (HttpCookie)base.BaseGet(name);
             if ((cookie == null) && (this.response != null))
             {
                 cookie = new HttpCookie(name);
-                this.AddCookie(cookie, true); 
+                this.AddCookie(cookie, true);
                 this.response.OnCookieAdd(cookie);
             }
             return cookie;

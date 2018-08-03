@@ -17,11 +17,8 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
 
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Xml;
 
 namespace OpenNETCF.Web.Configuration
@@ -40,7 +37,7 @@ namespace OpenNETCF.Web.Configuration
             XmlNodeList list = node.GetNodes("profiles/add", nsmgr);
             foreach (XmlNode profile in list)
             {
-                this.Add(new CachingProfile(profile));
+                Add(new CachingProfile(profile));
             }
         }
 
@@ -49,7 +46,7 @@ namespace OpenNETCF.Web.Configuration
         /// </summary>
         public CachingProfile[] Profiles 
         {
-            get { return this.ToArray(); } 
+            get { return ToArray(); } 
         }
     }
 }

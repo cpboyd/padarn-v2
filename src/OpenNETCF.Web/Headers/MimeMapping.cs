@@ -17,11 +17,13 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
+
+using System;
+using System.Collections;
+using System.IO;
+
 namespace OpenNETCF.Web
 {
-    using System;
-    using System.Collections;
-
     internal class MimeMapping
     {
         private static readonly Hashtable extensionToMimeMappingTable = new Hashtable(190, StringComparer.CurrentCultureIgnoreCase);
@@ -51,9 +53,7 @@ namespace OpenNETCF.Web
             AddMimeMapping(".zip", "application/x-zip-compressed");
         }
 
-        private MimeMapping()
-        {
-        }
+        private MimeMapping() { }
 
         private static void AddMimeMapping(string extension, string mimeType)
         {
@@ -70,7 +70,7 @@ namespace OpenNETCF.Web
                 startIndex = fileName.LastIndexOf('.');
             }
 
-            if ((0 < startIndex) && (startIndex > fileName.LastIndexOf(System.IO.Path.DirectorySeparatorChar)))
+            if ((0 < startIndex) && (startIndex > fileName.LastIndexOf(Path.DirectorySeparatorChar)))
             {
                 text = (string)extensionToMimeMappingTable[fileName.Substring(startIndex)];
             }

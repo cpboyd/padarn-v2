@@ -17,29 +17,15 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
+
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Collections;
 
 namespace OpenNETCF.Collections.Specialized
 {
     public class CaseInsensitiveDictionary<T> : IDictionary<string, T>
     {
-        internal class CaselessStringComparer : IEqualityComparer<string>
-        {
-
-            public bool Equals(string x, string y)
-            {
-                return (string.Compare(x, y, true) == 0);
-            }
-
-            public int GetHashCode(string obj)
-            {
-                return obj.GetHashCode();
-            }
-        }
         private Dictionary<string, T> m_items = new Dictionary<string, T>(new CaselessStringComparer());
 
         public void Add(string key, T value)
@@ -131,6 +117,20 @@ namespace OpenNETCF.Collections.Specialized
         IEnumerator IEnumerable.GetEnumerator()
         {
             return m_items.GetEnumerator();
+        }
+
+        internal class CaselessStringComparer : IEqualityComparer<string>
+        {
+
+            public bool Equals(string x, string y)
+            {
+                return (string.Compare(x, y, true) == 0);
+            }
+
+            public int GetHashCode(string obj)
+            {
+                return obj.GetHashCode();
+            }
         }
     }
 }

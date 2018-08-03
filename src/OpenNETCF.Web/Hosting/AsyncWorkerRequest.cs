@@ -298,11 +298,11 @@ namespace OpenNETCF.Web.Hosting
                 // Content-Encoding https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.11
                 if (!string.IsNullOrEmpty(HttpContext.Current.Response.ContentEncoding))
                 {
-                    m_responseHeaders.Append(string.Format("Content-Encoding: {0}\r\n", HttpContext.Current.Response.ContentEncoding));
+                    m_responseHeaders.AppendFormat("Content-Encoding: {0}\r\n", HttpContext.Current.Response.ContentEncoding);
                 }
 
                 // Content-Type https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.17
-                m_responseHeaders.Append(string.Format("Content-Type: {0}\r\n", HttpContext.Current.Response.ContentType));
+                m_responseHeaders.AppendFormat("Content-Type: {0}\r\n", HttpContext.Current.Response.ContentType);
 
                 // Cookies
                 if (HttpContext.Current.Response.Cookies != null)
@@ -975,7 +975,7 @@ namespace OpenNETCF.Web.Hosting
                 Status = StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusInternalServerError);
                 // see if we have a custom error page:
                 exceptionPage = GetCustomErrorPage(HttpErrorCode.InternalServerError) ??
-                                string.Format(Resources.ErrorPage, Path, string.Format(Resources.UnhandledExceptionDesc, Path), String.Format("{0}: {1}", e.GetType().FullName, e.Message), ParseStackTrace(e.StackTrace));
+                                string.Format(Resources.ErrorPage, Path, string.Format(Resources.UnhandledExceptionDesc, Path), string.Format("{0}: {1}", e.GetType().FullName, e.Message), ParseStackTrace(e.StackTrace));
             }
 
             byte[] b = Encoding.UTF8.GetBytes(exceptionPage);
@@ -1514,7 +1514,7 @@ namespace OpenNETCF.Web.Hosting
             switch (ServerConfig.GetConfig().Authentication.Mode.ToLowerInvariant())
             {
                 case "basic":
-                    //responseHeaders.Append(string.Format("WWW-Authenticate: Basic realm=\"{0}\"\r\n", ServerConfig.GetConfig().Authentication.Realm));
+                    //responseHeaders.AppendFormat("WWW-Authenticate: Basic realm=\"{0}\"\r\n", ServerConfig.GetConfig().Authentication.Realm);
                     auth = new BasicAuthentication();
                     break;
                 case "digest":
