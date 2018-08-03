@@ -17,10 +17,8 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
 
-using System.Collections.Generic;
-using System.Text;
+using System;
 using System.Collections;
 
 namespace OpenNETCF.Web.UI
@@ -30,18 +28,6 @@ namespace OpenNETCF.Web.UI
     /// </summary>
     public class ControlBuilder
     {
-        /// <summary>
-        /// Initializes a new instance of the ControlBuilder class.
-        /// </summary>
-        public ControlBuilder()
-        {
-        }
-
-        /// <summary>
-        /// Gets the TemplateParser responsible for parsing the control.
-        /// </summary>
-        protected internal TemplateParser Parser { get; private set;}
-
         /// <summary>
         /// The Type for the control to be created.
         /// </summary>

@@ -17,10 +17,9 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
 
+using System.Collections;
 using System.Collections.Generic;
-using System.Text;
 
 namespace OpenNETCF.Web.UI
 {
@@ -30,23 +29,6 @@ namespace OpenNETCF.Web.UI
     public class ControlCollection : IEnumerable<Control>
     {
         private List<Control> m_controls = new List<Control>();
-
-        /// <summary>
-        /// Adds the specified Control object to the collection.
-        /// </summary>
-        /// <param name="child"></param>
-        public virtual void Add(Control child)
-        {
-            m_controls.Add(child);
-        }
-
-        /// <summary>
-        /// Removes all controls from the current server control's ControlCollection object.
-        /// </summary>
-        public virtual void Clear()
-        {
-            m_controls.Clear();
-        }
 
         /// <summary>
         /// Gets a reference to the server control at the specified index location in the ControlCollection object.
@@ -71,9 +53,26 @@ namespace OpenNETCF.Web.UI
             return m_controls.GetEnumerator();
         }
 
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        IEnumerator IEnumerable.GetEnumerator()
         {
             return m_controls.GetEnumerator();
+        }
+
+        /// <summary>
+        /// Adds the specified Control object to the collection.
+        /// </summary>
+        /// <param name="child"></param>
+        public virtual void Add(Control child)
+        {
+            m_controls.Add(child);
+        }
+
+        /// <summary>
+        /// Removes all controls from the current server control's ControlCollection object.
+        /// </summary>
+        public virtual void Clear()
+        {
+            m_controls.Clear();
         }
     }
 }

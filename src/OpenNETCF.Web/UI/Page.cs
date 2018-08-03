@@ -1,4 +1,4 @@
-#region License
+﻿#region License
 // Copyright ©2017 Tacke Consulting (dba OpenNETCF)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
@@ -17,11 +17,11 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
+
 using System;
-using OpenNETCF.Web;
-using OpenNETCF.Web.SessionState;
 using System.IO;
 using OpenNETCF.Web.Parsers;
+using OpenNETCF.Web.SessionState;
 
 namespace OpenNETCF.Web.UI
 {
@@ -29,8 +29,56 @@ namespace OpenNETCF.Web.UI
     /// Represents an .aspx file, also known as a Web Forms page, 
     /// requested from a server that hosts a Padarn Web application.
     /// </summary>
-    public class Page : TemplateControl
+    public class Page : Control
     {
+        /// <summary>
+        /// Gets the <see cref="HttpRequest"/> object for the requested page.
+        /// </summary>
+        /// <returns>The current <see cref="HttpRequest"/> associated with the page.</returns>
+        /// <exception cref="HttpException">Occurs when the <see cref="HttpRequest"/> object is not available.</exception>
+        public HttpRequest Request
+        {
+            get { return HttpContext.Current.Request; }
+        }
+
+        /// <summary>
+        /// Gets the <see cref="HttpResponse"/> object associated with the <see cref="Page"/> object. This object 
+        /// allows you to send HTTP response data to a client and contains information 
+        /// about that response.
+        /// </summary>
+        /// <returns>The current <see cref="HttpResponse"/> associated with the page</returns>
+        /// <exception cref="HttpException">The <see cref="HttpResponse"/> object is not available. </exception>
+        public HttpResponse Response
+        {
+            get { return HttpContext.Current.Response; }
+        }
+
+        /// <summary>
+        /// Gets the current Session object provided by Padarn.
+        /// </summary>
+        public HttpSessionState Session
+        {
+            get { return HttpContext.Current.Session; }
+        }
+
+        /// <summary>
+        /// Gets a value that indicates whether the page is being rendered for the first time or is being loaded in response to a postback.
+        /// </summary>
+        public bool IsPostBack { get; internal set; }
+
+        internal string Content { get; set; }
+        internal string DTDHeader { get; set; }
+        internal AspxInfo AspxInfo { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this instance is reusable.
+        /// </summary>
+        /// <value><c>true</c> if this instance is reusable; otherwise, <c>false</c>.</value>
+        public virtual bool IsReusable
+        {
+            get { return false; }
+        }
+
         /// <summary>
         /// Occurs at the beginning of page initialization.
         /// </summary>
@@ -62,43 +110,6 @@ namespace OpenNETCF.Web.UI
         public event EventHandler PreRenderComplete;
 
         /// <summary>
-        /// Gets the <see cref="HttpRequest"/> object for the requested page.
-        /// </summary>
-        /// <returns>The current <see cref="HttpRequest"/> associated with the page.</returns>
-        /// <exception cref="HttpException">Occurs when the <see cref="HttpRequest"/> object is not available.</exception>
-        public HttpRequest Request
-        {
-            get { return HttpContext.Current.Request; }   
-        }
-
-        /// <summary>
-        /// Gets the <see cref="HttpResponse"/> object associated with the <see cref="Page"/> object. This object 
-        /// allows you to send HTTP response data to a client and contains information 
-        /// about that response.
-        /// </summary>
-        /// <returns>The current <see cref="HttpResponse"/> associated with the page</returns>
-        /// <exception cref="HttpException">The <see cref="HttpResponse"/> object is not available. </exception>
-        public HttpResponse Response
-        {
-            get { return HttpContext.Current.Response; }
-        }
-
-        /// <summary>
-        /// Gets the current Session object provided by Padarn.
-        /// </summary>
-        public HttpSessionState Session
-        {
-            get { return HttpContext.Current.Session; }
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Page"/> class.
-        /// </summary>
-        public Page()
-        {
-        }
-
-        /// <summary>
         /// Notifies the server control that caused the postback that it should handle an incoming post back event.
         /// </summary>
         /// <param name="sourceControl"></param>
@@ -120,7 +131,7 @@ namespace OpenNETCF.Web.UI
         /// <param name="e"></param>
         protected virtual void OnPreLoad(EventArgs e)
         {
-            var handler = PreLoad;
+            EventHandler handler = PreLoad;
 
             if (handler == null) return;
             handler(this, null);
@@ -138,7 +149,7 @@ namespace OpenNETCF.Web.UI
         /// <param name="e"></param>
         protected virtual void OnLoadComplete(EventArgs e)
         {
-            var handler = LoadComplete;
+            EventHandler handler = LoadComplete;
 
             if (handler == null) return;
             handler(this, null);
@@ -156,7 +167,7 @@ namespace OpenNETCF.Web.UI
         /// <param name="e"></param>
         protected virtual void OnPreInit(EventArgs e)
         {
-            var handler = PreInit;
+            EventHandler handler = PreInit;
 
             if (handler == null) return;
             handler(this, null);
@@ -174,7 +185,7 @@ namespace OpenNETCF.Web.UI
         /// <param name="e"></param>
         protected virtual void OnInitComplete(EventArgs e)
         {
-            var handler = InitComplete;
+            EventHandler handler = InitComplete;
 
             if (handler == null) return;
             handler(this, null);
@@ -182,14 +193,14 @@ namespace OpenNETCF.Web.UI
 
         internal void RenderInternal()
         {
-            using(var sw = new StringWriter())
+            using (var sw = new StringWriter())
             {
                 var writer = new HtmlTextWriter(sw);
 
                 Render(writer);
 
                 sw.Flush();
-                var pageData = sw.ToString();
+                string pageData = sw.ToString();
 
                 if (!string.IsNullOrEmpty(pageData))
                 {
@@ -204,7 +215,7 @@ namespace OpenNETCF.Web.UI
         /// <param name="e"></param>
         protected internal virtual void OnPreRender(EventArgs e)
         {
-            var handler = PreRender;
+            EventHandler handler = PreRender;
 
             if (handler == null) return;
             handler(this, null);
@@ -222,7 +233,7 @@ namespace OpenNETCF.Web.UI
         /// <param name="e"></param>
         protected virtual void OnPreRenderComplete(EventArgs e)
         {
-            var handler = PreRenderComplete;
+            EventHandler handler = PreRenderComplete;
 
             if (handler == null) return;
             handler(this, null);
@@ -236,24 +247,6 @@ namespace OpenNETCF.Web.UI
         {
             // TODO call children to render
             writer.Write(Content);
-        }
-
-        /// <summary>
-        /// Gets a value that indicates whether the page is being rendered for the first time or is being loaded in response to a postback.
-        /// </summary>
-        public bool IsPostBack { get; internal set; }
-
-        internal string Content { get; set; }
-        internal string DTDHeader { get; set; }
-        internal AspxInfo AspxInfo { get; set; }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether this instance is reusable.
-        /// </summary>
-        /// <value><c>true</c> if this instance is reusable; otherwise, <c>false</c>.</value>
-        public virtual bool IsReusable 
-        { 
-            get { return false; }
         }
     }
 }

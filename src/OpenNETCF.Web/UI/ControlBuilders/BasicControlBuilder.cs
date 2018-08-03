@@ -17,12 +17,10 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
 
-using System.Collections.Generic;
-using System.Text;
-using OpenNETCF.Web.UI.WebControls;
+using System;
 using System.Collections;
+using OpenNETCF.Web.UI.WebControls;
 
 namespace OpenNETCF.Web.UI
 {
@@ -31,17 +29,14 @@ namespace OpenNETCF.Web.UI
     {
         public BasicControlBuilder(string tagName)
         {
-            this.ControlType = typeof(T);
-            this.TagName = tagName;
+            ControlType = typeof(T);
+            TagName = tagName;
         }
 
         public override Type GetChildControlType(string tagName, IDictionary attribs)
         {
-            if (String.Compare(tagName, this.TagName, true) == 0)
-            {
-                return typeof(T);
-            }
-            return null;
+            return StringComparer.InvariantCultureIgnoreCase.Equals(tagName, TagName)
+                ? typeof(T) : null;
         }
     }
 }

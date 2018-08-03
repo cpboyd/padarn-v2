@@ -1,4 +1,4 @@
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -280,13 +280,10 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="UI\BaseParser.cs" />
     <Compile Include="UI\Control.cs" />
     <Compile Include="UI\ControlBuilders\BasicControlBuilder.cs" />
-    <Compile Include="UI\ControlBuilders\ButtonControlBuilder.cs" />
     <Compile Include="UI\ControlBuilders\ControlBuilder.cs" />
     <Compile Include="UI\ControlCollection.cs" />
-    <Compile Include="UI\DefaultPageParserFilter.cs" />
     <Compile Include="UI\HtmlTextWriter.cs" />
     <Compile Include="UI\HtmlTextWriterAttribute.cs" />
     <Compile Include="UI\HtmlTextWriterTag.cs" />
@@ -300,10 +297,6 @@
     <Compile Include="Configuration\ServerConfig.cs" />
     <Compile Include="Handlers\StaticFileHandler.cs" />
     <Compile Include="Parsers\PageParser.cs" />
-    <Compile Include="UI\PageParserFilter.cs" />
-    <Compile Include="UI\TemplateControl.cs" />
-    <Compile Include="UI\TemplateParser.cs" />
-    <Compile Include="UI\UserControl.cs" />
     <Compile Include="UI\WebControls\Button.cs" />
     <Compile Include="UI\WebControls\Label.cs" />
     <Compile Include="UI\WebControls\LinkButton.cs" />

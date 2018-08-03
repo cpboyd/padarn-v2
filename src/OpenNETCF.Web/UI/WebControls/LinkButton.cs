@@ -17,10 +17,9 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
 
-using System.Collections.Generic;
-using System.Text;
+using System;
+using System.Xml;
 
 namespace OpenNETCF.Web.UI.WebControls
 {
@@ -30,9 +29,9 @@ namespace OpenNETCF.Web.UI.WebControls
     public class LinkButton : WebControl, IPostBackEventHandler //, IButtonControl, 
     {
         /// <summary>
-        /// Occurs when the LinkButton control is clicked.
+        /// Initializes a new instance of the Button class that represents an Anchor HTML tag.
         /// </summary>
-        public event EventHandler Click;
+        protected LinkButton() : base("a") { }
 
         /// <summary>
         /// Gets or sets the text caption displayed in the Button control.
@@ -40,12 +39,25 @@ namespace OpenNETCF.Web.UI.WebControls
         public string Text { get; set; }
 
         /// <summary>
+        /// Raises events for the LinkButton control when it posts back to the server.
+        /// </summary>
+        /// <param name="eventArgument"></param>
+        public void RaisePostBackEvent(string eventArgument)
+        {
+        }
+
+        /// <summary>
+        /// Occurs when the LinkButton control is clicked.
+        /// </summary>
+        public event EventHandler Click;
+
+        /// <summary>
         /// Raises the Click event of the LinkButton control.
         /// </summary>
         /// <param name="e"></param>
         protected virtual void OnClick(EventArgs e)
         {
-            var handler = Click;
+            EventHandler handler = Click;
 
             if (handler == null) return;
 
@@ -53,9 +65,9 @@ namespace OpenNETCF.Web.UI.WebControls
         }
 
         // <a id="LinkButton1" href="javascript:__doPostBack('LinkButton1','')">LinkButton</a>
-        protected internal override void Render(System.Xml.XmlWriter writer)
+        protected internal override void Render(XmlWriter writer)
         {
-            writer.WriteStartElement("a");
+            RenderBeginTag(writer);
 
             string id = "unknown";
 
@@ -72,15 +84,7 @@ namespace OpenNETCF.Web.UI.WebControls
                 writer.WriteValue(Content);
             }
 
-            writer.WriteEndElement();
-        }
-
-        /// <summary>
-        /// Raises events for the LinkButton control when it posts back to the server.
-        /// </summary>
-        /// <param name="eventArgument"></param>
-        public void RaisePostBackEvent(string eventArgument)
-        {
+            RenderEndTag(writer);
         }
     }
 }

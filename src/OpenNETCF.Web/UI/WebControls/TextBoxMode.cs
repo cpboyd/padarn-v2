@@ -17,10 +17,6 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
-
-using System.Collections.Generic;
-using System.Text;
 
 namespace OpenNETCF.Web.UI.WebControls
 {
@@ -41,6 +37,5 @@ namespace OpenNETCF.Web.UI.WebControls
         /// Represents password entry mode.
         /// </summary>
         Password
-
     }
 }

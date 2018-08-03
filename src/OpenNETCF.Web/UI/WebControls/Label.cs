@@ -17,10 +17,8 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
 
-using System.Collections.Generic;
-using System.Text;
+using System.Xml;
 
 namespace OpenNETCF.Web.UI.WebControls
 {
@@ -33,10 +31,10 @@ namespace OpenNETCF.Web.UI.WebControls
         /// Gets or sets the text caption displayed in the Label control.
         /// </summary>
         public string Text { get; set; }
-        
-        protected internal override void Render(System.Xml.XmlWriter writer)
+
+        protected internal override void Render(XmlWriter writer)
         {
-            writer.WriteStartElement("span");
+            RenderBeginTag(writer);
             if (Parameters.Contains("id"))
             {
                 writer.WriteAttributeString("id", Parameters["id"].ToString());
@@ -50,8 +48,8 @@ namespace OpenNETCF.Web.UI.WebControls
             {
                 writer.WriteValue(Parameters["text"].ToString());
             }
-            
-            writer.WriteEndElement();
+
+            RenderEndTag(writer);
         }
     }
 }

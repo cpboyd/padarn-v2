@@ -106,7 +106,7 @@ namespace OpenNETCF.Web.UI
         private Dictionary<string, string> m_NextElementAttributes = new Dictionary<string, string>();
 
         private HtmlElement m_currentElement;
-        private int m_indentLevel = 0;
+        private int m_indentLevel;
         private string m_tabString = new string(' ', 2);
 
         /// <summary>
@@ -125,8 +125,7 @@ namespace OpenNETCF.Web.UI
         /// <param name="tagKey"></param>
         public virtual void RenderBeginTag(HtmlTextWriterTag tagKey)
         {
-            string tag = tagKey.AsText();
-            RenderBeginTag(tag);
+            RenderBeginTag(tagKey.AsText());
         }
 
         /// <summary>

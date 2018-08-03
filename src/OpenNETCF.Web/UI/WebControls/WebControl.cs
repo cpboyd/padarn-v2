@@ -17,11 +17,8 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
 
-using System.Collections.Generic;
-using System.Text;
-using System.Collections;
+using System.Xml;
 using OpenNETCF.Web.Core;
 
 namespace OpenNETCF.Web.UI.WebControls
@@ -61,6 +58,22 @@ namespace OpenNETCF.Web.UI.WebControls
         /// Gets the name of the control tag. This property is used primarily by control developers.
         /// </summary>
         protected virtual string TagName { get; private set; }
+
+        /// <summary>
+        /// Renders the HTML opening tag of the control to the specified writer. This method is used primarily by control developers.
+        /// </summary>
+        public virtual void RenderBeginTag(XmlWriter writer)
+        {
+            writer.WriteStartElement(TagName);
+        }
+
+        /// <summary>
+        /// Renders the HTML closing tag of the control into the specified writer. This method is used primarily by control developers.
+        /// </summary>
+        public virtual void RenderEndTag(XmlWriter writer)
+        {
+            writer.WriteEndElement();
+        }
 
         protected internal string Content { get; set; }
     }

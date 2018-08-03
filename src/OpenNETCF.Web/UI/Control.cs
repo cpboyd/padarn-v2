@@ -58,7 +58,7 @@ namespace OpenNETCF.Web.UI
         /// <param name="e"></param>
         protected internal virtual void OnInit(EventArgs e)
         {
-            var handler = Init;
+            EventHandler handler = Init;
 
             if (handler == null) return;
             handler(this, null);
@@ -70,7 +70,7 @@ namespace OpenNETCF.Web.UI
         /// <param name="e"></param>
         protected internal virtual void OnLoad(EventArgs e)
         {
-            var handler = Load;
+            EventHandler handler = Load;
 
             if (handler == null) return;
             handler(this, null);

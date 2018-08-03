@@ -17,10 +17,10 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
 
-using System.Collections.Generic;
-using System.Text;
+using System;
+using System.Collections;
+using System.Xml;
 using OpenNETCF.Web.Core;
 
 namespace OpenNETCF.Web.UI.WebControls
@@ -28,8 +28,13 @@ namespace OpenNETCF.Web.UI.WebControls
     /// <summary>
     /// Displays a text box control for user input.
     /// </summary>
-    public class TextBox : WebControl //, IButtonControl, IPostBackEventHandler
+    public class TextBox : WebControl, ITextControl //, IPostBackEventHandler
     {
+        /// <summary>
+        /// Initializes a new instance of the TextBox class that represents an Input HTML tag.
+        /// </summary>
+        protected TextBox() : base("input") { }
+
         /// <summary>
         /// Occurs when the content of the text box changes between posts to the server.
         /// </summary>
@@ -51,7 +56,7 @@ namespace OpenNETCF.Web.UI.WebControls
         /// <param name="e"></param>
         protected virtual void OnTextChanged(EventArgs e)
         {
-            var handler = TextChanged;
+            EventHandler handler = TextChanged;
 
             if (handler == null) return;
 
@@ -62,9 +67,9 @@ namespace OpenNETCF.Web.UI.WebControls
         /// Sends server control content to a provided HtmlTextWriter object, which writes the content to be rendered on the client.
         /// </summary>
         /// <param name="writer"></param>
-        protected internal override void Render(System.Xml.XmlWriter writer)
+        protected internal override void Render(XmlWriter writer)
         {
-            writer.WriteStartElement("input");
+            RenderBeginTag(writer);
 
             if (Parameters.Contains("id"))
             {
@@ -74,7 +79,7 @@ namespace OpenNETCF.Web.UI.WebControls
 
             if (Parameters.Contains("textmode"))
             {
-                var m = Parameters["textmode"];
+                object m = Parameters["textmode"];
                 writer.WriteAttributeString("type", m.ToString());
             }
             else
@@ -91,16 +96,16 @@ namespace OpenNETCF.Web.UI.WebControls
                 writer.WriteAttributeString("value", Parameters["text"].ToString());
             }
 
-            writer.WriteEndElement();
+            RenderEndTag(writer);
         }
 
-        protected internal override void SetParameters(System.Collections.IDictionary parms)
+        protected internal override void SetParameters(IDictionary parms)
         {
             base.SetParameters(parms);
 
             if (parms.Contains("textmode"))
             {
-                switch (((string) parms["textmode"]).ToLowerInvariant())
+                switch (((string)parms["textmode"]).ToLowerInvariant())
                 {
                     case "password":
                         TextMode = TextBoxMode.Password;
