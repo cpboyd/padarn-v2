@@ -33,7 +33,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using OpenNETCF.Web.Configuration;
-using OpenNETCF.Web.Core;
 using OpenNETCF.Web.Helpers;
 using OpenNETCF.Web.Logging;
 using OpenNETCF.Web.Security;

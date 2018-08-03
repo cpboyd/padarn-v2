@@ -19,13 +19,12 @@
 #endregion
 
 using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Security;
 using System.Text;
-using System.Diagnostics;
-using OpenNETCF.Web.Core;
 using OpenNETCF.Web.Headers;
 
 namespace OpenNETCF.Web
@@ -35,6 +34,21 @@ namespace OpenNETCF.Web
     /// </summary>
     internal class StaticFileHandler : IHttpHandler
     {
+        // Focus on compressing text files:
+        private static readonly string[] AllowCompress =
+        {
+            ".css",
+            ".htm",
+            ".html",
+            ".js",
+            ".json",
+            ".txt",
+            ".svg",
+            ".xml",
+        };
+
+        private static DateTimeFormatInfo m_dtfi = new DateTimeFormatInfo();
+
         private readonly string m_localFile;
         private readonly string m_mime;
 
@@ -181,18 +195,6 @@ namespace OpenNETCF.Web
             }
         }
 
-        // Focus on compressing text files:
-        private static readonly string[] AllowCompress =
-        {
-            ".css",
-            ".htm",
-            ".html",
-            ".js",
-            ".json",
-            ".txt",
-            ".svg",
-            ".xml",
-        };
 
         // Get the local file to serve and set Content-Encoding on the Response if necessary.
         private string GetFilename(HttpContext context)
@@ -242,7 +244,6 @@ namespace OpenNETCF.Web
             return filename;
         }
 
-        private static DateTimeFormatInfo m_dtfi = new DateTimeFormatInfo();
         private static void BuildFileItemResponse(HttpContext context, string fileName, long fileSize,
                                                   DateTime lastModifiedTime, string strETag, DateTime lastChange)
         {

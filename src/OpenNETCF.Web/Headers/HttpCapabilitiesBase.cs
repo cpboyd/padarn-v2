@@ -17,19 +17,19 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
+
 using System;
-using System.Collections.Generic;
 using System.Collections;
+using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Xml;
 using OpenNETCF.Configuration;
 using OpenNETCF.Web.Configuration;
-using System.IO;
-using System.Xml;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Globalization;
-using OpenNETCF.Web.Core;
 
 namespace OpenNETCF.Web
 {
@@ -39,21 +39,14 @@ namespace OpenNETCF.Web
     public class HttpCapabilitiesBase
     {
         #region Fields
-        private NameValueCollection m_headers;
-        private Dictionary<string, string> m_capabilities = null;
+
         private static XmlDocument CombinedBrowserDocument = null;
         private static object CombinedBrowserDocumentSyncRoot = new object();
 
-        private List<string> _browsers;
         private static object _staticLock = new object();
 
         #region variables to see if the properties have been retreived
         private volatile bool _hasBackButton;
-        private volatile bool _haveactivexcontrols;
-        private volatile bool _haveaol;
-        private volatile bool _havebackgroundsounds;
-        private volatile bool _havebeta;
-        private volatile bool _havebrowser;
         private volatile bool _haveCanCombineFormsInDeck;
         private volatile bool _haveCanInitiateVoiceCall;
         private volatile bool _haveCanRenderAfterInputOrSelectElement;
@@ -64,12 +57,7 @@ namespace OpenNETCF.Web
         private volatile bool _haveCanRenderPostBackCards;
         private volatile bool _haveCanRenderSetvarZeroWithMultiSelectionList;
         private volatile bool _haveCanSendMail;
-        private volatile bool _havecdf;
-        private volatile bool _havecookies;
-        private volatile bool _havecrawler;
         private volatile bool _haveDefaultSubmitButtonLimit;
-        private volatile bool _haveecmascriptversion;
-        private volatile bool _haveframes;
         private volatile bool _haveGatewayMajorVersion;
         private volatile bool _haveGatewayMinorVersion;
         private volatile bool _haveGatewayVersion;
@@ -78,19 +66,12 @@ namespace OpenNETCF.Web
         private volatile bool _haveInputType;
         private volatile bool _haveIsColor;
         private volatile bool _haveIsMobileDevice;
-        private volatile bool _havejavaapplets;
-        private volatile bool _havejavascript;
-        private volatile bool _havejscriptversion;
-        private volatile bool _havemajorversion;
         private volatile bool _haveMaximumHrefLength;
         private volatile bool _haveMaximumRenderedPageSize;
         private volatile bool _haveMaximumSoftkeyLabelLength;
-        private volatile bool _haveminorversion;
         private volatile bool _haveMobileDeviceManufacturer;
         private volatile bool _haveMobileDeviceModel;
-        private volatile bool _havemsdomversion;
         private volatile bool _haveNumberOfSoftkeys;
-        private volatile bool _haveplatform;
         private volatile bool _havePreferredImageMime;
         private volatile bool _havePreferredRenderingMime;
         private volatile bool _havePreferredRenderingType;
@@ -105,7 +86,6 @@ namespace OpenNETCF.Web
         private volatile bool _haveRequiredMetaTagNameValue;
         private volatile bool _haveRequiresAttributeColonSubstitution;
         private volatile bool _haveRequiresContentTypeMetaTag;
-        private volatile bool _haverequiresControlStateInSession;
         private volatile bool _haveRequiresDBCSCharacter;
         private volatile bool _haveRequiresHtmlAdaptiveErrorReporting;
         private volatile bool _haveRequiresLeadingPageBreak;
@@ -134,8 +114,8 @@ namespace OpenNETCF.Web
         private volatile bool _haveSupportsFontColor;
         private volatile bool _haveSupportsFontName;
         private volatile bool _haveSupportsFontSize;
-        private volatile bool _haveSupportsImageSubmit;
         private volatile bool _haveSupportsIModeSymbols;
+        private volatile bool _haveSupportsImageSubmit;
         private volatile bool _haveSupportsInputIStyle;
         private volatile bool _haveSupportsInputMode;
         private volatile bool _haveSupportsItalic;
@@ -147,6 +127,24 @@ namespace OpenNETCF.Web
         private volatile bool _haveSupportsSelectMultiple;
         private volatile bool _haveSupportsUncheck;
         private volatile bool _haveSupportsXmlHttp;
+        private volatile bool _haveactivexcontrols;
+        private volatile bool _haveaol;
+        private volatile bool _havebackgroundsounds;
+        private volatile bool _havebeta;
+        private volatile bool _havebrowser;
+        private volatile bool _havecdf;
+        private volatile bool _havecookies;
+        private volatile bool _havecrawler;
+        private volatile bool _haveecmascriptversion;
+        private volatile bool _haveframes;
+        private volatile bool _havejavaapplets;
+        private volatile bool _havejavascript;
+        private volatile bool _havejscriptversion;
+        private volatile bool _havemajorversion;
+        private volatile bool _haveminorversion;
+        private volatile bool _havemsdomversion;
+        private volatile bool _haveplatform;
+        private volatile bool _haverequiresControlStateInSession;
         private volatile bool _havetables;
         //private volatile bool _havetagwriter;
         private volatile bool _havetype;
@@ -243,8 +241,8 @@ namespace OpenNETCF.Web
         private volatile bool _supportsFontColor;
         private volatile bool _supportsFontName;
         private volatile bool _supportsFontSize;
-        private volatile bool _supportsImageSubmit;
         private volatile bool _supportsIModeSymbols;
+        private volatile bool _supportsImageSubmit;
         private volatile bool _supportsInputIStyle;
         private volatile bool _supportsInputMode;
         private volatile bool _supportsItalic;
@@ -264,6 +262,11 @@ namespace OpenNETCF.Web
         private volatile bool _win16;
         private volatile bool _win32;
         #endregion
+
+        private List<string> _browsers;
+        private Dictionary<string, string> m_capabilities = null;
+        private NameValueCollection m_headers;
+
         #endregion
 
         ///<summary>
@@ -334,7 +337,7 @@ namespace OpenNETCF.Web
         ///<returns>The common language runtime Version.</returns>
         public Version[] GetClrVersions()
         {
-            string userAgent = m_headers["HTTP_USER_AGENT"] as string;
+            var userAgent = m_headers["HTTP_USER_AGENT"] as string;
             if (string.IsNullOrEmpty(userAgent))
             {
                 return null;
@@ -344,12 +347,12 @@ namespace OpenNETCF.Web
             {
                 return new Version[] { new Version(0, 0) };
             }
-            ArrayList list = new ArrayList();
+            var list = new ArrayList();
             foreach (Match match in matchs)
             {
                 try
                 {
-                    Version version = new Version(match.Groups["clrVersion"].Value);
+                    var version = new Version(match.Groups["clrVersion"].Value);
                     list.Add(version);
                     continue;
                 }
@@ -388,6 +391,57 @@ namespace OpenNETCF.Web
         #endregion
 
         #region Private Methods
+
+        private XmlDocument GetCombinedBrowserXmlDoc
+        {
+            get
+            {
+                if (CombinedBrowserDocument != null)
+                    return CombinedBrowserDocument;
+
+                //Make sure the directory exists
+                if (!Directory.Exists(ServerConfig.GetConfig().BrowserDefinitions))
+                    return null;
+
+                lock (CombinedBrowserDocumentSyncRoot)
+                {
+                    try
+                    {
+                        //First get all the data from the files
+                        var xml = new StringBuilder();
+                        xml.Append("<browsers>");
+                        string[] browserFiles = Directory.GetFiles(ServerConfig.GetConfig().BrowserDefinitions, "*.browser");
+                        StreamReader sr;
+                        string tempLine;
+                        foreach (string browserFile in browserFiles)
+                        {
+                            sr = new StreamReader(browserFile);
+                            tempLine = sr.ReadToEnd().Replace("<browsers>", "");
+                            tempLine = tempLine.Replace("</browsers>", "");
+                            xml.Append(tempLine);
+                            //GetBrowserNodes(sr, xml);
+                            sr.Close();
+                        }
+                        xml.Append("</browsers>");
+                        //StreamWriter sw = new StreamWriter("\\windows\\Inetpub\\browsers.xml");
+                        //sw.Write(xml.ToString());
+                        //sw.Close();
+                        CombinedBrowserDocument = new XmlDocument();
+                        CombinedBrowserDocument.LoadXml(xml.ToString());
+                        return CombinedBrowserDocument;
+                    }
+                    catch (Exception e)
+                    {
+                        string s = e.Message;
+                        if (Debugger.IsAttached)
+                            Debugger.Break();
+                        CombinedBrowserDocument = null;
+                        return null;
+                    }
+                }
+            }
+        }
+
         private bool CapsParseBool(string capsKey)
         {
             bool flag = false;
@@ -432,7 +486,7 @@ namespace OpenNETCF.Web
                 return;
 
             //Get the userAgent string
-            string userAgent = m_headers["HTTP_USER_AGENT"] as string;
+            var userAgent = m_headers["HTTP_USER_AGENT"] as string;
             if (userAgent == null)
                 return;
 
@@ -468,63 +522,13 @@ namespace OpenNETCF.Web
             catch (Exception e)
             {
                 string s = e.Message;
-                if (System.Diagnostics.Debugger.IsAttached)
-                    System.Diagnostics.Debugger.Break();
+                if (Debugger.IsAttached)
+                    Debugger.Break();
             }
 
             foreach (string key in m_capabilities.Keys)
             {
-                System.Diagnostics.Debug.WriteLine(string.Format("{0}: {1}", key, m_capabilities[key]));
-            }
-        }
-
-        private XmlDocument GetCombinedBrowserXmlDoc
-        {
-            get
-            {
-                if (CombinedBrowserDocument != null)
-                    return CombinedBrowserDocument;
-
-                //Make sure the directory exists
-                if (!Directory.Exists(ServerConfig.GetConfig().BrowserDefinitions))
-                    return null;
-
-                lock (CombinedBrowserDocumentSyncRoot)
-                {
-                    try
-                    {
-                        //First get all the data from the files
-                        StringBuilder xml = new StringBuilder();
-                        xml.Append("<browsers>");
-                        string[] browserFiles = Directory.GetFiles(ServerConfig.GetConfig().BrowserDefinitions, "*.browser");
-                        StreamReader sr;
-                        string tempLine;
-                        foreach (string browserFile in browserFiles)
-                        {
-                            sr = new StreamReader(browserFile);
-                            tempLine = sr.ReadToEnd().Replace("<browsers>", "");
-                            tempLine = tempLine.Replace("</browsers>", "");
-                            xml.Append(tempLine);
-                            //GetBrowserNodes(sr, xml);
-                            sr.Close();
-                        }
-                        xml.Append("</browsers>");
-                        //StreamWriter sw = new StreamWriter("\\windows\\Inetpub\\browsers.xml");
-                        //sw.Write(xml.ToString());
-                        //sw.Close();
-                        CombinedBrowserDocument = new XmlDocument();
-                        CombinedBrowserDocument.LoadXml(xml.ToString());
-                        return CombinedBrowserDocument;
-                    }
-                    catch (Exception e)
-                    {
-                        string s = e.Message;
-                        if (System.Diagnostics.Debugger.IsAttached)
-                            System.Diagnostics.Debugger.Break();
-                        CombinedBrowserDocument = null;
-                        return null;
-                    }
-                }
+                Debug.WriteLine(string.Format("{0}: {1}", key, m_capabilities[key]));
             }
         }
 
@@ -533,7 +537,7 @@ namespace OpenNETCF.Web
             XmlNodeList browsers;
             string browserID = null;
             XmlNode activeNode = null;
-            Dictionary<string, string> captures = new Dictionary<string, string>();
+            var captures = new Dictionary<string, string>();
 
             if (string.IsNullOrEmpty(parentID))
             {
@@ -751,8 +755,8 @@ namespace OpenNETCF.Web
 
         private Exception BuildParseError(Exception e, string capsKey)
         {
-            ConfigurationErrorsException exception = new ConfigurationErrorsException(Resources.Invalid_string_from_browser_caps, e);
-            HttpUnhandledException exception2 = new HttpUnhandledException(exception.Message,exception);
+            var exception = new ConfigurationErrorsException(Resources.Invalid_string_from_browser_caps, e);
+            var exception2 = new HttpUnhandledException(exception.Message, exception);
             //TODO Need to implemetn exception formatter exception2.SetFormatter(new UseLastUnhandledErrorFormatter(exception));
             return exception2;
         }

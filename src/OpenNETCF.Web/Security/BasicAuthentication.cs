@@ -17,25 +17,26 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
+
 using System;
 using System.Text;
-using OpenNETCF.Configuration;
-using OpenNETCF.Web.Configuration;
-using OpenNETCF.Security;
-using OpenNETCF.Web.Core;
-using OpenNETCF.Web.Security.Cryptography;
 using OpenNETCF.Security.Principal;
+using OpenNETCF.Web.Configuration;
+using OpenNETCF.Web.Security.Cryptography;
 
 namespace OpenNETCF.Web.Security
 {
     internal class BasicAuthentication : Authentication
     {
         static char[] separator = { ':' };
-        
+
         private string m_user;
 
-        public BasicAuthentication() : base("Basic")
+        public BasicAuthentication() : base("Basic") { }
+
+        internal override string User
         {
+            get { return m_user; }
         }
 
         public override bool AcceptCredentials(HttpContext context, string authentication)
@@ -49,7 +50,7 @@ namespace OpenNETCF.Web.Security
 
             if (String.IsNullOrEmpty(this.User)) return false;
 
-            var config = ServerConfig.GetConfig(); 
+            ServerConfig config = ServerConfig.GetConfig();
             if (config.Authentication.AuthenticationCallback == null)
             {
                 auth = CheckConfigUserList(this.User, password);
@@ -69,7 +70,7 @@ namespace OpenNETCF.Web.Security
             }
 
             // set the user info
-            var id = new GenericIdentity(User, this.AuthenticationMethod.ToLowerInvariant()) {IsAuthenticated = auth};
+            var id = new GenericIdentity(User, this.AuthenticationMethod.ToLowerInvariant()) { IsAuthenticated = auth };
             var principal = new GenericPrincipal(id);
             context.User = principal;
 
@@ -106,17 +107,12 @@ namespace OpenNETCF.Web.Security
 
         public override void OnEndRequest(object sender, EventArgs e)
         {
-            HttpContext context = (HttpContext)sender;
+            var context = (HttpContext)sender;
             if (!AuthenticationRequired) return;
 
             string realm = ServerConfig.GetConfig().Authentication.Realm;
             string challenge = String.Format("{0} realm=\"{1}\"", AuthenticationMethod, realm);
             context.Response.AppendHeader("WWW-Authenticate", challenge);
-        }
-
-        internal override string User
-        {
-            get { return m_user; }
         }
     }
 }

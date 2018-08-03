@@ -17,16 +17,15 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
 
-using System.Collections.Generic;
-using System.Text;
-using OpenNETCF.Web.Configuration;
-using OpenNETCF.Web.Core;
-using OpenNETCF.Web.Helpers;
+using System;
 using System.Globalization;
-using System.Reflection;
 using System.IO;
+using System.Reflection;
+using System.Text;
+using System.Text.RegularExpressions;
+using OpenNETCF.Web.Configuration;
+using OpenNETCF.Web.Helpers;
 
 namespace OpenNETCF.Web.Hosting
 {
@@ -35,7 +34,40 @@ namespace OpenNETCF.Web.Hosting
     /// </summary>
     public sealed class HostingEnvironment
     {
+        private static AssemblyName m_assemblyName;
         internal static VirtualPathProvider VirtualPathProvider { get; private set; }
+
+        /// <summary>
+        /// Gets the physical path on disk to the application's directory.
+        /// </summary>
+        public static string ApplicationPhysicalPath
+        {
+            get
+            {
+                if (m_assemblyName == null)
+                {
+                    m_assemblyName = Assembly.GetExecutingAssembly().GetName();
+                }
+
+                return Path.GetDirectoryName(m_assemblyName.CodeBase);
+            }
+        }
+
+        /// <summary>
+        /// Gets the version of the Padarn server assembly
+        /// </summary>
+        public static Version ApplicationVersion
+        {
+            get
+            {
+                if (m_assemblyName == null)
+                {
+                    m_assemblyName = Assembly.GetExecutingAssembly().GetName();
+                }
+
+                return m_assemblyName.Version;
+            }
+        }
 
         /// <summary>
         /// Registers a new VirtualPathProvider instance with the Padarn system.
@@ -43,8 +75,8 @@ namespace OpenNETCF.Web.Hosting
         /// <param name="virtualPathProvider"></param>
         public static void RegisterVirtualPathProvider(VirtualPathProvider virtualPathProvider)
         {
-            VirtualPathProvider previous = HostingEnvironment.VirtualPathProvider;
-            HostingEnvironment.VirtualPathProvider = virtualPathProvider;
+            VirtualPathProvider previous = VirtualPathProvider;
+            VirtualPathProvider = virtualPathProvider;
             virtualPathProvider.Initialize(previous);
         }
 
@@ -58,7 +90,7 @@ namespace OpenNETCF.Web.Hosting
             char separator = Path.DirectorySeparatorChar;
 
             // Normalize the path
-            string path = System.Text.RegularExpressions.Regex.Replace(virtualPath, @"(/+)", "/");
+            string path = Regex.Replace(virtualPath, @"(/+)", "/");
 
             // Get the index of the end of the last directory name
             string resourcePath;
@@ -104,40 +136,6 @@ namespace OpenNETCF.Web.Hosting
             physicalPath.Append(resourceIdentifier);
 
             return physicalPath.ToString().Replace('/', separator).Replace('\\', separator);
-        }
-
-        private static AssemblyName m_assemblyName;
-
-        /// <summary>
-        /// Gets the physical path on disk to the application's directory.
-        /// </summary>
-        public static string ApplicationPhysicalPath
-        {
-            get
-            {
-                if (m_assemblyName == null)
-                {
-                    m_assemblyName = Assembly.GetExecutingAssembly().GetName();
-                }
-
-                return Path.GetDirectoryName(m_assemblyName.CodeBase);
-            }
-        }
-
-        /// <summary>
-        /// Gets the version of the Padarn server assembly
-        /// </summary>
-        public static Version ApplicationVersion
-        {
-            get
-            {
-                if (m_assemblyName == null)
-                {
-                    m_assemblyName = Assembly.GetExecutingAssembly().GetName();
-                }
-
-                return m_assemblyName.Version;
-            }
         }
     }
 }

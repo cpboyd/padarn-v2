@@ -2,13 +2,7 @@
 // Copyright ©2018 Christopher Boyd
 //
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using OpenNETCF.Web.Core;
 
 namespace OpenNETCF.Web
 {

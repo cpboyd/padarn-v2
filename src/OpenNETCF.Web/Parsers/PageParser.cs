@@ -26,7 +26,6 @@ using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
-using OpenNETCF.Web.Core;
 using OpenNETCF.Web.UI;
 using OpenNETCF.Web.UI.WebControls;
 

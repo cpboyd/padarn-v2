@@ -17,29 +17,23 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-//                                                                   
-// Copyright (c) 2007-2009 OpenNETCF Consulting, LLC                        
-//                                                                     
+
 using System;
-using System.Threading;
-using System.Reflection;
 using System.IO;
 using System.Net;
-using System.Collections.Generic;
-using OpenNETCF.Web.Logging;
-using OpenNETCF.Web.Core;
+using System.Reflection;
+using System.Threading;
 using OpenNETCF.Web.Configuration;
-using System.Security.Cryptography;
-using System.Text;
+using OpenNETCF.Web.Logging;
 
 namespace OpenNETCF.Web.Server
 {
     internal interface IRequestListener : IDisposable
     {
+        bool ProcessingRequest { get; }
         event ListenerStateChange OnStateChange;
         void StartListening();
         void Shutdown();
-        bool ProcessingRequest { get; }
     }
 
     /// <summary>
@@ -47,8 +41,8 @@ namespace OpenNETCF.Web.Server
     /// </summary>
     public sealed partial class WebServer : MarshalByRefObject
     {
-        private Thread m_listeningThread;
         private IRequestListener m_listener;
+        private Thread m_listeningThread;
         private ILogProvider m_logProvider;
 
         /// <summary>
@@ -70,6 +64,33 @@ namespace OpenNETCF.Web.Server
             // create the one and only log provider.  This gets injected into anyone who needs it.
             LoadLogProvider();
         }
+
+        /// <summary>
+        /// Returns the physical path of the Web Application folder.
+        /// </summary>
+        /// <remarks>Obsolete as of version 1.1.70.  Throws an error as of version 1.1.90</remarks>
+        // TODO: obsolete as of 1.1.70 - mark to throw error in future version
+        [Obsolete("Consider using Configuration.DocumentRoot", true)]
+        public static string PhysicalPath
+        {
+            get
+            {
+                return ServerConfig.GetConfig().DocumentRoot;
+            }
+        }
+
+        /// <summary>
+        /// Gets the current server configuration information
+        /// </summary>
+        public ServerConfig Configuration
+        {
+            get { return ServerConfig.GetConfig(m_logProvider, true); }
+        }
+
+        /// <summary>
+        /// Returns <b>true</b> if the server is currently running, otherwise <b>false</b>.
+        /// </summary>
+        public bool Running { get; private set; }
 
         private void LoadLogProvider()
         {
@@ -129,28 +150,6 @@ namespace OpenNETCF.Web.Server
         }
 
         /// <summary>
-        /// Returns the physical path of the Web Application folder.
-        /// </summary>
-        /// <remarks>Obsolete as of version 1.1.70.  Throws an error as of version 1.1.90</remarks>
-        // TODO: obsolete as of 1.1.70 - mark to throw error in future version
-        [Obsolete("Consider using Configuration.DocumentRoot", true)]
-        public static string PhysicalPath
-        {
-            get
-            {
-                return ServerConfig.GetConfig().DocumentRoot;
-            }
-        }
-
-        /// <summary>
-        /// Gets the current server configuration information
-        /// </summary>
-        public ServerConfig Configuration
-        {
-            get { return ServerConfig.GetConfig(m_logProvider, true); }
-        }
-
-        /// <summary>
         /// Listens for incoming requests on a separate thread. 
         /// </summary>
         public void Start()
@@ -160,7 +159,7 @@ namespace OpenNETCF.Web.Server
             if (Running) throw new ApplicationException("Server is already running");
 
             // Initialize Virtual Path Providers
-            var config = Configuration;
+            ServerConfig config = Configuration;
 
             if (config.VirtualPathProviders != null)
             {
@@ -185,11 +184,6 @@ namespace OpenNETCF.Web.Server
             m_listeningThread.Name = "HttpRequestListener";
             Running = true;
         }
-
-        /// <summary>
-        /// Returns <b>true</b> if the server is currently running, otherwise <b>false</b>.
-        /// </summary>
-        public bool Running { get; private set; }
 
         private void listener_OnStateChange(bool listening)
         {

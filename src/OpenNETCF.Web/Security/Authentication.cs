@@ -17,11 +17,9 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
 
-using System.Collections.Generic;
-using System.Text;
-using OpenNETCF.Web.Core;
+using System;
+using OpenNETCF.Web.Configuration;
 
 namespace OpenNETCF.Web.Security
 {
@@ -32,24 +30,26 @@ namespace OpenNETCF.Web.Security
         /// <summary>
         /// 
         /// </summary>
-        public string AuthenticationMethod
-        {
-            get { return authMethod; }
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
         /// <param name="authenticationMethod"></param>
         public Authentication(string authenticationMethod)
         {
             authMethod = authenticationMethod;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        public string AuthenticationMethod
+        {
+            get { return authMethod; }
+        }
+
         protected bool AuthenticationRequired
         {
-            get { return (string.Compare(AuthenticationMethod, Configuration.ServerConfig.GetConfig().Authentication.Mode, true) == 0); }
+            get { return (string.Compare(AuthenticationMethod, ServerConfig.GetConfig().Authentication.Mode, true) == 0); }
         }
+
+        internal abstract string User { get; }
 
         public virtual void Dispose()
         {
@@ -79,10 +79,10 @@ namespace OpenNETCF.Web.Security
         {
             if (!AuthenticationRequired)
                 return;
-            HttpContext context = (HttpContext) sender;
+            var context = (HttpContext)sender;
 
             string authData = Authorization(context, AuthenticationMethod);
-            if( String.IsNullOrEmpty(authData) || !AcceptCredentials(context, authData))
+            if (String.IsNullOrEmpty(authData) || !AcceptCredentials(context, authData))
             {
                 DenyAccess(context);
                 return;
@@ -92,7 +92,5 @@ namespace OpenNETCF.Web.Security
         public abstract void OnEndRequest(object sender, EventArgs e);
 
         public abstract bool AcceptCredentials(HttpContext context, string authentication);
-
-        internal abstract string User { get; }
     }
 }

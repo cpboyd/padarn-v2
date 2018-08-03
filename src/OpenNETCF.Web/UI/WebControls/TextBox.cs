@@ -21,7 +21,6 @@
 using System;
 using System.Collections;
 using System.Xml;
-using OpenNETCF.Web.Core;
 
 namespace OpenNETCF.Web.UI.WebControls
 {
@@ -36,9 +35,9 @@ namespace OpenNETCF.Web.UI.WebControls
         protected TextBox() : base("input") { }
 
         /// <summary>
-        /// Occurs when the content of the text box changes between posts to the server.
+        /// Gets or sets the behavior mode (single-line, multiline, or password) of the TextBox control.
         /// </summary>
-        public event EventHandler TextChanged;
+        public virtual TextBoxMode TextMode { get; set; }
 
         /// <summary>
         /// Gets or sets the text caption displayed in the TextBox control.
@@ -46,9 +45,9 @@ namespace OpenNETCF.Web.UI.WebControls
         public string Text { get; set; }
 
         /// <summary>
-        /// Gets or sets the behavior mode (single-line, multiline, or password) of the TextBox control.
+        /// Occurs when the content of the text box changes between posts to the server.
         /// </summary>
-        public virtual TextBoxMode TextMode { get; set; }
+        public event EventHandler TextChanged;
 
         /// <summary>
         /// Raises the TextChanged event.

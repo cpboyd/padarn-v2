@@ -17,35 +17,31 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-// 
-// Copyright (c) 2008 OpenNETCF Consulting, LLC. All rights reserved.
-// 
-using System.Collections.Generic;
-using System.Security.Cryptography;
+
+using System;
 using System.Text;
+using OpenNETCF.Security.Principal;
 using OpenNETCF.Web.Configuration;
-using OpenNETCF.Web.Core;
+using OpenNETCF.Web.Security.Cryptography;
 
 namespace OpenNETCF.Web.Security
 {
-    using System;
-    using OpenNETCF.Security;
-    using OpenNETCF.Web.Security.Cryptography;
-    using OpenNETCF.Security.Principal;
-
     /// <summary>
     /// 
     /// </summary>
     internal class DigestAuthentication : Authentication
     {
         private readonly int nonceLifetime = 60;
-        private string m_user; 
+        private string m_user;
 
         /// <summary>
         /// 
         /// </summary>
-        public DigestAuthentication() : base("Digest")
+        public DigestAuthentication() : base("Digest") { }
+
+        internal override string User
         {
+            get { return m_user; }
         }
 
         /// <summary>
@@ -58,16 +54,16 @@ namespace OpenNETCF.Web.Security
         {
             bool auth = false;
 
-            var config = ServerConfig.GetConfig();
-            DigestAuthInfo digest = new DigestAuthInfo(context.Request.HttpMethod);
+            ServerConfig config = ServerConfig.GetConfig();
+            var digest = new DigestAuthInfo(context.Request.HttpMethod);
 
             string[] elements = authentication.Split(',');
 
-            foreach(string element in elements)
+            foreach (string element in elements)
             {
                 int splitIndex = element.IndexOf('=');
-                string K = element.Substring(0, splitIndex).Trim(new char[] {' ', '\"'});
-                string V = element.Substring(splitIndex+1).Trim(new char[] {' ', '\"'});
+                string K = element.Substring(0, splitIndex).Trim(new char[] { ' ', '\"' });
+                string V = element.Substring(splitIndex + 1).Trim(new char[] { ' ', '\"' });
                 digest.AddElement(K, V);
             }
 
@@ -83,7 +79,7 @@ namespace OpenNETCF.Web.Security
             }
 
             // set the user info
-            var id = new GenericIdentity(User, this.AuthenticationMethod.ToLowerInvariant()) {IsAuthenticated = auth};
+            var id = new GenericIdentity(User, this.AuthenticationMethod.ToLowerInvariant()) { IsAuthenticated = auth };
             var principal = new GenericPrincipal(id);
             context.User = principal;
 
@@ -105,12 +101,12 @@ namespace OpenNETCF.Web.Security
         private bool CheckConfigUserList(DigestAuthInfo digest)
         {
             AuthenticationConfiguration authConfig = ServerConfig.GetConfig().Authentication;
-            var user = authConfig.Users.Find(digest.UserName);
+            User user = authConfig.Users.Find(digest.UserName);
 
             if (user == null) return false;
 
-            var password = user.Password;
-            var hash = digest.GetHashCode(password);
+            string password = user.Password;
+            string hash = digest.GetHashCode(password);
 
             return digest["response"].Equals(hash);
 
@@ -173,14 +169,14 @@ namespace OpenNETCF.Web.Security
         /// <param name="e"></param>
         public override void OnEndRequest(object sender, EventArgs e)
         {
-            HttpContext context = (HttpContext)sender;
+            var context = (HttpContext)sender;
             if (!AuthenticationRequired)
                 return;
 
             string realm = ServerConfig.GetConfig().Authentication.Realm;
             string nonce = GetCurrentNonce();
 
-            StringBuilder challenge = new StringBuilder("Digest realm=\"");
+            var challenge = new StringBuilder("Digest realm=\"");
             challenge.Append(realm);
             challenge.Append("\"");
             challenge.Append(", nonce=\"");
@@ -201,13 +197,8 @@ namespace OpenNETCF.Web.Security
             byte[] expireBytes = Encoding.ASCII.GetBytes(nonceTime.ToString("G"));
             string nonce = Convert.ToBase64String(expireBytes);
             nonce = nonce.TrimEnd('=');
-            
-            return nonce;
-        }
 
-        internal override string User
-        {
-            get { return m_user; }
+            return nonce;
         }
     }
 }

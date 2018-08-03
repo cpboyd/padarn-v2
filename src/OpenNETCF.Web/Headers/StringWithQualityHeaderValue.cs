@@ -3,20 +3,24 @@
 //
 
 using System;
-using System.Linq;
-using System.Collections.Generic;
-using System.Text;
-using OpenNETCF.Web.Core;
 
 namespace OpenNETCF.Web.Headers
 {
     /// <summary>
     /// Represents a string header value with an optional quality.
     /// </summary>
-    public class StringWithQualityHeaderValue: ICloneable
+    public class StringWithQualityHeaderValue : ICloneable
     {
-        private readonly string _value;
         private readonly double _quality;
+        private readonly string _value;
+
+        public StringWithQualityHeaderValue(string value) : this(value, 1) { }
+
+        public StringWithQualityHeaderValue(string value, double quality)
+        {
+            _value = value;
+            _quality = quality;
+        }
 
         public string Value
         {
@@ -28,22 +32,14 @@ namespace OpenNETCF.Web.Headers
             get { return _quality; }
         }
 
-        public StringWithQualityHeaderValue(string value) : this(value, 1) {}
-
-        public StringWithQualityHeaderValue(string value, double quality)
+        public object Clone()
         {
-            _value = value;
-            _quality = quality;
+            return new StringWithQualityHeaderValue(Value, Quality);
         }
 
         public override string ToString()
         {
             return Value + ";q=" + Quality;
-        }
-
-        public object Clone()
-        {
-            return new StringWithQualityHeaderValue(Value, Quality);
         }
 
         public static StringWithQualityHeaderValue Parse(string input)

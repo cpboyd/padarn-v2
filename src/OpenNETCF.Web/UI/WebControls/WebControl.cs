@@ -19,7 +19,6 @@
 #endregion
 
 using System.Xml;
-using OpenNETCF.Web.Core;
 
 namespace OpenNETCF.Web.UI.WebControls
 {
@@ -59,6 +58,8 @@ namespace OpenNETCF.Web.UI.WebControls
         /// </summary>
         protected virtual string TagName { get; private set; }
 
+        protected internal string Content { get; set; }
+
         /// <summary>
         /// Renders the HTML opening tag of the control to the specified writer. This method is used primarily by control developers.
         /// </summary>
@@ -74,7 +75,5 @@ namespace OpenNETCF.Web.UI.WebControls
         {
             writer.WriteEndElement();
         }
-
-        protected internal string Content { get; set; }
     }
 }

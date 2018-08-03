@@ -17,24 +17,18 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
 
+using System;
 using System.Collections.Generic;
-using System.Text;
 using System.IO;
-using OpenNETCF.Web.Core;
 using System.Net;
+using System.Text;
 
 namespace OpenNETCF.Web.UI
 {
     internal class HtmlElement
     {
         private string m_contents;
-        internal string TagName { get; private set; }
-        internal bool IsEmpty { get; set; }
-        internal bool StartWritten { get; set; }
-        internal bool ContentsWritten { get; set; }
-        internal Dictionary<string, string> Attributes { get; private set; }
 
         internal HtmlElement(string tagName)
         {
@@ -46,7 +40,13 @@ namespace OpenNETCF.Web.UI
             Attributes = new Dictionary<string, string>();
         }
 
-        internal string StartTag 
+        internal string TagName { get; private set; }
+        internal bool IsEmpty { get; set; }
+        internal bool StartWritten { get; set; }
+        internal bool ContentsWritten { get; set; }
+        internal Dictionary<string, string> Attributes { get; private set; }
+
+        internal string StartTag
         {
             get
             {
@@ -74,13 +74,13 @@ namespace OpenNETCF.Web.UI
             }
         }
 
-        internal string EndTag 
+        internal string EndTag
         {
             get
             {
-//                if (IsEmpty) return string.Empty;
+                //                if (IsEmpty) return string.Empty;
 
-                return string.Format("</{0}>", TagName);                    
+                return string.Format("</{0}>", TagName);
             }
         }
 
@@ -101,13 +101,13 @@ namespace OpenNETCF.Web.UI
     /// </summary>
     public class HtmlTextWriter : TextWriter
     {
-        private TextWriter m_writer;
-        private Stack<HtmlElement> m_elementStack = new Stack<HtmlElement>();
         private Dictionary<string, string> m_NextElementAttributes = new Dictionary<string, string>();
 
         private HtmlElement m_currentElement;
+        private Stack<HtmlElement> m_elementStack = new Stack<HtmlElement>();
         private int m_indentLevel;
         private string m_tabString = new string(' ', 2);
+        private TextWriter m_writer;
 
         /// <summary>
         /// Initializes a new instance of the HtmlTextWriter class that uses a default tab string.
@@ -117,6 +117,14 @@ namespace OpenNETCF.Web.UI
         {
             m_writer = writer;
             m_currentElement = null;
+        }
+
+        /// <summary>
+        /// Gets the encoding that the HtmlTextWriter object uses to write content to the page. 
+        /// </summary>
+        public override Encoding Encoding
+        {
+            get { return Encoding.UTF8; }
         }
 
         /// <summary>
@@ -357,14 +365,6 @@ namespace OpenNETCF.Web.UI
         public void WriteEndTag(string tagName)
         {
             Write(string.Format("</{0}>", tagName));
-        }
-
-        /// <summary>
-        /// Gets the encoding that the HtmlTextWriter object uses to write content to the page. 
-        /// </summary>
-        public override Encoding Encoding
-        {
-            get { return Encoding.UTF8; }
         }
     }
 }

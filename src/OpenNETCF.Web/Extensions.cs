@@ -17,15 +17,21 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
 
-using System.Collections.Generic;
+using System;
 using System.Globalization;
 using System.Linq;
-using System.Text;
 using OpenNETCF.Web.UI;
 
-namespace OpenNETCF.Web.Core
+#if NET_20
+namespace System.Runtime.CompilerServices
+{
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class | AttributeTargets.Assembly)]
+    public sealed class ExtensionAttribute : Attribute { }
+}
+#endif
+
+namespace OpenNETCF.Web
 {
     internal static class Extensions
     {
