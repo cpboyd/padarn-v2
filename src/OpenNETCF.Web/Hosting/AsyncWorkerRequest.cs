@@ -695,7 +695,7 @@ namespace OpenNETCF.Web.Hosting
 
                         if (t == null)
                         {
-                            throw new HttpException(HttpErrorCode.InternalServerError,
+                            throw new HttpException(HttpStatusCode.InternalServerError,
                                 string.Format("Unable To load type '{0}'", typeName));
                         }
                     }
@@ -751,7 +751,7 @@ namespace OpenNETCF.Web.Hosting
                         Console.WriteLine(ex);
                     }
 
-                    throw new HttpException(HttpErrorCode.InternalServerError,
+                    throw new HttpException(HttpStatusCode.InternalServerError,
                         string.Format("Unable to create '{0}' handler for '{1}' method: {2}",
                             t.Name,
                             method.GetVerbName(),
@@ -835,7 +835,7 @@ namespace OpenNETCF.Web.Hosting
                 {
                     m_requestCount = 0;
                     m_lastRequestFrom = string.Empty;
-                    throw new HttpException(HttpErrorCode.Unauthorized, "Unauthorized");
+                    throw new HttpException(HttpStatusCode.Unauthorized, "Unauthorized");
                 }
 
             }
@@ -901,59 +901,73 @@ namespace OpenNETCF.Web.Hosting
                 var err = e as HttpException;
 
                 // see if we have a custom error page:
-                exceptionPage = GetCustomErrorPage((HttpErrorCode)err.GetHttpCode());
+                HttpStatusCode statusCode = err.StatusCode;
+                exceptionPage = GetCustomErrorPage(statusCode);
 
-                switch (err.GetHttpCode())
+                switch (statusCode)
                 {
-                    case (int)HttpErrorCode.NotFound:
+                    case HttpStatusCode.NotFound:
                         Status = StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusFileNotFound);
                         if (exceptionPage == null)
                         {
-                            exceptionPage = string.Format(StringHelper.ConvertVerbatimLineEndings(Resources.ContextualErrorTemplate), Resources.FileNotFoundTitle, e.Message, Resources.FileNotFoundDesc);
+                            exceptionPage = string.Format(
+                                StringHelper.ConvertVerbatimLineEndings(Resources.ContextualErrorTemplate),
+                                Resources.FileNotFoundTitle, e.Message, Resources.FileNotFoundDesc);
                         }
                         break;
-                    case (int)HttpErrorCode.Unauthorized:
+                    case HttpStatusCode.Unauthorized:
                         Status = StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusUnauthorized);
                         if (exceptionPage == null)
                         {
-                            exceptionPage = string.Format(StringHelper.ConvertVerbatimLineEndings(Resources.ContextualErrorTemplate), Resources.UnauthorizedTitle, Resources.UnuthorizedMessage, Resources.UnauthorizedDesc);
+                            exceptionPage = string.Format(
+                                StringHelper.ConvertVerbatimLineEndings(Resources.ContextualErrorTemplate),
+                                Resources.UnauthorizedTitle, Resources.UnuthorizedMessage, Resources.UnauthorizedDesc);
                         }
                         break;
                     default:
-                        if (e.InnerException != null)
-                        {
-                            if (e.InnerException.Message == Resources.Max_request_length_exceeded)
-                            {
-                                Status = StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusInternalServerError);
-                                if (exceptionPage == null)
-                                {
-                                    exceptionPage = string.Format(StringHelper.ConvertVerbatimLineEndings(Resources.ContextualErrorTemplate), Resources.MaxRequestLengthErrorTitle, e.Message, Resources.MaxRequestLengthErrorDesc);
-                                }
-                            }
-                            else if (e.InnerException.Message == Resources.DiskError)
-                            {
-                                Status = StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusInternalServerError);
-                                if (exceptionPage == null)
-                                {
-                                    exceptionPage = string.Format(StringHelper.ConvertVerbatimLineEndings(Resources.ContextualErrorTemplate), Resources.DiskErrorTitle, e.Message, Resources.DiskErrorDesc);
-                                }
-                            }
-                            else if (e.InnerException is OutOfMemoryException)
-                            {
-                                Status = StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusInternalServerError);
-                                if (exceptionPage == null)
-                                {
-                                    exceptionPage = string.Format(StringHelper.ConvertVerbatimLineEndings(Resources.ContextualErrorTemplate), Resources.OutOfMemoryErrorTitle, e.Message, Resources.OutOfMemoryErrorDesc);
-                                }
-                            }
-                        }
-                        else
+                        if (e.InnerException == null)
                         {
                             // pass along the error
-                            Status = GetStatusForErrorCode((HttpErrorCode)((e as HttpException).GetHttpCode()));
+                            Status = GetStatusForErrorCode(statusCode);
                             if (exceptionPage == null)
                             {
-                                exceptionPage = string.Format(Resources.ErrorPage, Path, string.Format(Resources.UnhandledExceptionDesc, Path), string.Format("{0}: {1}", e.GetType().FullName, e.Message), ParseStackTrace(e.StackTrace));
+                                exceptionPage = string.Format(Resources.ErrorPage, Path,
+                                    string.Format(Resources.UnhandledExceptionDesc, Path),
+                                    string.Format("{0}: {1}", e.GetType().FullName, e.Message),
+                                    ParseStackTrace(e.StackTrace));
+                            }
+                            break;
+                        }
+
+                        if (e.InnerException.Message == Resources.Max_request_length_exceeded)
+                        {
+                            Status = StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusInternalServerError);
+                            if (exceptionPage == null)
+                            {
+                                exceptionPage = string.Format(
+                                    StringHelper.ConvertVerbatimLineEndings(Resources.ContextualErrorTemplate),
+                                    Resources.MaxRequestLengthErrorTitle, e.Message,
+                                    Resources.MaxRequestLengthErrorDesc);
+                            }
+                        }
+                        else if (e.InnerException.Message == Resources.DiskError)
+                        {
+                            Status = StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusInternalServerError);
+                            if (exceptionPage == null)
+                            {
+                                exceptionPage = string.Format(
+                                    StringHelper.ConvertVerbatimLineEndings(Resources.ContextualErrorTemplate),
+                                    Resources.DiskErrorTitle, e.Message, Resources.DiskErrorDesc);
+                            }
+                        }
+                        else if (e.InnerException is OutOfMemoryException)
+                        {
+                            Status = StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusInternalServerError);
+                            if (exceptionPage == null)
+                            {
+                                exceptionPage = string.Format(
+                                    StringHelper.ConvertVerbatimLineEndings(Resources.ContextualErrorTemplate),
+                                    Resources.OutOfMemoryErrorTitle, e.Message, Resources.OutOfMemoryErrorDesc);
                             }
                         }
                         break;
@@ -962,7 +976,8 @@ namespace OpenNETCF.Web.Hosting
             else if (e is FileNotFoundException)
             {
                 Status = StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusFileNotFound);
-                exceptionPage = string.Format(StringHelper.ConvertVerbatimLineEndings(Resources.ContextualErrorTemplate), Resources.CodeBehindNotFoundTitle, e.Message, Resources.CodeBehindNotFoundDesc);
+                exceptionPage = string.Format(StringHelper.ConvertVerbatimLineEndings(Resources.ContextualErrorTemplate),
+                    Resources.CodeBehindNotFoundTitle, e.Message, Resources.CodeBehindNotFoundDesc);
             }
             else if (e is TypeLoadException)
             {
@@ -974,8 +989,10 @@ namespace OpenNETCF.Web.Hosting
             {
                 Status = StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusInternalServerError);
                 // see if we have a custom error page:
-                exceptionPage = GetCustomErrorPage(HttpErrorCode.InternalServerError) ??
-                                string.Format(Resources.ErrorPage, Path, string.Format(Resources.UnhandledExceptionDesc, Path), string.Format("{0}: {1}", e.GetType().FullName, e.Message), ParseStackTrace(e.StackTrace));
+                exceptionPage = GetCustomErrorPage(HttpStatusCode.InternalServerError) ?? string.Format(
+                    Resources.ErrorPage, Path, string.Format(Resources.UnhandledExceptionDesc, Path),
+                    string.Format("{0}: {1}", e.GetType().FullName, e.Message), ParseStackTrace(e.StackTrace)
+                    );
             }
 
             byte[] b = Encoding.UTF8.GetBytes(exceptionPage);
@@ -1108,13 +1125,13 @@ namespace OpenNETCF.Web.Hosting
                         if (!File.Exists(localFile))
                         {
                             string name = UrlPath.FixVirtualPathSlashes(System.IO.Path.Combine(Path, defaultDoc ?? string.Empty));
-                            throw new HttpException(404, string.Format("The file '{0}' cannot be found.", name));
+                            throw new HttpException(HttpStatusCode.NotFound, string.Format("The file '{0}' cannot be found.", name));
                         }
 
                         // validate the requested file is *beneath* the server root (no navigating above the root)
                         if (!IsSubDirectoryOf(localFile, ServerConfig.GetConfig().DocumentRoot))
                         {
-                            throw new HttpException(HttpErrorCode.NotFound, "Not found");
+                            throw new HttpException(HttpStatusCode.NotFound, "Not found");
                         }
                     }
                     else
@@ -1262,7 +1279,7 @@ namespace OpenNETCF.Web.Hosting
 
         private Exception LastError { get; set; }
 
-        private string GetCustomErrorPage(HttpErrorCode errorCode)
+        private string GetCustomErrorPage(HttpStatusCode errorCode)
         {
             var extensions = new[] { "htm", "html", "aspx" };
 
@@ -1294,48 +1311,48 @@ namespace OpenNETCF.Web.Hosting
             return returnPage;
         }
 
-        private string GetStatusForErrorCode(HttpErrorCode error)
+        private string GetStatusForErrorCode(HttpStatusCode error)
         {
             switch (error)
             {
-                case HttpErrorCode.BadRequest: // 400
+                case HttpStatusCode.BadRequest: // 400
                     return StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusBadRequest);
-                case HttpErrorCode.Unauthorized: // 401
+                case HttpStatusCode.Unauthorized: // 401
                     return StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusUnauthorized);
-                case HttpErrorCode.PaymentRequired: // 402
+                case HttpStatusCode.PaymentRequired: // 402
                     return StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusPaymentRequired);
-                case HttpErrorCode.Forbidden: // 403
+                case HttpStatusCode.Forbidden: // 403
                     return StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusForbidden);
-                case HttpErrorCode.NotFound: // 404
+                case HttpStatusCode.NotFound: // 404
                     return StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusFileNotFound);
-                case HttpErrorCode.MethodNotAllowed: // 405
+                case HttpStatusCode.MethodNotAllowed: // 405
                     return StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusNotAllowed);
-                case HttpErrorCode.NotAcceptable: // 406
+                case HttpStatusCode.NotAcceptable: // 406
                     return StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusNotAcceptable);
-                case HttpErrorCode.ProxyAuthenticationRequired: // 407
+                case HttpStatusCode.ProxyAuthenticationRequired: // 407
                     return StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusProxyAuthRequired);
-                case HttpErrorCode.RequestTimeout: // 408
+                case HttpStatusCode.RequestTimeout: // 408
                     return StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusRequestTimeout);
-                case HttpErrorCode.Conflict: // 409
+                case HttpStatusCode.Conflict: // 409
                     return StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusConflict);
-                case HttpErrorCode.Gone: // 410
+                case HttpStatusCode.Gone: // 410
                     return StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusGone);
-                case HttpErrorCode.LengthRequired: // 411
+                case HttpStatusCode.LengthRequired: // 411
                     return StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusLengthRequired);
-                case HttpErrorCode.PreconditionFailed: // 412
+                case HttpStatusCode.PreconditionFailed: // 412
                     return StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusPreconditionFailed);
-                case HttpErrorCode.RequestEntityTooLarge: // 413
+                case HttpStatusCode.RequestEntityTooLarge: // 413
                     return StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusRequestEntityTooLarge);
-                case HttpErrorCode.RequestURITooLong: // 414
+                case HttpStatusCode.RequestUriTooLong: // 414
                     return StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusRequestURITooLong);
-                case HttpErrorCode.UnsupportedMediaType: // 415
+                case HttpStatusCode.UnsupportedMediaType: // 415
                     return StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusUnsupportedMediaType);
-                case HttpErrorCode.RequestedRangeNotSatisfiable: // 416
+                case HttpStatusCode.RequestedRangeNotSatisfiable: // 416
                     return StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusRequestedRangeNotSatisfiable);
-                case HttpErrorCode.ExpectationFailed: // 417
+                case HttpStatusCode.ExpectationFailed: // 417
                     return StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusExpectationFailed);
 
-                case HttpErrorCode.InternalServerError: // 500
+                case HttpStatusCode.InternalServerError: // 500
                     return StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusInternalServerError);
                 default:
                     return string.Format(StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusGeneric), ((int)error).ToString());
@@ -1361,7 +1378,7 @@ namespace OpenNETCF.Web.Hosting
 
             if (vf == null)
             {
-                throw new HttpException(404, Resources.HttpFileNotFound);
+                throw new HttpException(HttpStatusCode.NotFound, Resources.HttpFileNotFound);
             }
 
             HttpContext.Current.Response.ContentType = MimeMapping.GetMimeMapping(requestPath);
@@ -1553,7 +1570,7 @@ namespace OpenNETCF.Web.Hosting
             //check to max sure we have not exceeded the maxlength
             if (length > HttpRuntimeConfig.GetConfig().MaxRequestLengthBytes)
             {
-                throw new HttpException(500, Resources.Max_request_length_exceeded);
+                throw new HttpException(HttpStatusCode.InternalServerError, Resources.Max_request_length_exceeded);
             }
             //See if we only downloaded partial data
             if (m_partialDownload)
@@ -1627,13 +1644,11 @@ namespace OpenNETCF.Web.Hosting
                   3072/*Use 3k of memory then go to file if we go out of this threshold*/,
                   ((IPEndPoint)client.RemoteEndPoint).Address);
 
-            int received = -1;
-
             //TODO: I don't like this magic number, needs to get cleaned up
             // was fixed in 12259, but may have introduced other bugs (reverted in 13136)
             var buffer = new byte[10240];
 
-            received = client.Receive(buffer);
+            int received = client.Receive(buffer);
 
             if (received > 0)
             {
@@ -1683,8 +1698,7 @@ namespace OpenNETCF.Web.Hosting
                     if (client.Available > 0)
                     {
                         buffer = new byte[10240];
-                        int received = -1;
-                        received = client.Receive(buffer);
+                        int received = client.Receive(buffer);
                         if (received != -1)
                         {
                             newContent.AddBytes(buffer, 0, received);

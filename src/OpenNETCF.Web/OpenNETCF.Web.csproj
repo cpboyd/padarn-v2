@@ -193,7 +193,6 @@
     <Compile Include="Headers\HttpCookie.cs" />
     <Compile Include="Headers\HttpCookieCollection.cs" />
     <Compile Include="Headers\HttpCookieMode.cs" />
-    <Compile Include="HttpErrorCode.cs" />
     <Compile Include="HttpException.cs" />
     <Compile Include="HttpFileCollection.cs" />
     <Compile Include="Handlers\HttpHandlerResult.cs" />

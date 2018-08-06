@@ -229,7 +229,7 @@ namespace OpenNETCF.Web.Server
                         if (m_clients.Count >= m_maxConnections)
                         {
                             var errorHandler = new DefaultWorkerRequest(sock, m_logProvider);
-                            HttpRuntime.ProcessError(errorHandler, HttpErrorCode.Forbidden, "Maximum Connections Exceeded");
+                            HttpRuntime.ProcessError(errorHandler, HttpStatusCode.Forbidden, "Maximum Connections Exceeded");
                             return;
                         }
                         else

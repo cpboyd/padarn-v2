@@ -17,6 +17,9 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
+
+using System.Net;
+
 namespace OpenNETCF.Web
 {
     using System;
@@ -119,7 +122,7 @@ namespace OpenNETCF.Web
             catch (System.Xml.XmlException ex)
             {
                 // TODO: format a custom error screen for this (page parsing issue)
-                throw new HttpException(HttpErrorCode.InternalServerError, ex.Message);
+                throw new HttpException(HttpStatusCode.InternalServerError, ex.Message);
             }
 
             // for page life cycle see http://msdn.microsoft.com/en-us/library/ms178472.aspx
@@ -254,7 +257,7 @@ namespace OpenNETCF.Web
 
             if (pages == null)
             {
-                throw new HttpException(HttpErrorCode.InternalServerError, 
+                throw new HttpException(HttpStatusCode.InternalServerError, 
                     string.Format("Unable to load type information from Code Behind assembly at '{0}'. Check the file, reference versions and dependencies",
                     asmPath));
             }

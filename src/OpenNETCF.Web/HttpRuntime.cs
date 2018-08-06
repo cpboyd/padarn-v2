@@ -20,6 +20,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Net;
 using OpenNETCF.Web.Logging;
 
 namespace OpenNETCF.Web
@@ -46,7 +47,7 @@ namespace OpenNETCF.Web
             ProcessRequestInternal(wr, null);
         }
 
-        internal static void ProcessError(HttpWorkerRequest wr, HttpErrorCode error, string errorMessage)
+        internal static void ProcessError(HttpWorkerRequest wr, HttpStatusCode error, string errorMessage)
         {
             var ctx = new HttpContext(wr, false);
             ctx.Response.StatusCode = (int)error;

@@ -17,9 +17,11 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
+
 using System;
+using System.Net;
 using System.Runtime.InteropServices;
-using System.Security;
+
 //using OpenNETCF.Configuration;
 
 namespace OpenNETCF.Web
@@ -29,18 +31,7 @@ namespace OpenNETCF.Web
     /// </summary>
     public class HttpException : ExternalException
     {
-        private HttpErrorCode httpCode;
- 
-        /// <summary>
-        /// Creates a new <see cref="HttpException"/> exception based on the error code that 
-        /// is returned from the Win32 API GetLastError() method.
-        /// </summary>
-        /// <param name="message"></param>
-        /// <returns></returns>
-        public static HttpException CreateFromLastError(string message)
-        {
-            return new HttpException(message, HResultFromLastError(Marshal.GetLastWin32Error()));
-        }
+        private HttpStatusCode httpCode = HttpStatusCode.InternalServerError;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="HttpException"/> class using a supplied error message.
@@ -59,7 +50,8 @@ namespace OpenNETCF.Web
         public HttpException(int httpCode, string message)
             : base(message)
         {
-            this.httpCode = (HttpErrorCode)httpCode;
+            // TODO: Allow custom HTTP status codes?
+            this.httpCode = (HttpStatusCode)httpCode;
         }
 
         /// <summary>
@@ -67,7 +59,7 @@ namespace OpenNETCF.Web
         /// </summary>
         /// <param name="httpCode"></param>
         /// <param name="message"></param>
-        public HttpException(HttpErrorCode httpCode, string message)
+        public HttpException(HttpStatusCode httpCode, string message)
             : base(message)
         {
             this.httpCode = httpCode;
@@ -89,7 +81,7 @@ namespace OpenNETCF.Web
         /// <param name="httpCode"></param>
         /// <param name="message"></param>
         /// <param name="innerException"></param>
-        public HttpException(HttpErrorCode httpCode, string message, Exception innerException)
+        public HttpException(HttpStatusCode httpCode, string message, Exception innerException)
             : base(message, innerException)
         {
             this.httpCode = httpCode;
@@ -112,7 +104,7 @@ namespace OpenNETCF.Web
         /// <param name="httpCode"></param>
         /// <param name="message"></param>
         /// <param name="hr"></param>
-        public HttpException(HttpErrorCode httpCode, string message, int hr)
+        public HttpException(HttpStatusCode httpCode, string message, int hr)
             : base(message)
         {
             base.HResult = hr;
@@ -120,7 +112,27 @@ namespace OpenNETCF.Web
         }
 
         /// <summary>
-        /// 
+        /// Gets the HTTP response status code as an enum.
+        /// </summary>
+        /// <returns></returns>
+        public HttpStatusCode StatusCode
+        {
+            get { return httpCode; }
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="HttpException"/> exception based on the error code that 
+        /// is returned from the Win32 API GetLastError() method.
+        /// </summary>
+        /// <param name="message"></param>
+        /// <returns></returns>
+        public static HttpException CreateFromLastError(string message)
+        {
+            return new HttpException(message, HResultFromLastError(Marshal.GetLastWin32Error()));
+        }
+
+        /// <summary>
+        /// Gets the HTTP response status code to return to the client.
         /// </summary>
         /// <returns></returns>
         public int GetHttpCode()
@@ -128,18 +140,15 @@ namespace OpenNETCF.Web
             return (int)GetHttpCodeForException(this);
         }
 
-        internal static HttpErrorCode GetHttpCodeForException(Exception e)
+        internal static HttpStatusCode GetHttpCodeForException(Exception e)
         {
-            if(e is HttpException)
+            var httpException = e as HttpException;
+            if (httpException != null && httpException.httpCode > 0)
             {
-                HttpException httpException = (HttpException)e;
-                if(httpException.httpCode > 0)
-                {
-                    return httpException.httpCode;
-                }
+                return httpException.httpCode;
             }
 
-            return HttpErrorCode.InternalServerError;
+            return HttpStatusCode.InternalServerError;
         }
 
         internal static int HResultFromLastError(int lastError)

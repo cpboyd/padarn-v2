@@ -23,6 +23,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Security;
 using System.Text;
 using OpenNETCF.Web.Headers;
@@ -91,11 +92,11 @@ namespace OpenNETCF.Web
                     }
                     catch (IOException)
                     {
-                        throw new HttpException(404, Resources.HttpEnumeratorError);
+                        throw new HttpException(HttpStatusCode.NotFound, Resources.HttpEnumeratorError);
                     }
                     catch (SecurityException)
                     {
-                        throw new HttpException(401, Resources.HttpEnumeratorDenied);
+                        throw new HttpException(HttpStatusCode.Unauthorized, Resources.HttpEnumeratorDenied);
                     }
 
                     string ims = request.Headers["HTTP_IF_MODIFIED_SINCE"];
@@ -119,12 +120,12 @@ namespace OpenNETCF.Web
 
                     if ((requestedFile.Attributes & FileAttributes.Hidden) != 0)
                     {
-                        throw new HttpException(404, Resources.HttpFileHidden);
+                        throw new HttpException(HttpStatusCode.NotFound, Resources.HttpFileHidden);
                     }
 
                     if (filename[filename.Length - 1].Equals('.'))
                     {
-                        throw new HttpException(404, Resources.HttpFileNotFound);
+                        throw new HttpException(HttpStatusCode.NotFound, Resources.HttpFileNotFound);
                     }
 
                     DateTime lastModTime = requestedFile.LastWriteTime;
@@ -142,7 +143,7 @@ namespace OpenNETCF.Web
                     }
                     catch (Exception)
                     {
-                        throw new HttpException(401, Resources.HttpAccessForbidden);
+                        throw new HttpException(HttpStatusCode.Unauthorized, Resources.HttpAccessForbidden);
                     }
 
 
