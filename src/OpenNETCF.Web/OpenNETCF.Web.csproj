@@ -216,12 +216,6 @@
     <Compile Include="Headers\HttpValueCollection.cs" />
     <Compile Include="Headers\HttpMethod.cs" />
     <Compile Include="MultipartContentItem.cs" />
-    <Compile Include="Networking\INetworkInterface.cs" />
-    <Compile Include="Networking\IP_ADAPTER_INFO.cs" />
-    <Compile Include="Networking\NativeMethods.cs" />
-    <Compile Include="Networking\NetworkInterface.cs" />
-    <Compile Include="Networking\NetworkInterface_static.cs" />
-    <Compile Include="Networking\PhysicalAddress.cs" />
     <Compile Include="Parsers\AspxInfo.cs" />
     <Compile Include="Routing\IRouteHandler.cs" />
     <Compile Include="Routing\RequestContext.cs" />
