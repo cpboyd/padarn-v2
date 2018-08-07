@@ -17,8 +17,8 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
+
 using System;
-using Microsoft.Win32;
 using OpenNETCF.Web.Helpers;
 
 namespace OpenNETCF.Web
@@ -37,17 +37,145 @@ namespace OpenNETCF.Web
 
     internal sealed class VirtualPath : IComparable
     {
-        private string _virtualPath;
-        private string _appRelativeVirtualPath;
-
         internal static VirtualPath RootVirtualPath;
         private readonly static char[] illegalVirtualPathChars;
+        private string _appRelativeVirtualPath;
+        private string _virtualPath;
 
         static VirtualPath()
         {
-            illegalVirtualPathChars = new char[] { ':', '?', '*', '\0' };
+            illegalVirtualPathChars = new[] { ':', '?', '*', '\0' };
             RootVirtualPath = Create("/");
         }
+
+        private VirtualPath() { }
+
+        private VirtualPath(string virtualPath)
+        {
+            if (UrlPath.IsAppRelativePath(virtualPath))
+            {
+                this._appRelativeVirtualPath = virtualPath;
+            }
+            else
+            {
+                this._virtualPath = virtualPath;
+            }
+        }
+
+        public string VirtualPathString
+        {
+            get
+            {
+                if (this._virtualPath == null)
+                {
+                    this._virtualPath = HttpContext.Current.Request.Path;
+                }
+
+                return this._virtualPath;
+            }
+        }
+
+        internal string VirtualPathStringNoTrailingSlash
+        {
+            get { return UrlPath.RemoveSlashFromPathIfNeeded(this.VirtualPathString); }
+        }
+
+        internal string VirtualPathStringWhicheverAvailable
+        {
+            get
+            {
+                return this._virtualPath ?? this._appRelativeVirtualPath;
+            }
+        }
+
+        public string Extension
+        {
+            get { return UrlPath.GetExtension(this.VirtualPathString); }
+        }
+
+        public string FileName
+        {
+            get { return UrlPath.GetFileName(this.VirtualPathStringNoTrailingSlash); }
+        }
+
+        public bool IsRelative
+        {
+            get { return ((this._virtualPath != null) && (this._virtualPath[0] != '/')); }
+        }
+
+        public bool IsRoot
+        {
+            get { return (this._virtualPath == "/"); }
+        }
+
+        public VirtualPath Parent
+        {
+            get
+            {
+                this.FailIfRelativePath();
+
+                if (this.IsRoot)
+                {
+                    return null;
+                }
+
+                string virtualPathStringNoTrailingSlash = UrlPath.RemoveSlashFromPathIfNeeded(this.VirtualPathStringWhicheverAvailable);
+                if (virtualPathStringNoTrailingSlash == "~")
+                {
+                    virtualPathStringNoTrailingSlash = this.VirtualPathStringNoTrailingSlash;
+                }
+
+                int num = virtualPathStringNoTrailingSlash.LastIndexOf('/');
+                return (num == 0) ? RootVirtualPath
+                    : new VirtualPath(virtualPathStringNoTrailingSlash.Substring(0, num + 1));
+            }
+        }
+
+        public string AppRelativeVirtualPathString
+        {
+            get
+            {
+                return this.AppRelativeVirtualPathStringOrNull ?? this._virtualPath;
+            }
+        }
+
+        internal string AppRelativeVirtualPathStringOrNull
+        {
+            get
+            {
+                //if (this._appRelativeVirtualPath == null)
+                //{
+                //    if (this.flags[0x4])
+                //    {
+                //        return null;
+                //    }
+
+                //    this._appRelativeVirtualPath = UrlPath.MakeVirtualPathAppRelativeOrNull(this._virtualPath);
+                //    //this.flags[0x4] = true;
+                //    if (this._appRelativeVirtualPath == null)
+                //    {
+                //        return null;
+                //    }
+                //}
+                return this._appRelativeVirtualPath;
+            }
+        }
+
+        #region IComparable Members
+
+        int IComparable.CompareTo(object obj)
+        {
+            var path = obj as VirtualPath;
+            if (path == null)
+            {
+                throw new ArgumentException();
+            }
+
+            return (path == this) ? 0
+                : StringComparer.InvariantCultureIgnoreCase.Compare(this.VirtualPathString, path.VirtualPathString);
+        }
+
+        #endregion
 
         private static bool ContainsIllegalVirtualPathChars(string virtualPath)
         {
@@ -83,7 +211,7 @@ namespace OpenNETCF.Web
                 throw new HttpException(""); //Resources.GetString("Invalid_vpath", new object[] { _virtualPath }));
             }
             string normalizedVirtualPath = UrlPath.FixVirtualPathSlashes(virtualPath);
-            if (((options & VirtualPathOptions.FailIfMalformed) != 0) && !object.ReferenceEquals(virtualPath, normalizedVirtualPath))
+            if (((options & VirtualPathOptions.FailIfMalformed) != 0) && !ReferenceEquals(virtualPath, normalizedVirtualPath))
             {
                 throw new HttpException(""); //"Invalid virtual path ", _virtualPath }));
             }
@@ -92,7 +220,7 @@ namespace OpenNETCF.Web
             {
                 virtualPath = UrlPath.AppendSlashToPathIfNeeded(virtualPath);
             }
-            VirtualPath path = new VirtualPath();
+            var path = new VirtualPath();
             if (UrlPath.IsAppRelativePath(virtualPath))
             {
                 virtualPath = UrlPath.ReduceVirtualPath(virtualPath);
@@ -134,155 +262,11 @@ namespace OpenNETCF.Web
             return Create(virtualPath, VirtualPathOptions.AllowAppRelativePath | VirtualPathOptions.AllowAbsolutePath);
         }
 
-        private VirtualPath()
-        {
-        }
-
-        private VirtualPath(string virtualPath)
-        {
-            if (UrlPath.IsAppRelativePath(virtualPath))
-            {
-                this._appRelativeVirtualPath = virtualPath;
-            }
-            else
-            {
-                this._virtualPath = virtualPath;
-            }
-        }
-
-        public string VirtualPathString
-        {
-            get
-            {
-                if (this._virtualPath == null)
-                {
-                    this._virtualPath = HttpContext.Current.Request.Path;
-                }
-
-                return this._virtualPath;
-            }
-        }
-
-        internal string VirtualPathStringNoTrailingSlash
-        {
-            get { return UrlPath.RemoveSlashFromPathIfNeeded(this.VirtualPathString); }
-        }
-
-        internal string VirtualPathStringWhicheverAvailable
-        {
-            get
-            {
-                if (this._virtualPath == null)
-                {
-                    return this._appRelativeVirtualPath;
-                }
-                return this._virtualPath;
-            }
-        }
-
-        int IComparable.CompareTo(object obj)
-        {
-            VirtualPath path = obj as VirtualPath;
-            if (path == null)
-            {
-                throw new ArgumentException();
-            }
-
-            if (path == this)
-            {
-                return 0;
-            }
-
-            return StringComparer.InvariantCultureIgnoreCase.Compare(this.VirtualPathString, path.VirtualPathString);
-        }
-
-        public string Extension
-        {
-            get { return UrlPath.GetExtension(this.VirtualPathString); }
-        }
-        
-        public string FileName
-        {
-            get { return UrlPath.GetFileName(this.VirtualPathStringNoTrailingSlash); }
-        }
-
-        public bool IsRelative
-        {
-            get { return ((this._virtualPath != null) && (this._virtualPath[0] != '/')); }
-        }
-
-        public bool IsRoot
-        {
-            get { return (this._virtualPath == "/"); }
-        }
-
-        public VirtualPath Parent
-        {
-            get
-            {
-                this.FailIfRelativePath();
-
-                if (this.IsRoot)
-                {
-                    return null;
-                }
-
-                string virtualPathStringNoTrailingSlash = UrlPath.RemoveSlashFromPathIfNeeded(this.VirtualPathStringWhicheverAvailable);
-                if (virtualPathStringNoTrailingSlash == "~")
-                {
-                    virtualPathStringNoTrailingSlash = this.VirtualPathStringNoTrailingSlash;
-                }
-
-                int num = virtualPathStringNoTrailingSlash.LastIndexOf('/');
-                if (num == 0)
-                {
-                    return RootVirtualPath;
-                }
-
-                return new VirtualPath(virtualPathStringNoTrailingSlash.Substring(0, num + 1));
-            }
-        }
-
-        public string AppRelativeVirtualPathString
-        {
-            get
-            {
-                string appRelativeVirtualPathStringOrNull = this.AppRelativeVirtualPathStringOrNull;
-                if (appRelativeVirtualPathStringOrNull == null)
-                {
-                    return this._virtualPath;
-                }
-                return appRelativeVirtualPathStringOrNull;
-            }
-        }
-
-        internal string AppRelativeVirtualPathStringOrNull
-        {
-            get
-            {
-                //if (this._appRelativeVirtualPath == null)
-                //{
-                //    if (this.flags[0x4])
-                //    {
-                //        return null;
-                //    }
-
-                //    this._appRelativeVirtualPath = UrlPath.MakeVirtualPathAppRelativeOrNull(this._virtualPath);
-                //    //this.flags[0x4] = true;
-                //    if (this._appRelativeVirtualPath == null)
-                //    {
-                //        return null;
-                //    }
-                //}
-                return this._appRelativeVirtualPath;
-            }
-        }
-
         internal void FailIfRelativePath()
         {
             if (this.IsRelative)
             {
-                throw new ArgumentException(String.Format("The relative virtual path '{0}' is not allowed here.", this._virtualPath));
+                throw new ArgumentException(string.Format("The relative virtual path '{0}' is not allowed here.", this._virtualPath));
             }
         }
     }

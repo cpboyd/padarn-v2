@@ -44,6 +44,8 @@ namespace OpenNETCF.Web.Logging
         private static DateTime m_lastLogDay = DateTime.MinValue;
         private static string m_currentFileName;
 
+        #region ILogProvider Members
+
         /// <summary>
         /// The Padarn configuration state at the time the Provider was created
         /// </summary>
@@ -135,7 +137,7 @@ namespace OpenNETCF.Web.Logging
         public virtual void LogPadarnError(string errorInfo, LogDataItem dataItem)
         {
             Debug.WriteLine(errorInfo);
-            
+
             try
             {
                 if (ServerConfiguration == null) return; // the configuration is null, so we have no output path
@@ -144,7 +146,7 @@ namespace OpenNETCF.Web.Logging
 
                 if (!dataItem.ServerConfiguration.LoggingEnabled) return;
 
-                using (TextWriter writer = File.AppendText( Path.Combine(ServerConfiguration.LogFileFolder, "PadarnErrors.txt")))
+                using (TextWriter writer = File.AppendText(Path.Combine(ServerConfiguration.LogFileFolder, "PadarnErrors.txt")))
                 {
                     writer.WriteLine(errorInfo);
                     writer.Flush();
@@ -165,5 +167,7 @@ namespace OpenNETCF.Web.Logging
         {
             Debug.WriteLine(string.Format("Zone {0} : {1}", zoneMask.ToString(), info));
         }
+
+        #endregion
     }
 }

@@ -35,14 +35,14 @@ namespace OpenNETCF.Web.Configuration
             ParseXml(node);
         }
 
-        public VirtualDirectoryMapping GetVirtualDirectory(string virtualPath)
-        {
-            return Find(mapping => StringComparer.InvariantCultureIgnoreCase.Equals(mapping.VirtualDirectory, virtualPath));
-        }
-
         public VirtualDirectoryMapping this[string virtualPath]
         {
             get { return GetVirtualDirectory(virtualPath); }
+        }
+
+        public VirtualDirectoryMapping GetVirtualDirectory(string virtualPath)
+        {
+            return Find(mapping => StringComparer.InvariantCultureIgnoreCase.Equals(mapping.VirtualDirectory, virtualPath));
         }
 
         public string FindPhysicalDirectoryForVirtualUrlPath(string url)

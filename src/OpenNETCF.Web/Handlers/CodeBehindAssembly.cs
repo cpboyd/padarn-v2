@@ -17,14 +17,14 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
+
+using System;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 
 namespace OpenNETCF.Web
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Reflection;
-
     /// <summary>
     /// Helper class for loading a code-behind assembly into the Web Server
     /// </summary>
@@ -66,37 +66,17 @@ namespace OpenNETCF.Web
         /// <returns>An array of types of type baseType</returns>
         public Type[] GetTypesFromBaseType(Type baseType)
         {
-            Type[] types = null;
             try
             {
-                types = asm.GetTypes();
+                Type[] types = asm.GetTypes();
+
+                return (types == null) ? null
+                    : types.Where(t => t != null && t.IsSubclassOf(baseType)).ToArray();
             }
-            catch(TypeLoadException)
+            catch (TypeLoadException)
             {
                 return null;
             }
-
-            if (types == null)
-            {
-                return types;
-            }
-
-            int count = types.Length;
-
-            List<Type> matchedTypes = new List<Type>();
-
-            for (int i = 0; i < count; i++)
-            {
-                if (types[i] != null)
-                {
-                    if (types[i].IsSubclassOf(baseType))
-                    {
-                        matchedTypes.Add(types[i]);
-                    }
-                }
-            }
-
-            return matchedTypes.ToArray();
         }
     }
 }

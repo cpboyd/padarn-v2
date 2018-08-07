@@ -44,9 +44,9 @@ namespace OpenNETCF.Web.Configuration
         /// <summary>
         /// The currently set caching profiles for the server
         /// </summary>
-        public CachingProfile[] Profiles 
+        public CachingProfile[] Profiles
         {
-            get { return ToArray(); } 
+            get { return ToArray(); }
         }
     }
 }

@@ -17,9 +17,8 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
+
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.IO;
 
 namespace OpenNETCF.Web
@@ -36,6 +35,33 @@ namespace OpenNETCF.Web
         internal HttpInputStream(HttpRawRequestContent data, int offset, int length)
         {
             this.Init(data, offset, length);
+        }
+
+        // Properties
+        public override bool CanRead
+        {
+            get { return true; }
+        }
+
+        public override bool CanSeek
+        {
+            get { return true; }
+        }
+
+        public override bool CanWrite
+        {
+            get { return false; }
+        }
+
+        public override long Length
+        {
+            get { return (long)this.m_length; }
+        }
+
+        public override long Position
+        {
+            get { return (long)this.m_pos; }
+            set { this.Seek(value, SeekOrigin.Begin); }
         }
 
         protected override void Dispose(bool disposing)
@@ -92,7 +118,7 @@ namespace OpenNETCF.Web
         public override long Seek(long offset, SeekOrigin origin)
         {
             int num = this.m_pos;
-            int num2 = (int)offset;
+            var num2 = (int)offset;
             switch (origin)
             {
                 case SeekOrigin.Begin:
@@ -141,51 +167,6 @@ namespace OpenNETCF.Web
             if ((this.m_data != null) && (this.m_length > 0))
             {
                 this.m_data.WriteBytes(this.m_offset, this.m_length, s);
-            }
-        }
-
-        // Properties
-        public override bool CanRead
-        {
-            get
-            {
-                return true;
-            }
-        }
-
-        public override bool CanSeek
-        {
-            get
-            {
-                return true;
-            }
-        }
-
-        public override bool CanWrite
-        {
-            get
-            {
-                return false;
-            }
-        }
-
-        public override long Length
-        {
-            get
-            {
-                return (long)this.m_length;
-            }
-        }
-
-        public override long Position
-        {
-            get
-            {
-                return (long)this.m_pos;
-            }
-            set
-            {
-                this.Seek(value, SeekOrigin.Begin);
             }
         }
     }

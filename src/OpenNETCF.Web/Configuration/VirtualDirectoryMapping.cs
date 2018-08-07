@@ -29,6 +29,19 @@ namespace OpenNETCF.Web.Configuration
         private readonly string virtualDirectory;
 
         /// <summary>
+        /// VirtualDirectoryMapping constructor
+        /// </summary>
+        /// <param name="virtualPath"></param>
+        /// <param name="physicalPath"></param>
+        public VirtualDirectoryMapping(string virtualPath, string physicalPath)
+        {
+            this.virtualDirectory = virtualPath;
+            this.physicalDirectory = physicalPath;
+
+            this.RequiresAuthentication = false;
+        }
+
+        /// <summary>
         /// Physical directory path
         /// </summary>
         public string PhysicalDirectory
@@ -48,18 +61,5 @@ namespace OpenNETCF.Web.Configuration
         /// True if the virtual directory requires authentication, otherwise false
         /// </summary>
         public bool RequiresAuthentication { get; internal set; }
-
-        /// <summary>
-        /// VirtualDirectoryMapping constructor
-        /// </summary>
-        /// <param name="virtualPath"></param>
-        /// <param name="physicalPath"></param>
-        public VirtualDirectoryMapping(string virtualPath, string physicalPath)
-        {
-            this.virtualDirectory = virtualPath;
-            this.physicalDirectory = physicalPath;
-
-            this.RequiresAuthentication = false;
-        }
     }
 }

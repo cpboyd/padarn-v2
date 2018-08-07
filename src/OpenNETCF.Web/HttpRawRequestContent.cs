@@ -17,42 +17,44 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
+
 using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Collections.Specialized;
+using System.Diagnostics;
 using System.IO;
+using System.Net;
+using System.Text;
 using System.Text.RegularExpressions;
 using OpenNETCF.Web.Configuration;
-using System.Collections.Specialized;
-using System.Net;
 
 namespace OpenNETCF.Web
 {
     internal class HttpRawRequestContent : IDisposable
     {
+        private static readonly char[] s_ColonOrNL = { ':'/*, '\n' */};
         private int m_chunkLength;
         private int m_chunkOffset;
         private bool m_completed;
         private byte[] m_data;
+        private int m_endofLine;
         private int m_expectedLength;
         private TempFile m_file;
         private int m_fileThreshold;
-        private int m_length;
         private NameValueCollection m_headers;
-        private string m_rawQueryString;
-        private string m_path;
-        private string m_httpVersion;
         private string m_httpMethod;
+        private string m_httpVersion;
+        private int m_length;
+        private int m_lengthOfHeaders = -1;
+        private string m_path;
+        private string m_rawQueryString;
+
+        private IPAddress m_remoteClient;
 
         /// <summary>
         /// The offset in which to start reading the line data
         /// </summary>
         private int m_startofLine;
-        private int m_endofLine;
 
-        private static readonly char[] s_ColonOrNL = { ':'/*, '\n' */};
-
-        private IPAddress m_remoteClient;
         internal HttpRawRequestContent(int fileThreshold, int expectedLength, IPAddress remoteClient, HttpRawRequestContent rawRequest)
             : this(fileThreshold, expectedLength, remoteClient)
         {
@@ -80,6 +82,135 @@ namespace OpenNETCF.Web
                 this.m_data = new byte[this.m_fileThreshold];
             }
         }
+
+        internal int CurrentReadIndex { get { return m_endofLine; } }
+
+        internal NameValueCollection Headers
+        {
+            get
+            {
+                if (m_headers == null)
+                {
+                    m_headers = GetHeaders();
+                }
+                return m_headers;
+            }
+        }
+
+        internal int LengthOfHeaders
+        {
+            get
+            {
+                if (m_lengthOfHeaders == -1)
+                {
+                    for (int x = 0; x < this.Length - 3; x++)
+                    {
+                        if ((this[x] == '\r') && (this[++x] == '\n') &&
+                            (this[++x] == '\r') && (this[++x] == '\n'))
+                        {
+                            //we found the end of the headers so return the length
+                            m_lengthOfHeaders = ++x;
+                            break;
+                        }
+                    }
+                }
+                return m_lengthOfHeaders;
+            }
+        }
+
+        // Properties
+        internal byte this[int index]
+        {
+            get
+            {
+                if (!this.m_completed)
+                {
+                    throw new InvalidOperationException();
+                }
+                if (this.m_file == null)
+                {
+                    return this.m_data[index];
+                }
+                if ((index >= this.m_chunkOffset) && (index < (this.m_chunkOffset + this.m_chunkLength)))
+                {
+                    return this.m_data[index - this.m_chunkOffset];
+                }
+                if ((index < 0) || (index >= this.m_length))
+                {
+                    throw new ArgumentOutOfRangeException("index");
+                }
+                this.m_chunkLength = this.m_file.GetBytes(index, this.m_data.Length, this.m_data, 0);
+                this.m_chunkOffset = index;
+                return this.m_data[0];
+            }
+        }
+
+        internal bool Completed
+        {
+            get { return m_completed; }
+        }
+
+        internal int Length
+        {
+            get { return this.m_length; }
+        }
+
+        public string HttpMethod
+        {
+            get
+            {
+                if (m_httpMethod == null)
+                    ReadContentInfo();
+                return m_httpMethod;
+            }
+        }
+
+        public string Path
+        {
+            get
+            {
+                if (m_path == null)
+                    ReadContentInfo();
+                return m_path;
+            }
+            set
+            {
+                m_path = value;
+            }
+        }
+
+        public string HttpVersion
+        {
+            get
+            {
+                if (m_httpVersion == null)
+                    ReadContentInfo();
+                return m_httpVersion;
+            }
+        }
+
+        public string RawQueryString
+        {
+            get
+            {
+                if (m_rawQueryString == null)
+                    ReadContentInfo();
+                return m_rawQueryString;
+            }
+        }
+
+        #region IDisposable Members
+
+        public void Dispose()
+        {
+            if (this.m_file != null)
+            {
+                this.m_file.Dispose();
+            }
+            m_data = null;
+        }
+
+        #endregion
 
         internal void AddBytes(byte[] data, int offset, int length)
         {
@@ -149,15 +280,6 @@ namespace OpenNETCF.Web
             this.m_file.GetBytes(offset, length, buffer, bufferOffset);
         }
 
-        public void Dispose()
-        {
-            if (this.m_file != null)
-            {
-                this.m_file.Dispose();
-            }
-            m_data = null;
-        }
-
         internal void DoneAddingBytes()
         {
             if (this.m_data == null)
@@ -224,8 +346,6 @@ namespace OpenNETCF.Web
             }
         }
 
-        internal int CurrentReadIndex { get { return m_endofLine; } }
-
         internal string ReadLine(Encoding encoding)
         {
             return ReadLine(encoding, false);
@@ -274,7 +394,7 @@ namespace OpenNETCF.Web
                 ret = this.ReadLine(Encoding.ASCII, true);
                 if (ret == null)
                 {
-                    System.Diagnostics.Debug.WriteLine("ret is null in ReadContentInfo()");
+                    Debug.WriteLine("ret is null in ReadContentInfo()");
                     return null;
                 }
 
@@ -309,47 +429,13 @@ namespace OpenNETCF.Web
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine(ex.Message);
+                Debug.WriteLine(ex.Message);
 
-                if (System.Diagnostics.Debugger.IsAttached)
-                    System.Diagnostics.Debugger.Break();
+                if (Debugger.IsAttached)
+                    Debugger.Break();
             }
 
             return ret;
-        }
-
-        internal NameValueCollection Headers
-        {
-            get
-            {
-                if (m_headers == null)
-                {
-                    m_headers = GetHeaders();
-                }
-                return m_headers;
-            }
-        }
-
-        private int m_lengthOfHeaders = -1;
-        internal int LengthOfHeaders
-        {
-            get
-            {
-                if (m_lengthOfHeaders == -1)
-                {
-                    for (int x = 0; x < this.Length - 3; x++)
-                    {
-                        if ((this[x] == '\r') && (this[++x] == '\n') &&
-                            (this[++x] == '\r') && (this[++x] == '\n'))
-                        {
-                            //we found the end of the headers so return the length
-                            m_lengthOfHeaders = ++x;
-                            break;
-                        }
-                    }
-                }
-                return m_lengthOfHeaders;
-            }
         }
 
         private NameValueCollection GetHeaders()
@@ -381,91 +467,13 @@ namespace OpenNETCF.Web
             return headers;
         }
 
-        // Properties
-        internal byte this[int index]
-        {
-            get
-            {
-                if (!this.m_completed)
-                {
-                    throw new InvalidOperationException();
-                }
-                if (this.m_file == null)
-                {
-                    return this.m_data[index];
-                }
-                if ((index >= this.m_chunkOffset) && (index < (this.m_chunkOffset + this.m_chunkLength)))
-                {
-                    return this.m_data[index - this.m_chunkOffset];
-                }
-                if ((index < 0) || (index >= this.m_length))
-                {
-                    throw new ArgumentOutOfRangeException("index");
-                }
-                this.m_chunkLength = this.m_file.GetBytes(index, this.m_data.Length, this.m_data, 0);
-                this.m_chunkOffset = index;
-                return this.m_data[0];
-            }
-        }
-
-        internal bool Completed
-        {
-            get { return m_completed; }
-        }
-
-        internal int Length
-        {
-            get
-            {
-                return this.m_length;
-            }
-        }
-
-        public string HttpMethod
-        {
-            get
-            {
-                if (m_httpMethod == null)
-                    ReadContentInfo();
-                return m_httpMethod;
-            }
-        }
-
-        public string Path
-        {
-            get
-            {
-                if (m_path == null)
-                    ReadContentInfo();
-                return m_path;
-            }
-            set
-            {
-                m_path = value;
-            }
-        }
-
-        public string HttpVersion
-        {
-            get
-            {
-                if (m_httpVersion == null)
-                    ReadContentInfo();
-                return m_httpVersion;
-            }
-        }
-
-        public string RawQueryString
-        {
-            get
-            {
-                if (m_rawQueryString == null)
-                    ReadContentInfo();
-                return m_rawQueryString;
-            }
-        }
-
         // Nested Types
+
+        internal void ResetRead()
+        {
+            m_endofLine = m_startofLine = 0;
+        }
+
         private class TempFile : IDisposable
         {
             // Fields
@@ -492,14 +500,7 @@ namespace OpenNETCF.Web
                 this.m_filestream = new FileStream(this.m_filename, FileMode.Create, FileAccess.ReadWrite, FileShare.None);
             }
 
-            internal void AddBytes(byte[] data, int offset, int length)
-            {
-                if (this.m_filestream == null)
-                {
-                    throw new InvalidOperationException();
-                }
-                this.m_filestream.Write(data, offset, length);
-            }
+            #region IDisposable Members
 
             public void Dispose()
             {
@@ -515,6 +516,17 @@ namespace OpenNETCF.Web
                 catch
                 {
                 }
+            }
+
+            #endregion
+
+            internal void AddBytes(byte[] data, int offset, int length)
+            {
+                if (this.m_filestream == null)
+                {
+                    throw new InvalidOperationException();
+                }
+                this.m_filestream.Write(data, offset, length);
             }
 
             internal void DoneAddingBytes()
@@ -536,11 +548,6 @@ namespace OpenNETCF.Web
                 this.m_filestream.Seek((long)offset, SeekOrigin.Begin);
                 return this.m_filestream.Read(buffer, bufferOffset, length);
             }
-        }
-
-        internal void ResetRead()
-        {
-            m_endofLine = m_startofLine = 0;
         }
     }
 }

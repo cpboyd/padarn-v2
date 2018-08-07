@@ -17,10 +17,8 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
 
-using System.Collections.Generic;
-using System.Text;
+using System;
 using System.Xml;
 
 namespace OpenNETCF.Web.Configuration
@@ -38,10 +36,26 @@ namespace OpenNETCF.Web.Configuration
             Timeout = DefaultTimeout;
         }
 
-        internal SessionConfiguration(XmlNode node) : this()
+        internal SessionConfiguration(XmlNode node)
+            : this()
         {
             ParseXml(node);
         }
+
+        /// <summary>
+        /// Timeout in minutes
+        /// </summary>
+        public int Timeout { get; private set; }
+
+        /// <summary>
+        /// Specifies the maximum number of concurrent sessions.
+        /// </summary>
+        public int MaxSessions { get; private set; }
+
+        /// <summary>
+        /// Specifies whether session state persistence for the Padarn server is enabled. 
+        /// </summary>
+        public bool AllowSessionState { get; private set; }
 
         internal static SessionConfiguration FromXml(XmlNode sessionNode)
         {
@@ -106,20 +120,5 @@ namespace OpenNETCF.Web.Configuration
                 this.Timeout = DefaultTimeout;
             }
         }
-
-        /// <summary>
-        /// Timeout in minutes
-        /// </summary>
-        public int Timeout { get; private set; }
-
-        /// <summary>
-        /// Specifies the maximum number of concurrent sessions.
-        /// </summary>
-        public int MaxSessions { get; private set; }
-
-        /// <summary>
-        /// Specifies whether session state persistence for the Padarn server is enabled. 
-        /// </summary>
-        public bool AllowSessionState { get; private set; }
     }
 }

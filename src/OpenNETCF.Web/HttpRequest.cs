@@ -18,17 +18,16 @@
 //
 #endregion
 
-using System.Collections.Specialized;
-using System.Text;
-using System.Collections;
-using System.Collections.Generic;
 using System;
-using System.Linq;
-using OpenNETCF.WindowsCE;
+using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.IO;
-using OpenNETCF.Security;
+using System.Linq;
+using System.Net;
+using System.Text;
 using OpenNETCF.Security.Principal;
 using OpenNETCF.Web.Headers;
+using OpenNETCF.WindowsCE;
 
 namespace OpenNETCF.Web
 {
@@ -37,19 +36,32 @@ namespace OpenNETCF.Web
     /// </summary>
     public sealed class HttpRequest
     {
-        private HttpWorkerRequest m_wr;
-        private HttpContext m_context;
-        private HttpValueCollection m_queryString;
-        private HttpBrowserCapabilities m_browser;
-        private byte[] m_queryStringBytes;
-        private IEnumerable<StringWithQualityHeaderValue> m_acceptTypes;
+        private const string BOUNDARY_ATTRIBUTE = "boundary=";
+        private HttpInputStream _inputStream;
         private IEnumerable<StringWithQualityHeaderValue> m_acceptEncoding;
-        private HttpValueCollection m_form;
-        private HttpFileCollection m_files;
+        private IEnumerable<StringWithQualityHeaderValue> m_acceptTypes;
+        private HttpBrowserCapabilities m_browser;
         private Encoding m_contentEncoding;
-        private List<MultipartContentItem> m_multipartContentElements;
+        private HttpContext m_context;
         private HttpCookieCollection m_cookies;
+        private HttpFileCollection m_files;
+        private HttpValueCollection m_form;
+        private List<MultipartContentItem> m_multipartContentElements;
+        private HttpValueCollection m_queryString;
+        private byte[] m_queryStringBytes;
         private string m_subpath;
+        private HttpWorkerRequest m_wr;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="wr"></param>
+        /// <param name="context"></param>
+        public HttpRequest(HttpWorkerRequest wr, HttpContext context)
+        {
+            this.m_wr = wr;
+            this.m_context = context;
+        }
 
         /// <summary>
         /// Gets or sets information about the requesting client's browser capabilities.
@@ -81,22 +93,11 @@ namespace OpenNETCF.Web
         }
 
         /// <summary>
-        /// Forcibly terminates the underlying TCP connection, causing any outstanding I/O to fail.
-        /// </summary>
-        public void Abort()
-        {
-            m_wr.CloseConnection();
-        }
-
-        /// <summary>
         /// Gets the WindowsIdentity type for the current user.
         /// </summary>
         public IIdentity LogonUserIdentity
         {
-            get
-            {
-                return m_context.User.Identity;
-            }
+            get { return m_context.User.Identity; }
         }
 
         /// <summary>
@@ -144,10 +145,7 @@ namespace OpenNETCF.Web
         /// </summary>
         public bool IsSecureConnection
         {
-            get
-            {
-                return m_wr.IsSecure();
-            }
+            get { return m_wr.IsSecure(); }
         }
 
         /// <summary>
@@ -159,7 +157,7 @@ namespace OpenNETCF.Web
             {
                 string remoteaddr = m_wr.GetRemoteAddress();
 
-                System.Net.IPHostEntry hostent = System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName());
+                IPHostEntry hostent = Dns.GetHostEntry(Dns.GetHostName());
                 return hostent.AddressList.Any(address => string.Equals(address.ToString(), remoteaddr));
             }
         }
@@ -383,8 +381,6 @@ namespace OpenNETCF.Web
         /// </summary>
         internal HttpRawRequestContent RawPostContent { get; set; }
 
-        private HttpInputStream _inputStream;
-
         public Stream InputStream
         {
             get
@@ -399,16 +395,6 @@ namespace OpenNETCF.Web
 
                 return _inputStream;
             }
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="wr"></param>
-        /// <param name="context"></param>
-        public HttpRequest(HttpWorkerRequest wr, HttpContext context)
-        {
-            this.m_wr = wr;
-            this.m_context = context;
         }
 
         internal string QueryStringText
@@ -436,6 +422,14 @@ namespace OpenNETCF.Web
                 return contentEncoding.Equals(Encoding.Unicode)
                     ? Encoding.UTF8 : contentEncoding;
             }
+        }
+
+        /// <summary>
+        /// Forcibly terminates the underlying TCP connection, causing any outstanding I/O to fail.
+        /// </summary>
+        public void Abort()
+        {
+            m_wr.CloseConnection();
         }
 
         private IEnumerable<StringWithQualityHeaderValue> ParseAcceptHeader(string s)
@@ -661,7 +655,6 @@ namespace OpenNETCF.Web
             return Encoding.ASCII.GetBytes(boundaryText);
         }
 
-        private const string BOUNDARY_ATTRIBUTE = "boundary=";
         private string ExtractGetBoundaryTextFromContentType(string contentType)
         {
             //Get the boundary as a byte[]

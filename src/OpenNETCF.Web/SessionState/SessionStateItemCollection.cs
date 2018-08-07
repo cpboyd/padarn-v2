@@ -17,12 +17,11 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
 
-using System.Collections.Generic;
-using System.Text;
-using System.Collections.Specialized;
+using System;
 using System.Collections;
+using System.Collections.Specialized;
+using System.Linq;
 
 namespace OpenNETCF.Web.SessionState
 {
@@ -30,21 +29,16 @@ namespace OpenNETCF.Web.SessionState
     /// A collection of objects stored in session state. This class cannot be inherited.
     /// </summary>
     public sealed class SessionStateItemCollection : NameObjectCollectionBase,
-        ISessionStateItemCollection, ICollection, IEnumerable
+        ISessionStateItemCollection
     {
         private object m_syncRoot = new object();
+
+        #region ISessionStateItemCollection Members
 
         /// <summary>
         /// Gets or sets a value indicating whether the collection has been marked as changed.
         /// </summary>
         public bool Dirty { get; set; }
-
-        /// <summary>
-        /// Creates a new, empty SessionStateItemCollection object.
-        /// </summary>
-        public SessionStateItemCollection()
-        {
-        }
 
         /// <summary>
         /// Removes all values and keys from the session-state collection.
@@ -74,16 +68,6 @@ namespace OpenNETCF.Web.SessionState
             Dirty = true;
         }
 
-        private bool ContainsKey(string name)
-        {
-            foreach (var key in BaseGetAllKeys())
-            {
-                if (key == name) return true;
-            }
-
-            return false;
-        }
-
         /// <summary>
         /// Gets or sets a value in the collection by name.
         /// </summary>
@@ -92,35 +76,35 @@ namespace OpenNETCF.Web.SessionState
         public object this[string name]
         {
             get { return BaseGet(name); }
-            set 
+            set
             {
-                lock(m_syncRoot)
+                lock (m_syncRoot)
                 {
-                if (string.IsNullOrEmpty(name))
-                {
-                    throw new ArgumentException();
-                }
+                    if (string.IsNullOrEmpty(name))
+                    {
+                        throw new ArgumentException();
+                    }
 
-                // if it's already in the collection, set the value
-                var item = BaseGet(name);
-                if(item != null)
-                {
+                    // if it's already in the collection, set the value
+                    object item = BaseGet(name);
+                    if (item != null)
+                    {
+                        BaseSet(name, value);
+                        return;
+                    }
+
+                    // a null means either it's not there or the value is null - we need to know which
+                    if (!this.ContainsKey(name))
+                    {
+                        this.BaseAdd(name, value);
+                    }
+                    else
+                    {
+                        BaseSet(name, value);
+                    }
+
                     BaseSet(name, value);
-                    return;
-                }
-
-                // a null means either it's not there or the value is null - we need to know which
-                if (!this.ContainsKey(name))
-                {
-                    this.BaseAdd(name, value);
-                }
-                else
-                {
-                    BaseSet(name, value);
-                }
-
-                BaseSet(name, value);
-                Dirty = true;
+                    Dirty = true;
                 }
             }
         }
@@ -133,8 +117,8 @@ namespace OpenNETCF.Web.SessionState
         public object this[int index]
         {
             get { return BaseGet(index); }
-            set 
-            { 
+            set
+            {
                 BaseSet(index, value);
                 Dirty = true;
             }
@@ -163,6 +147,13 @@ namespace OpenNETCF.Web.SessionState
         IEnumerator IEnumerable.GetEnumerator()
         {
             return base.GetEnumerator();
+        }
+
+        #endregion
+
+        private bool ContainsKey(string name)
+        {
+            return BaseGetAllKeys().Any(key => key == name);
         }
     }
 }

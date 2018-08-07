@@ -17,9 +17,7 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
-using System.Collections.Generic;
-using System.Text;
+
 using System.IO;
 
 namespace OpenNETCF.Web
@@ -37,9 +35,41 @@ namespace OpenNETCF.Web
         // Methods
         internal HttpPostedFile(string filename, string contentType, HttpInputStream stream)
         {
-            this.m_filename = filename;
-            this.m_contentType = contentType;
-            this.m_stream = stream;
+            m_filename = filename;
+            m_contentType = contentType;
+            m_stream = stream;
+        }
+
+        /// <summary>
+        /// Gets the size of an uploaded file, in bytes
+        /// </summary>
+        public int ContentLength
+        {
+            get { return (int)m_stream.Length; }
+        }
+
+        /// <summary>
+        /// Gets the MIME content type of a file sent by a client.
+        /// </summary>
+        public string ContentType
+        {
+            get { return m_contentType; }
+        }
+
+        /// <summary>
+        /// Gets the fully qualified name of the file on the client.
+        /// </summary>
+        public string FileName
+        {
+            get { return m_filename; }
+        }
+
+        /// <summary>
+        /// Gets a Stream object that points to an uploaded file to prepare for reading the contents of the file.
+        /// </summary>
+        public Stream InputStream
+        {
+            get { return m_stream; }
         }
 
         /// <summary>
@@ -52,59 +82,15 @@ namespace OpenNETCF.Web
             {
                 throw new HttpException("Not a rooted path: " + filename);
             }
-            FileStream s = new FileStream(filename, FileMode.Create);
+            var s = new FileStream(filename, FileMode.Create);
             try
             {
-                this.m_stream.WriteTo(s);
+                m_stream.WriteTo(s);
                 s.Flush();
             }
             finally
             {
                 s.Close();
-            }
-        }
-
-        /// <summary>
-        /// Gets the size of an uploaded file, in bytes
-        /// </summary>
-        public int ContentLength
-        {
-            get
-            {
-                return (int)this.m_stream.Length;
-            }
-        }
-
-        /// <summary>
-        /// Gets the MIME content type of a file sent by a client.
-        /// </summary>
-        public string ContentType
-        {
-            get
-            {
-                return this.m_contentType;
-            }
-        }
-
-        /// <summary>
-        /// Gets the fully qualified name of the file on the client.
-        /// </summary>
-        public string FileName
-        {
-            get
-            {
-                return this.m_filename;
-            }
-        }
-
-        /// <summary>
-        /// Gets a Stream object that points to an uploaded file to prepare for reading the contents of the file.
-        /// </summary>
-        public Stream InputStream
-        {
-            get
-            {
-                return this.m_stream;
             }
         }
     }

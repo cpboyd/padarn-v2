@@ -17,12 +17,10 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
 
-using System.Collections.Generic;
-using System.Text;
+using System;
 using System.Collections;
-using OpenNETCF.Security;
+using System.Collections.Generic;
 using OpenNETCF.Security.Principal;
 
 namespace OpenNETCF.Web
@@ -33,6 +31,7 @@ namespace OpenNETCF.Web
     public abstract class HttpContextBase : IServiceProvider
     {
         private List<Exception> m_exceptions = new List<Exception>();
+        private Dictionary<string, object> m_items = new Dictionary<string, object>();
 
         /// <summary>
         /// Initializes the class for use by an inherited class instance. This constructor can only be called by an inherited class.
@@ -40,6 +39,59 @@ namespace OpenNETCF.Web
         protected HttpContextBase()
         {
         }
+
+        /// <summary>
+        /// When overridden in a derived class, gets an array of errors (if any) that accumulated when an HTTP request was being processed.
+        /// </summary>
+        public virtual Exception[] AllErrors
+        {
+            get { return m_exceptions.ToArray(); }
+        }
+
+        /// <summary>
+        /// When overridden in a derived class, gets the first error (if any) that accumulated when an HTTP request was being processed.
+        /// </summary>
+        /// <value>
+        /// The first exception for the current HTTP request/response process, or null if no errors accumulated during the HTTP request processing.
+        /// </value>
+        public virtual Exception Error
+        {
+            get
+            {
+                if (m_exceptions.Count > 0) return m_exceptions[0];
+
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// When overridden in a derived class, gets the HttpRequest object for the current HTTP request.
+        /// </summary>
+        public virtual HttpRequestBase Request
+        {
+            get { return null; }
+        }
+
+        /// <summary>
+        /// When overridden in a derived class, gets the HttpResponse object for the current HTTP response.
+        /// </summary>
+        public virtual HttpResponseBase Response
+        {
+            get { return null; }
+        }
+
+        public virtual IDictionary Items
+        {
+            get { return m_items; }
+        }
+
+        public virtual IPrincipal User
+        {
+            get { throw new NotImplementedException(); }
+            set { throw new NotImplementedException(); }
+        }
+
+        #region IServiceProvider Members
 
         /// <summary>
         /// When overridden in a derived class, returns an object for the current service type.
@@ -52,6 +104,8 @@ namespace OpenNETCF.Web
         {
             return null;
         }
+
+        #endregion
 
         /// <summary>
         /// When overridden in a derived class, adds an exception to the exception collection for the current HTTP request.
@@ -69,58 +123,5 @@ namespace OpenNETCF.Web
         {
             m_exceptions.Clear();
         }
-
-        /// <summary>
-        /// When overridden in a derived class, gets an array of errors (if any) that accumulated when an HTTP request was being processed.
-        /// </summary>
-        public virtual Exception[] AllErrors 
-        {
-            get { return m_exceptions.ToArray(); } 
-        }
-
-        /// <summary>
-        /// When overridden in a derived class, gets the first error (if any) that accumulated when an HTTP request was being processed.
-        /// </summary>
-        /// <value>
-        /// The first exception for the current HTTP request/response process, or null if no errors accumulated during the HTTP request processing.
-        /// </value>
-        public virtual Exception Error 
-        {
-            get
-            {
-                if (m_exceptions.Count > 0) return m_exceptions[0];
-
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// When overridden in a derived class, gets the HttpRequest object for the current HTTP request.
-        /// </summary>
-        public virtual HttpRequestBase Request 
-        {
-            get { return null; } 
-        }
-
-        /// <summary>
-        /// When overridden in a derived class, gets the HttpResponse object for the current HTTP response.
-        /// </summary>
-        public virtual HttpResponseBase Response 
-        {
-            get { return null; } 
-        }
-
-        private Dictionary<string, object> m_items = new Dictionary<string, object>();
- 
-        public virtual IDictionary Items 
-        {
-            get { return m_items; } 
-        }
-
-        public virtual IPrincipal User 
-        { 
-            get { throw new NotImplementedException(); } 
-            set { throw new NotImplementedException(); } 
-        }
-    }    
+    }
 }

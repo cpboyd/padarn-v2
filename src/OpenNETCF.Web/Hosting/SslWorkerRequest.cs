@@ -17,9 +17,6 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-//                                                                   
-// Copyright (c) 2007-2008 OpenNETCF Consulting, LLC                        
-//    
 
 using System.Net.Sockets;
 using OpenNETCF.Web.Logging;
@@ -38,15 +35,6 @@ namespace OpenNETCF.Web.Hosting
     public sealed class SslWorkerRequest : AsyncWorkerRequest
     {
         /// <summary>
-        /// Returns a value indicating whether the connection uses SSL.
-        /// </summary>
-        /// <returns>true if the connection is an SSL connection; otherwise, false.</returns>
-        public override bool IsSecure()
-        {
-            return true;
-        }
-
-        /// <summary>
         /// Initializes an instance of <see cref="SslWorkerRequest"/>
         /// </summary>
         /// <param name="client"></param>
@@ -55,6 +43,15 @@ namespace OpenNETCF.Web.Hosting
         internal SslWorkerRequest(TcpClient client, SslStream stream, ILogProvider logProvider)
             : base(client.Client, stream, logProvider)
         {
+        }
+
+        /// <summary>
+        /// Returns a value indicating whether the connection uses SSL.
+        /// </summary>
+        /// <returns>true if the connection is an SSL connection; otherwise, false.</returns>
+        public override bool IsSecure()
+        {
+            return true;
         }
     }
 }

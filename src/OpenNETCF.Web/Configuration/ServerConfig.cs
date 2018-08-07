@@ -18,26 +18,25 @@
 //
 #endregion
 
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Net;
+using System.Reflection;
+using System.Xml;
+using OpenNETCF.Web.Logging;
 #if WindowsCE
 using OpenNETCF.Configuration;
 #else
   using System.Configuration;
 #endif
 
-using System.IO;
-using System.Collections.Generic;
-using System;
-using System.Net;
-using System.Reflection;
-using System.Xml;
-using OpenNETCF.Web.Logging;
-using System.Diagnostics;
-
 // disable warnings about obsoletes
 #pragma warning disable 612, 618
 
-  namespace OpenNETCF.Web.Configuration
+namespace OpenNETCF.Web.Configuration
 {
 
     /// <summary>
@@ -90,7 +89,7 @@ using System.Diagnostics;
             {
                 string temp = value;
 
-                if(temp != null)
+                if (temp != null)
                 {
                     temp = temp.Replace("%APPLICATIONDATA%", Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData));
                     temp = temp.Replace("%PERSONAL%", Environment.GetFolderPath(Environment.SpecialFolder.Personal));
@@ -166,7 +165,7 @@ using System.Diagnostics;
             }
 
             var handler = new ServerConfigurationHandler();
-            return (ServerConfig) handler.Create(null, null, serverConfigNode);
+            return (ServerConfig)handler.Create(null, null, serverConfigNode);
         }
 
         internal static void SetConfig(ServerConfig config)
@@ -220,13 +219,13 @@ using System.Diagnostics;
                     throw new ConfigurationException("Empty DocumentRoot is invalid");
                 }
 
-                if (!System.IO.Directory.Exists(config.DocumentRoot))
+                if (!Directory.Exists(config.DocumentRoot))
                 {
                     if (provider != null)
                     {
                         provider.LogRuntimeInfo(ZoneFlags.Startup, "Creating DocumentRoot at " + config.DocumentRoot);
                     }
-                    System.IO.Directory.CreateDirectory(config.DocumentRoot);
+                    Directory.CreateDirectory(config.DocumentRoot);
                     // TODO: Should we dump in a standard "default" web page (pulled from an embedded resource), or is the 404 going to be enough?
                     // if we have a page that at least says "the server is installed an running" I think that would be useful
                 }
@@ -265,7 +264,6 @@ using System.Diagnostics;
                         {
                             provider.LogPadarnError(msg, null);
                         }
-                        
                     }
                 }
                 if (cache)
@@ -354,7 +352,6 @@ using System.Diagnostics;
         /// </summary>
         public string SSLLicenseKey { get; internal set; }
 
-        
         /// <summary>
         /// 
         /// </summary>
@@ -512,7 +509,7 @@ using System.Diagnostics;
         /// </summary>
         public string CustomErrorFolder
         {
-            get 
+            get
             {
                 try
                 {
@@ -526,7 +523,7 @@ using System.Diagnostics;
                     m_errorFolder = @"\";
                 }
 
-                return m_errorFolder; 
+                return m_errorFolder;
             }
             internal set { m_errorFolder = value; }
         }
@@ -546,5 +543,5 @@ using System.Diagnostics;
     }
 }
 
-  // disable warnings about obsoletes
+// disable warnings about obsoletes
 #pragma warning restore 612, 618

@@ -17,10 +17,6 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
-
-using System.Collections.Generic;
-using System.Text;
 
 namespace OpenNETCF.Web
 {
@@ -32,9 +28,7 @@ namespace OpenNETCF.Web
         /// Initializes a new instance of the HttpContextWrapper class by using the specified context object.
         /// </summary>
         /// <param name="httpContext"></param>
-        public HttpContextWrapper(
-                HttpContext httpContext
-            )
+        public HttpContextWrapper(HttpContext httpContext)
         {
             m_context = httpContext;
         }

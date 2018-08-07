@@ -17,10 +17,8 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
 
-using System.Collections.Generic;
-using System.Text;
+using System;
 
 namespace OpenNETCF.Web.SessionState
 {
@@ -33,11 +31,17 @@ namespace OpenNETCF.Web.SessionState
         private const string SessionCookieIDValueName = "SessionID";
 
         /// <summary>
-        /// Creates an instance of the SessionIDManager class.
+        /// Gets the maximum length of a valid session identifier.
         /// </summary>
-        public SessionIDManager()
+        /// <remarks>
+        /// While session identifiers created by the CreateSessionID method are 24 characters long, the maximum length of a session identifier allowed by the SessionIDManager class is 80 characters.
+        /// </remarks>
+        public static int SessionIDMaxLength
         {
+            get { return 80; }
         }
+
+        #region ISessionIDManager Members
 
         /// <summary>
         /// Initializes the SessionIDManager object with information from configuration files.
@@ -73,19 +77,16 @@ namespace OpenNETCF.Web.SessionState
 
             if (context.Request.Cookies.Count != 0)
             {
-                var cookie = context.Request.Cookies[SessionCookieName];
+                HttpCookie cookie = context.Request.Cookies[SessionCookieName];
                 if (cookie != null)
                 {
                     id = cookie[SessionCookieIDValueName];
                 }
             }
 
-            if (id != null)
+            if (id == null || !Validate(id))
             {
-                if (!Validate(id))
-                {
-                    id = null;
-                }
+                return null;
             }
 
             return id;
@@ -122,7 +123,7 @@ namespace OpenNETCF.Web.SessionState
             redirected = false;
             cookieAdded = false;
 
-            HttpCookie sessionCookie = new HttpCookie(SessionCookieName);
+            var sessionCookie = new HttpCookie(SessionCookieName);
             sessionCookie.Values[SessionCookieIDValueName] = id;
             context.Response.Cookies.Set(sessionCookie);
             cookieAdded = true;
@@ -137,7 +138,7 @@ namespace OpenNETCF.Web.SessionState
         {
             try
             {
-                Guid testGuid = new Guid(id);
+                var testGuid = new Guid(id);
 
                 return (id == testGuid.ToString());
             }
@@ -147,16 +148,6 @@ namespace OpenNETCF.Web.SessionState
             }
         }
 
-        /// <summary>
-        /// ets the maximum length of a valid session identifier.
-        /// </summary>
-        /// <remarks>
-        /// While session identifiers created by the CreateSessionID method are 24 characters long, the maximum length of a session identifier allowed by the SessionIDManager class is 80 characters.
-        /// </remarks>
-        public static int SessionIDMaxLength 
-        {
-            get { return 80; } 
-        }
-
+        #endregion
     }
 }

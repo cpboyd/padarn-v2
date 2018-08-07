@@ -1,4 +1,4 @@
-#region License
+﻿#region License
 // Copyright ©2017 Tacke Consulting (dba OpenNETCF)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
@@ -17,11 +17,11 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
-using System.Collections.Specialized;
+
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
+using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 namespace OpenNETCF.Web
 {
@@ -33,16 +33,14 @@ namespace OpenNETCF.Web
         internal HttpBrowserCapabilities(NameValueCollection headers)
             : base(headers)
         {
-
-
         }
 
         private string[] GetProducts(string userAgentString)
         {
-            List<string> products = new List<string>();
+            var products = new List<string>();
             string pattern = @"\s*(?<ua>[^()<>@,;:\\/\]\[?={} ]+)(\/(?<ver>[^()<>@,;:\\/\]\[?={} ]+))?(\s+\[.*\])?(\s+\(((?'detail'[^;)]+)([; ]*))+\))?";
 
-            Regex regex = new Regex(pattern);
+            var regex = new Regex(pattern);
 
             foreach (Match match in regex.Matches(userAgentString))
             {

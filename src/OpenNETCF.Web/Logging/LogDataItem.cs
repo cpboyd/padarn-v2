@@ -23,34 +23,34 @@ using OpenNETCF.Web.Configuration;
 
 namespace OpenNETCF.Web.Logging
 {
-  /// <summary>
-  /// Contains data about a padarn page access
-  /// </summary>
-  public sealed class LogDataItem
-  {
-    internal LogDataItem(NameValueCollection headers, string page, string clientIP, ServerConfig config)
+    /// <summary>
+    /// Contains data about a padarn page access
+    /// </summary>
+    public sealed class LogDataItem
     {
-      Headers = headers;
-      PageName = page;
-      RemoteClientIP = clientIP;
-      ServerConfiguration = config;
-    }
+        internal LogDataItem(NameValueCollection headers, string page, string clientIP, ServerConfig config)
+        {
+            Headers = headers;
+            PageName = page;
+            RemoteClientIP = clientIP;
+            ServerConfiguration = config;
+        }
 
-    /// <summary>
-    /// HTTP Headers passed into the page request
-    /// </summary>
-    public NameValueCollection Headers { get; set; }
-    /// <summary>
-    /// Page being called
-    /// </summary>
-    public string PageName { get; set; }
-    /// <summary>
-    /// IP address of the client making the page request
-    /// </summary>
-    public string RemoteClientIP { get; set; }
-    /// <summary>
-    /// Current Padarn configuration settings
-    /// </summary>
-    public ServerConfig ServerConfiguration { get; set; }
-  }
+        /// <summary>
+        /// HTTP Headers passed into the page request
+        /// </summary>
+        public NameValueCollection Headers { get; set; }
+        /// <summary>
+        /// Page being called
+        /// </summary>
+        public string PageName { get; set; }
+        /// <summary>
+        /// IP address of the client making the page request
+        /// </summary>
+        public string RemoteClientIP { get; set; }
+        /// <summary>
+        /// Current Padarn configuration settings
+        /// </summary>
+        public ServerConfig ServerConfiguration { get; set; }
+    }
 }

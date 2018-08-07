@@ -41,7 +41,8 @@ namespace OpenNETCF.Web.Configuration
             m_users = new UserCollection();
         }
 
-        internal AuthenticationConfiguration(XmlNode node) : this()
+        internal AuthenticationConfiguration(XmlNode node)
+            : this()
         {
             ParseXml(node);
         }

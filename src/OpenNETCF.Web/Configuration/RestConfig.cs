@@ -17,14 +17,12 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
 
+using System;
 using System.Collections.Generic;
-using System.Text;
+using System.IO;
 using System.Reflection;
 using System.Xml;
-using System.Diagnostics;
-using System.IO;
 
 namespace OpenNETCF.Web.Configuration
 {
@@ -58,7 +56,7 @@ namespace OpenNETCF.Web.Configuration
                     fileName = Path.Combine(Path.GetDirectoryName(currentAssembly.GetName().CodeBase),
                         fileName);
 
-                    if(!File.Exists(fileName))
+                    if (!File.Exists(fileName))
                     {
                         throw new FileNotFoundException(string.Format("Cannot find REST service assembly '{0}'", n.Attributes["name"].Value));
                     }

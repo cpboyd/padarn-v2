@@ -7,8 +7,18 @@ namespace OpenNETCF.Web
     /// <summary>
     /// HttpHandler wrapper to pass along the subpath.
     /// </summary>
-    public class HttpHandlerResult: IHttpHandler
+    public class HttpHandlerResult : IHttpHandler
     {
+        /// <summary>
+        /// The HttpHandler corresponding to a specific path.
+        /// </summary>
+        public IHttpHandler Handler;
+
+        /// <summary>
+        /// The subpath following the initial path match.
+        /// </summary>
+        public string SubPath;
+
         /// <summary>
         /// Simple constructor for HttpHandlerResult 
         /// </summary>
@@ -20,15 +30,7 @@ namespace OpenNETCF.Web
             SubPath = subPath;
         }
 
-        /// <summary>
-        /// The HttpHandler corresponding to a specific path.
-        /// </summary>
-        public IHttpHandler Handler;
-
-        /// <summary>
-        /// The subpath following the initial path match.
-        /// </summary>
-        public string SubPath;
+        #region IHttpHandler Members
 
         /// <summary>
         /// Enables processing of HTTP Web requests by a custom HttpHandler that 
@@ -47,5 +49,7 @@ namespace OpenNETCF.Web
         /// Gets a value indicating whether another request can use the IHttpHandler instance.
         /// </summary>
         public bool IsReusable { get { return Handler.IsReusable; } }
+
+        #endregion
     }
 }

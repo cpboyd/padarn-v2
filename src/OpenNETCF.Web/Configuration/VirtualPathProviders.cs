@@ -17,11 +17,10 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
+
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Xml;
 using OpenNETCF.Web.Hosting;
 
 namespace OpenNETCF.Web.Configuration
@@ -43,7 +42,7 @@ namespace OpenNETCF.Web.Configuration
 
                     if (providerType != null)
                     {
-                        var providerInst = (VirtualPathProvider) Activator.CreateInstance(providerType);
+                        var providerInst = (VirtualPathProvider)Activator.CreateInstance(providerType);
                         HostingEnvironment.RegisterVirtualPathProvider(providerInst);
                     }
                 }

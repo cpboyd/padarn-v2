@@ -17,9 +17,8 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
+
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Collections.Specialized;
 
 namespace OpenNETCF.Web
@@ -39,8 +38,8 @@ namespace OpenNETCF.Web
 
         internal void AddFile(string key, HttpPostedFile file)
         {
-            this._all = null;
-            this._allKeys = null;
+            _all = null;
+            _allKeys = null;
             base.BaseAdd(key, file);
         }
 
@@ -51,18 +50,18 @@ namespace OpenNETCF.Web
         /// <param name="index">The index of the destination array where copying starts. </param>
         public void CopyTo(Array dest, int index)
         {
-            if (this._all == null)
+            if (_all == null)
             {
-                int count = this.Count;
-                this._all = new HttpPostedFile[count];
+                int count = Count;
+                _all = new HttpPostedFile[count];
                 for (int i = 0; i < count; i++)
                 {
-                    this._all[i] = this.Get(i);
+                    _all[i] = Get(i);
                 }
             }
-            if (this._all != null)
+            if (_all != null)
             {
-                this._all.CopyTo(dest, index);
+                _all.CopyTo(dest, index);
             }
         }
 
@@ -103,11 +102,11 @@ namespace OpenNETCF.Web
         {
             get
             {
-                if (this._allKeys == null)
+                if (_allKeys == null)
                 {
-                    this._allKeys = base.BaseGetAllKeys();
+                    _allKeys = base.BaseGetAllKeys();
                 }
-                return this._allKeys;
+                return _allKeys;
             }
         }
 
@@ -118,10 +117,7 @@ namespace OpenNETCF.Web
         /// <returns>The HttpPostedFile specified by name.</returns>
         public HttpPostedFile this[string name]
         {
-            get
-            {
-                return this.Get(name);
-            }
+            get { return Get(name); }
         }
 
         /// <summary>
@@ -131,10 +127,7 @@ namespace OpenNETCF.Web
         /// <returns>The HttpPostedFile specified by index.</returns>
         public HttpPostedFile this[int index]
         {
-            get
-            {
-                return this.Get(index);
-            }
+            get { return Get(index); }
         }
     }
 

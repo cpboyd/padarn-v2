@@ -1,4 +1,4 @@
-#region License
+﻿#region License
 // Copyright ©2017 Tacke Consulting (dba OpenNETCF)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
@@ -16,18 +16,16 @@
 // ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
-#endregion                                                   
+#endregion
+
+using System;
+using System.IO;
+using System.Text;
+using System.Text.RegularExpressions;
+using OpenNETCF.Web.Hosting;
 
 namespace OpenNETCF.Web
 {
-    using System;
-    using System.IO;
-    using System.Text;
-    using Hosting;
-    using System.Diagnostics;
-    using System.Collections.Generic;
-    using System.Text.RegularExpressions;
-
     /// <summary>
     /// Represents the response to a particular HTTP request.
     /// </summary>
@@ -35,13 +33,11 @@ namespace OpenNETCF.Web
     {
         #region Fields
 
+        private MemoryStream m_bufferedStream = null;
+        private HttpContext m_context;
+        private HttpCookieCollection m_cookies;
         private Encoding m_headerEncoding;
         private HttpWorkerRequest m_wr;
-        private HttpContext m_context;
-        private MemoryStream m_bufferedStream = null;
-        private HttpCookieCollection m_cookies;
-
-        internal long? ForcedContentLength { get; set; }
 
         internal HttpResponse(HttpWorkerRequest wr, HttpContext context)
         {
@@ -51,9 +47,16 @@ namespace OpenNETCF.Web
             this.m_context = context;
         }
 
+        internal long? ForcedContentLength { get; set; }
+
         #endregion // Fields
 
         #region Properties
+
+        private string m_contentEncoding;
+        private string m_contentType;
+        private int m_statusCode = 200;
+        private string m_statusDescription = string.Empty;
 
         internal Stream BufferedStream
         {
@@ -107,7 +110,6 @@ namespace OpenNETCF.Web
             }
         }
 
-        private string m_contentEncoding;
         /// <summary>
         /// The <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Encoding">Content-Encoding</a>
         /// entity header is used to compress the media-type.
@@ -126,7 +128,6 @@ namespace OpenNETCF.Web
             }
         }
 
-        private string m_contentType;
         /// <summary>
         /// The <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type">Content-Type</a>
         /// entity header is used to indicate the media type of the resource.
@@ -186,17 +187,14 @@ namespace OpenNETCF.Web
             get { return m_wr.ResponseStream; }
         }
 
-        private int m_statusCode = 200;
-        private string m_statusDescription = string.Empty;
-
         /// <summary>
         /// Gets or sets the HTTP status code of the output returned to the client.
         /// </summary>
-        public int StatusCode 
+        public int StatusCode
         {
             get
             {
-                var matches = Regex.Matches(m_wr.Status, @"HTTP/\d\.\d (?<code>\d{0,3}) (?<status>[\w\d ]*)", RegexOptions.IgnoreCase);
+                MatchCollection matches = Regex.Matches(m_wr.Status, @"HTTP/\d\.\d (?<code>\d{0,3}) (?<status>[\w\d ]*)", RegexOptions.IgnoreCase);
                 return int.Parse(matches[0].Groups[1].Value);
             }
             set
@@ -209,11 +207,11 @@ namespace OpenNETCF.Web
         /// <summary>
         /// Gets or sets the HTTP status string of the output returned to the client.
         /// </summary>
-        public string StatusDescription 
-        { 
+        public string StatusDescription
+        {
             get
             {
-                var matches = Regex.Matches(m_wr.Status, @"HTTP/\d\.\d (?<code>\d{0,3}) (?<status>[\w\d ]*)", RegexOptions.IgnoreCase);
+                MatchCollection matches = Regex.Matches(m_wr.Status, @"HTTP/\d\.\d (?<code>\d{0,3}) (?<status>[\w\d ]*)", RegexOptions.IgnoreCase);
                 return matches[0].Groups[2].Value;
             }
             set
@@ -229,6 +227,20 @@ namespace OpenNETCF.Web
         }
 
         #endregion // Properties
+
+        /// <summary>
+        /// Gets a Boolean value indicating whether the client is being transferred to a new location.
+        /// </summary>
+        public bool IsRequestBeingRedirected { get; private set; }
+
+        /// <summary>
+        /// Gets a value indicating whether the client is still connected to the server.
+        /// </summary>
+        /// <value>true if the client is currently connected; otherwise, false.</value>
+        public bool IsClientConnected
+        {
+            get { return m_wr.IsClientConnected(); }
+        }
 
         /// <summary>
         /// Updates an existing cookie in the cookie collection.
@@ -358,20 +370,6 @@ namespace OpenNETCF.Web
             m_wr.FlushResponse(false);
         }
 
-        /// <summary>
-        /// Gets a Boolean value indicating whether the client is being transferred to a new location.
-        /// </summary>
-        public bool IsRequestBeingRedirected { get; private set; }
-
-        /// <summary>
-        /// Gets a value indicating whether the client is still connected to the server.
-        /// </summary>
-        /// <value>true if the client is currently connected; otherwise, false.</value>
-        public bool IsClientConnected
-        {
-            get { return m_wr.IsClientConnected(); }
-        }
-
         internal void Write(byte[] b)
         {
             m_wr.SendResponseFromMemory(b, b.Length);
@@ -410,7 +408,7 @@ namespace OpenNETCF.Web
 
         internal void SendStatus(int status, string description, bool endResponse)
         {
-            m_wr.Status = String.Format("HTTP/1.1 {0} {1}\r\n", status, description);
+            m_wr.Status = string.Format("HTTP/1.1 {0} {1}\r\n", status, description);
 
             if (endResponse)
                 Flush();
@@ -430,7 +428,7 @@ namespace OpenNETCF.Web
 
         private static string UriCombine(string host, string virtualPath, bool isSSL)
         {
-            StringBuilder uri = new StringBuilder();
+            var uri = new StringBuilder();
             uri.Append("http");
             if (isSSL)
                 uri.Append("s");
@@ -457,7 +455,7 @@ namespace OpenNETCF.Web
                 long length = stream.Length;
                 if (length > 0)
                 {
-                    byte[] buffer = new byte[(int)length];
+                    var buffer = new byte[(int)length];
                     stream.Read(buffer, 0x0, (int)length);
                     BinaryWrite(buffer);
                     Flush();

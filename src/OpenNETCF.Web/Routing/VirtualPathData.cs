@@ -17,10 +17,6 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
-
-using System.Collections.Generic;
-using System.Text;
 
 namespace OpenNETCF.Web.Routing
 {
@@ -44,7 +40,7 @@ namespace OpenNETCF.Web.Routing
         /// Gets or sets the route that is used to create the URL.
         /// </summary>
         public RouteBase Route { get; set; }
-        
+
         /// <summary>
         /// Gets or sets the URL that was created from the route definition
         /// </summary>

@@ -17,10 +17,7 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
 
-using System.Collections.Generic;
-using System.Text;
 using System.Collections;
 
 namespace OpenNETCF.Web.Hosting
@@ -35,7 +32,7 @@ namespace OpenNETCF.Web.Hosting
         /// </summary>
         protected VirtualDirectory(string virtualPath)
         {
-            _virtualPath = OpenNETCF.Web.VirtualPath.CreateTrailingSlash(virtualPath);
+            _virtualPath = Web.VirtualPath.CreateTrailingSlash(virtualPath);
         }
 
         /// <summary>

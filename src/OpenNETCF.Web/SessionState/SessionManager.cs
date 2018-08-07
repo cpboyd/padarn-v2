@@ -17,25 +17,24 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
 
+using System;
 using System.Collections.Generic;
-using System.Text;
-using OpenNETCF.Web.Configuration;
 using System.Diagnostics;
+using OpenNETCF.Web.Configuration;
 
 namespace OpenNETCF.Web.SessionState
 {
     internal class SessionManager
     {
         private static SessionManager m_instance;
-        private Dictionary<string, HttpSessionState> m_sessions = new Dictionary<string, HttpSessionState>();
         private SessionConfiguration m_config;
         private SessionIDManager m_manager;
+        private Dictionary<string, HttpSessionState> m_sessions = new Dictionary<string, HttpSessionState>();
 
         private SessionManager()
         {
-            m_config = Configuration.ServerConfig.GetConfig().Session;
+            m_config = ServerConfig.GetConfig().Session;
             m_manager = new SessionIDManager();
         }
 

@@ -17,8 +17,7 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System.IO;
-using System.Collections.Generic;
+
 using System;
 using System.Xml;
 
@@ -39,50 +38,14 @@ namespace OpenNETCF.Web.Configuration
     /// </summary>
     public sealed class HttpRuntimeConfig
     {
-        private int maxRequestLength = 4096;
-        private int requestLengthDiskThreshold = 256;
-        private int maxRequestLengthBytes = -1;
-        private int requestLengthDiskThresholdBytes = -1;
-        
         private static HttpRuntimeConfig config;
+        private int maxRequestLength = 4096;
+        private int maxRequestLengthBytes = -1;
+        private int requestLengthDiskThreshold = 256;
+        private int requestLengthDiskThresholdBytes = -1;
 
         internal HttpRuntimeConfig()
         {
-        }
-
-        internal static void SetConfig(HttpRuntimeConfig cfg)
-        {
-            config = cfg;
-        }
-
-        /// <summary>
-        /// Reads the HttpRuntime configuration settings.
-        /// </summary>
-        /// <returns>An instance of HttpRuntimeConfig</returns>
-        public static HttpRuntimeConfig GetConfig()
-        {
-            if (config == null)
-            {
-                config = ConfigurationSettings.GetConfig("httpRuntime") as HttpRuntimeConfig;
-
-                if (config == null)
-                {
-                    // set up some defaults
-                    config = new HttpRuntimeConfig();
-                }
-            }
-
-
-            return config;
-        }
-
-        /// <summary>
-        /// Reloads the httpRuntime configuration section from the App.Config
-        /// </summary>
-        public void Reload()
-        {
-            config = null;
-            config = GetConfig();
         }
 
         /// <summary>
@@ -131,7 +94,41 @@ namespace OpenNETCF.Web.Configuration
                 return this.maxRequestLengthBytes;
             }
         }
- 
+
+        internal static void SetConfig(HttpRuntimeConfig cfg)
+        {
+            config = cfg;
+        }
+
+        /// <summary>
+        /// Reads the HttpRuntime configuration settings.
+        /// </summary>
+        /// <returns>An instance of HttpRuntimeConfig</returns>
+        public static HttpRuntimeConfig GetConfig()
+        {
+            if (config == null)
+            {
+                config = ConfigurationSettings.GetConfig("httpRuntime") as HttpRuntimeConfig;
+
+                if (config == null)
+                {
+                    // set up some defaults
+                    config = new HttpRuntimeConfig();
+                }
+            }
+
+
+            return config;
+        }
+
+        /// <summary>
+        /// Reloads the httpRuntime configuration section from the App.Config
+        /// </summary>
+        public void Reload()
+        {
+            config = null;
+            config = GetConfig();
+        }
 
 
         private int BytesFromKilobytes(int kilobytes)
@@ -143,11 +140,6 @@ namespace OpenNETCF.Web.Configuration
             }
             return (int)num;
         }
-
- 
-
- 
-
     }
 
 
@@ -156,6 +148,8 @@ namespace OpenNETCF.Web.Configuration
     /// </summary>
     public sealed class HttpRuntimeConfigurationHandler : IConfigurationSectionHandler
     {
+        #region IConfigurationSectionHandler Members
+
         /// <summary>
         /// Creates an instance of ServerConfig from the information in the app.config file
         /// </summary>
@@ -165,7 +159,7 @@ namespace OpenNETCF.Web.Configuration
         /// <returns></returns>
         public object Create(object parent, object configContext, XmlNode section)
         {
-            HttpRuntimeConfig cfg = new HttpRuntimeConfig();
+            var cfg = new HttpRuntimeConfig();
 
             foreach (XmlAttribute attribute in section.Attributes)
             {
@@ -189,6 +183,8 @@ namespace OpenNETCF.Web.Configuration
             }
             return cfg;
         }
+
+        #endregion
 
         private static void HandleInvalidAttributes()
         {

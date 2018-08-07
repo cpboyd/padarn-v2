@@ -27,6 +27,11 @@ namespace OpenNETCF.Web
     public interface IHttpHandler
     {
         /// <summary>
+        /// Gets a value indicating whether another request can use the IHttpHandler instance.
+        /// </summary>
+        bool IsReusable { get; }
+
+        /// <summary>
         /// Enables processing of HTTP Web requests by a custom HttpHandler that 
         /// implements the <see cref="IHttpHandler"/> interface.
         /// </summary>
@@ -34,10 +39,5 @@ namespace OpenNETCF.Web
         /// intrinsic server objects (for example, Request, Response, Session, and Server) 
         /// used to service HTTP requests.</param>
         void ProcessRequest(HttpContext context);
-
-        /// <summary>
-        /// Gets a value indicating whether another request can use the IHttpHandler instance.
-        /// </summary>
-        bool IsReusable { get; }
     }
 }

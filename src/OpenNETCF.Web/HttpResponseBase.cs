@@ -17,10 +17,8 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
 
-using System.Collections.Generic;
-using System.Text;
+using System;
 using System.IO;
 
 namespace OpenNETCF.Web
@@ -50,6 +48,15 @@ namespace OpenNETCF.Web
             set { throw new NotImplementedException(); }
         }
 
+        /// <summary>
+        /// When overridden in a derived class, gets the caching policy (such as expiration time, privacy settings, and vary clauses) of the current Web page.
+        /// </summary>
+        /// <value>The caching policy of the current response.</value>
+        public virtual HttpCachePolicyBase Cache
+        {
+            get { throw new NotImplementedException(); }
+        }
+
         public virtual void Redirect(string url)
         {
             throw new NotImplementedException();
@@ -58,15 +65,6 @@ namespace OpenNETCF.Web
         public virtual void Redirect(string url, bool endResponse)
         {
             throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// When overridden in a derived class, gets the caching policy (such as expiration time, privacy settings, and vary clauses) of the current Web page.
-        /// </summary>
-        /// <value>The caching policy of the current response.</value>
-        public virtual HttpCachePolicyBase Cache
-        {
-            get { throw new NotImplementedException(); }
         }
 
         /// <summary>

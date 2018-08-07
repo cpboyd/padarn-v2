@@ -19,13 +19,13 @@
 #endregion
 
 #if WindowsCE
+using System;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Text;
+
 namespace OpenNETCF.WindowsCE
 {
-    using System;
-    using System.IO;
-    using System.Runtime.InteropServices;
-    using System.Text;
-
     /// <summary>
     /// Describes the type of platform the device is using
     /// </summary>

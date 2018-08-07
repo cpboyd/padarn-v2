@@ -17,6 +17,7 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
+
 using System;
 
 namespace OpenNETCF.Web
@@ -36,11 +37,7 @@ namespace OpenNETCF.Web
         public static string GetDirectory(string virtualPath)
         {
             VirtualPath parent = VirtualPath.CreateNonRelative(virtualPath).Parent;
-            if (parent == null)
-            {
-                return null;
-            }
-            return parent.VirtualPathStringWhicheverAvailable;
+            return (parent == null) ? null : parent.VirtualPathStringWhicheverAvailable;
         }
 
         /// <summary>
@@ -100,6 +97,5 @@ namespace OpenNETCF.Web
         {
             throw new NotImplementedException();
         }
-
     }
 }

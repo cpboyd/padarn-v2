@@ -64,6 +64,8 @@ namespace OpenNETCF.Web
             m_mime = mimeType;
         }
 
+        #region IHttpHandler Members
+
         public bool IsReusable
         {
             get { return false; }
@@ -196,6 +198,7 @@ namespace OpenNETCF.Web
             }
         }
 
+        #endregion
 
         // Get the local file to serve and set Content-Encoding on the Response if necessary.
         private string GetFilename(HttpContext context)

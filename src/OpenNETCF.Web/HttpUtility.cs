@@ -1,4 +1,4 @@
-#region License
+﻿#region License
 // Copyright ©2017 Tacke Consulting (dba OpenNETCF)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
@@ -17,10 +17,10 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
+
+using System;
 using System.Globalization;
 using System.Text;
-using System;
-using System.Collections.Specialized;
 
 namespace OpenNETCF.Web
 {
@@ -37,12 +37,7 @@ namespace OpenNETCF.Web
         /// <returns>An encoded string.</returns>
         public static string UrlEncode(string str)
         {
-            if (str == null)
-            {
-                return null;
-            }
-            return UrlEncode(str, Encoding.UTF8);
-
+            return (str == null) ? null : UrlEncode(str, Encoding.UTF8);
         }
 
         /// <summary>
@@ -73,7 +68,7 @@ namespace OpenNETCF.Web
                 return null;
             }
             byte[] data = UrlEncodeToBytes(str, e);
-            return Encoding.UTF8.GetString(data,0,data.Length);
+            return Encoding.UTF8.GetString(data, 0, data.Length);
         }
 
         /// <summary>
@@ -100,11 +95,7 @@ namespace OpenNETCF.Web
         /// <returns>An encoded string.</returns>
         public static string UrlEncodeUnicode(string str)
         {
-            if (str == null)
-            {
-                return null;
-            }
-            return UrlEncodeUnicodeStringToStringInternal(str, false);
+            return (str == null) ? null : UrlEncodeUnicodeStringToStringInternal(str, false);
         }
 
         /// <summary>
@@ -114,11 +105,7 @@ namespace OpenNETCF.Web
         /// <returns>An encoded array of bytes.</returns>
         public static byte[] UrlEncodeToBytes(byte[] bytes)
         {
-            if (bytes == null)
-            {
-                return null;
-            }
-            return UrlEncodeToBytes(bytes, 0, bytes.Length);
+            return (bytes == null) ? null : UrlEncodeToBytes(bytes, 0, bytes.Length);
         }
 
         /// <summary>
@@ -171,7 +158,7 @@ namespace OpenNETCF.Web
             int num2 = 0;
             for (int i = 0; i < count; i++)
             {
-                char ch = (char)bytes[offset + i];
+                var ch = (char)bytes[offset + i];
                 if (ch == ' ')
                 {
                     num++;
@@ -185,12 +172,12 @@ namespace OpenNETCF.Web
             {
                 return bytes;
             }
-            byte[] buffer = new byte[count + (num2 * 2)];
+            var buffer = new byte[count + (num2 * 2)];
             int num4 = 0;
             for (int j = 0; j < count; j++)
             {
                 byte num6 = bytes[offset + j];
-                char ch2 = (char)num6;
+                var ch2 = (char)num6;
                 if (IsSafe(ch2))
                 {
                     buffer[num4++] = num6;
@@ -212,7 +199,7 @@ namespace OpenNETCF.Web
         private static string UrlEncodeUnicodeStringToStringInternal(string s, bool ignoreAscii)
         {
             int length = s.Length;
-            StringBuilder builder = new StringBuilder(length);
+            var builder = new StringBuilder(length);
             for (int i = 0; i < length; i++)
             {
                 char ch = s[i];
@@ -253,11 +240,7 @@ namespace OpenNETCF.Web
         /// <returns>A decoded string.</returns>
         public static string UrlDecode(string str)
         {
-            if (str == null)
-            {
-                return null;
-            }
-            return UrlDecode(str, Encoding.UTF8);
+            return (str == null) ? null : UrlDecode(str, Encoding.UTF8);
         }
 
         /// <summary>
@@ -268,11 +251,7 @@ namespace OpenNETCF.Web
         /// <returns></returns>
         public static string UrlDecode(byte[] bytes, Encoding e)
         {
-            if (bytes == null)
-            {
-                return null;
-            }
-            return UrlDecode(bytes, 0, bytes.Length, e);
+            return (bytes == null) ? null : UrlDecode(bytes, 0, bytes.Length, e);
         }
 
         /// <summary>
@@ -283,11 +262,7 @@ namespace OpenNETCF.Web
         /// <returns></returns>
         public static string UrlDecode(string str, Encoding e)
         {
-            if (str == null)
-            {
-                return null;
-            }
-            return UrlDecodeStringFromStringInternal(str, e);
+            return (str == null) ? null : UrlDecodeStringFromStringInternal(str, e);
         }
 
         /// <summary>
@@ -322,7 +297,7 @@ namespace OpenNETCF.Web
         private static string UrlDecodeStringFromStringInternal(string s, Encoding e)
         {
             int length = s.Length;
-            UrlDecoder decoder = new UrlDecoder(length, e);
+            var decoder = new UrlDecoder(length, e);
             for (int i = 0; i < length; i++)
             {
                 char ch = s[i];
@@ -351,7 +326,7 @@ namespace OpenNETCF.Web
                     int num8 = HexToInt(s[i + 2]);
                     if ((num7 >= 0) && (num8 >= 0))
                     {
-                        byte b = (byte)((num7 << 4) | num8);
+                        var b = (byte)((num7 << 4) | num8);
                         i += 2;
                         decoder.AddByte(b);
                         continue;
@@ -372,7 +347,7 @@ namespace OpenNETCF.Web
 
         private static string UrlDecodeStringFromBytesInternal(byte[] buf, int offset, int count, Encoding e)
         {
-            UrlDecoder decoder = new UrlDecoder(count, e);
+            var decoder = new UrlDecoder(count, e);
             for (int i = 0; i < count; i++)
             {
                 int index = offset + i;
@@ -393,7 +368,7 @@ namespace OpenNETCF.Web
                         {
                             goto Label_00DA;
                         }
-                        char ch = (char)((((num4 << 12) | (num5 << 8)) | (num6 << 4)) | num7);
+                        var ch = (char)((((num4 << 12) | (num5 << 8)) | (num6 << 4)) | num7);
                         i += 5;
                         decoder.AddChar(ch);
                         continue;
@@ -475,7 +450,7 @@ namespace OpenNETCF.Web
         /// <returns></returns>
         public static string HtmlEncode(string text)
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
 
             foreach (char c in text)
             {
@@ -503,7 +478,7 @@ namespace OpenNETCF.Web
                         }
                         else
                         {
-                            sb.Append(string.Format("&#{0};", (int)c));
+                            sb.AppendFormat("&#{0};", (int)c);
                         }
                         break;
                 }
@@ -560,11 +535,9 @@ namespace OpenNETCF.Web
                 {
                     this.FlushBytes();
                 }
-                if (this._numChars > 0)
-                {
-                    return new string(this._charBuffer, 0, this._numChars);
-                }
-                return string.Empty;
+                return (this._numChars > 0)
+                    ? new string(this._charBuffer, 0, this._numChars)
+                    : string.Empty;
             }
         }
     }

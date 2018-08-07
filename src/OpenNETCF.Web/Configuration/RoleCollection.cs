@@ -17,14 +17,12 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
 
 using System.Collections.Generic;
-using System.Text;
 
 namespace OpenNETCF.Web.Configuration
 {
-  internal sealed class RoleCollection : List<Role>
-  {
-  }
+    internal sealed class RoleCollection : List<Role>
+    {
+    }
 }

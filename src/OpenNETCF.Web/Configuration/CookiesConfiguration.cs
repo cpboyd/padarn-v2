@@ -52,25 +52,16 @@ namespace OpenNETCF.Web.Configuration
         /// <summary>
         /// Gets or sets a value indicating whether Secure Sockets Layer (SSL) communication is required. 
         /// </summary>
-        public bool RequireSSL
-        {
-            get; internal set;
-        }
+        public bool RequireSSL { get; internal set; }
 
         /// <summary>
         /// Gets or sets the cookie domain name. 
         /// </summary>
-        public string Domain
-        { 
-            get; internal set; 
-        }
+        public string Domain { get; internal set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether the support for the browser's HttpOnly cookie is enabled. 
         /// </summary>
-        public bool HttpOnlyCookies
-        {
-            get; internal set;
-        }
+        public bool HttpOnlyCookies { get; internal set; }
     }
 }

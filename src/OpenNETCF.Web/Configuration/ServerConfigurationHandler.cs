@@ -17,14 +17,12 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
+
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Xml;
 using System.Net;
-using System.Reflection;
+using System.Xml;
 using OpenNETCF.Configuration;
-using OpenNETCF.Web.Security;
 
 #if !WindowsCE
 using System.Configuration;
@@ -41,7 +39,7 @@ namespace OpenNETCF.Web.Configuration
     /// </summary>
     public sealed class ServerConfigurationHandler
 #if WindowsCE
- : OpenNETCF.Configuration.IConfigurationSectionHandler
+ : IConfigurationSectionHandler
 #else
      : System.Configuration.IConfigurationSectionHandler
 #endif

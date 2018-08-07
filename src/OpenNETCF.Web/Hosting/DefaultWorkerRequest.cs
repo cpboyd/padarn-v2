@@ -17,11 +17,9 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-//                                                                   
-// Copyright (c) 2007-2008 OpenNETCF Consulting, LLC                        
-//    
 
 using OpenNETCF.Web.Logging;
+using OpenNETCF.Web.Server;
 
 namespace OpenNETCF.Web.Hosting
 {
@@ -35,7 +33,7 @@ namespace OpenNETCF.Web.Hosting
         /// </summary>
         /// <param name="client"></param>
         /// <param name="logProvider"></param>
-        internal DefaultWorkerRequest(Server.SocketWrapperBase client, ILogProvider logProvider)
+        internal DefaultWorkerRequest(SocketWrapperBase client, ILogProvider logProvider)
             : base(client, logProvider)
         {
         }

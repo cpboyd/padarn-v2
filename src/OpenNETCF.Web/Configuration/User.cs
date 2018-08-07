@@ -18,10 +18,6 @@
 //
 #endregion
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-
 namespace OpenNETCF.Web.Configuration
 {
     /// <summary>
@@ -29,6 +25,14 @@ namespace OpenNETCF.Web.Configuration
     /// </summary>
     public sealed class User
     {
+        /// <summary>
+        /// Creates an instance of the User class. 
+        /// </summary>
+        public User()
+        {
+            Roles = new RoleCollection();
+        }
+
         /// <summary>
         /// The user's username.
         /// </summary>
@@ -40,13 +44,5 @@ namespace OpenNETCF.Web.Configuration
         public string Password { get; set; }
 
         internal RoleCollection Roles { get; set; }
-
-        /// <summary>
-        /// Creates an instance of the User class. 
-        /// </summary>
-        public User()
-        {
-            Roles = new RoleCollection();
-        }
     }
 }
