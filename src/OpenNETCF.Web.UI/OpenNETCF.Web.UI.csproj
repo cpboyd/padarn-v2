@@ -7,8 +7,8 @@
     <ProjectGuid>{5517ABE7-5582-4405-8F5B-C84FC6F11222}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>OpenNETCF.Web.Extensions.CF</RootNamespace>
-    <AssemblyName>OpenNETCF.Web.Extensions.CF</AssemblyName>
+    <RootNamespace>OpenNETCF.Web.UI</RootNamespace>
+    <AssemblyName>OpenNETCF.Web.UI</AssemblyName>
     <ProjectTypeGuids>{4D628B5B-2FBC-4AA6-8C16-197242AEB884};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <PlatformFamilyName>WindowsCE</PlatformFamilyName>
     <PlatformID>E2BECB1F-8C8C-41ba-B736-9BE7D946A398</PlatformID>
@@ -67,12 +67,32 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Extensions.cs" />
     <Compile Include="HtmlFormExtensions.cs" />
     <Compile Include="DocumentType.cs" />
     <Compile Include="HtmlAttributeManager.cs" />
     <Compile Include="HtmlTableExtensions.cs" />
     <Compile Include="HtmlTextWriterExtensions.cs" />
+    <Compile Include="PageHandler.cs" />
+    <Compile Include="Parsers\AspxInfo.cs" />
+    <Compile Include="Parsers\PageParser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="UI\Control.cs" />
+    <Compile Include="UI\ControlBuilders\BasicControlBuilder.cs" />
+    <Compile Include="UI\ControlBuilders\ControlBuilder.cs" />
+    <Compile Include="UI\ControlCollection.cs" />
+    <Compile Include="UI\HtmlTextWriter.cs" />
+    <Compile Include="UI\HtmlTextWriterAttribute.cs" />
+    <Compile Include="UI\HtmlTextWriterTag.cs" />
+    <Compile Include="UI\IPostBackEventHandler.cs" />
+    <Compile Include="UI\ITextControl.cs" />
+    <Compile Include="UI\Page.cs" />
+    <Compile Include="UI\WebControls\Button.cs" />
+    <Compile Include="UI\WebControls\Label.cs" />
+    <Compile Include="UI\WebControls\LinkButton.cs" />
+    <Compile Include="UI\WebControls\TextBox.cs" />
+    <Compile Include="UI\WebControls\TextBoxMode.cs" />
+    <Compile Include="UI\WebControls\WebControl.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\OpenNETCF.Web\OpenNETCF.Web.csproj">

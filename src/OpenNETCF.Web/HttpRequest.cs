@@ -289,10 +289,15 @@ namespace OpenNETCF.Web
         /// </summary>
         public string RequestType
         {
-            get
-            {
-                return this.HttpMethod;
-            }
+            get { return HttpMethod; }
+        }
+
+        /// <summary>
+        /// Gets the local file path of the current request.
+        /// </summary>
+        public string LocalPath
+        {
+            get { return HttpContext.Current.WorkerRequest.GetLocalPath(); }
         }
 
         /// <summary>

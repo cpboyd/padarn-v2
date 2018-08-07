@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using OpenNETCF.Web;
 
 namespace OpenNETCF.Web.UI
 {
@@ -113,7 +112,7 @@ namespace OpenNETCF.Web.UI
         {
             return writer.Tag(HtmlTextWriterTag.Div);
         }
-        
+
         /// <summary>
         /// Renders a Div start tag.
         /// </summary>
@@ -314,14 +313,14 @@ namespace OpenNETCF.Web.UI
         {
             if (value != null)
             {
-                IFormattable formattable = value as IFormattable;
+                var formattable = value as IFormattable;
                 if (formattable != null)
                 {
                     writer.Text(formattable.ToString(null, null));
                 }
                 else
                 {
-                        writer.Text(value.ToString());
+                    writer.Text(value.ToString());
                 }
             }
 
@@ -348,7 +347,7 @@ namespace OpenNETCF.Web.UI
                 .Check();
 
             int index = 0;
-            foreach (var item in collection)
+            foreach (T item in collection)
             {
                 binder(item, index++, writer);
             }
@@ -365,7 +364,7 @@ namespace OpenNETCF.Web.UI
         /// the first parameter is the number of the call (starting with one), the
         /// second parameter is the writer to render to.</param>
         /// <returns>The writer.</returns>
-        public static HtmlTextWriter Repeat(this HtmlTextWriter writer, int times, 
+        public static HtmlTextWriter Repeat(this HtmlTextWriter writer, int times,
             Func<int, HtmlTextWriter, HtmlTextWriter> binder)
         {
             Validate.Begin()
@@ -374,7 +373,7 @@ namespace OpenNETCF.Web.UI
 
             if (times < 0) throw new ArgumentOutOfRangeException("times");
 
-            for (var i = 1; i <= times; i++)
+            for (int i = 1; i <= times; i++)
             {
                 binder(i, writer);
             }
@@ -416,15 +415,9 @@ namespace OpenNETCF.Web.UI
                     .EndTag();
         }
 
-        private static class DoctypeTags
-        {
-            public const string HTML4 = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">";
-            public const string XHTML1 = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">";
-        }
-
         public static HtmlTextWriter DocType(this HtmlTextWriter writer, DocumentType docType)
         {
-            switch(docType)
+            switch (docType)
             {
                 case DocumentType.HTML401Transitional:
                     writer.Write(DoctypeTags.HTML4);
@@ -586,7 +579,7 @@ namespace OpenNETCF.Web.UI
 
         public static HtmlTextWriter JavaScript(this HtmlTextWriter writer)
         {
-            return writer.Tag(HtmlTextWriterTag.Script, t=>t[HtmlTextWriterAttribute.Type, "text/javascript"]);
+            return writer.Tag(HtmlTextWriterTag.Script, t => t[HtmlTextWriterAttribute.Type, "text/javascript"]);
         }
 
         public static HtmlTextWriter Meta(this HtmlTextWriter writer, Func<HtmlAttributeManager, HtmlAttributeManager> attributes)

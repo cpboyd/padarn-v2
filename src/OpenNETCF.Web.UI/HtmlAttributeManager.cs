@@ -1,5 +1,4 @@
 ﻿using System;
-using OpenNETCF.Web.UI;
 using System.Text;
 
 namespace OpenNETCF.Web.UI
@@ -109,7 +108,7 @@ namespace OpenNETCF.Web.UI
         {
             var namesString = new StringBuilder();
 
-            foreach (var name in classNames)
+            foreach (string name in classNames)
             {
                 if (namesString.Length > 0)
                 {

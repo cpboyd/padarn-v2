@@ -60,7 +60,7 @@ namespace OpenNETCF.Web.UI
                     sb.Append(attrib.Key);
                     if (attrib.Value != null)
                     {
-                        sb.AppendFormat("=\"{1}\"", attrib.Value);
+                        sb.AppendFormat("=\"{0}\"", attrib.Value);
                     }
                 }
 

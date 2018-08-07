@@ -17,13 +17,13 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
+
 using System;
 using System.Diagnostics;
-using OpenNETCF.Security;
-using OpenNETCF.Web.SessionState;
-using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using OpenNETCF.Security.Principal;
+using OpenNETCF.Web.SessionState;
 
 namespace OpenNETCF.Web
 {
@@ -32,11 +32,10 @@ namespace OpenNETCF.Web
     /// </summary>
     public sealed class HttpContext
     {
-        private HttpWorkerRequest wr;
+        private static LocalDataStoreSlot httpContextDataStoreSlot = Thread.AllocateDataSlot();
         private HttpRequest request;
         private HttpResponse response;
-
-        private static LocalDataStoreSlot httpContextDataStoreSlot = Thread.AllocateDataSlot();
+        private HttpWorkerRequest wr;
 
         internal HttpContext(HttpWorkerRequest wr, bool initResponseWriter)
         {
@@ -106,6 +105,14 @@ namespace OpenNETCF.Web
                     throw new ApplicationException("HttpContext does not exist in this thread.");
                 return ctx;
             }
+        }
+
+        /// <summary>
+        /// Gets the physical path to bin folder.
+        /// </summary>
+        public string BinFolder
+        {
+            get { return Path.Combine(WorkerRequest.GetAppPathTranslated(), Resources.BinFolderName); }
         }
 
         /// <summary>

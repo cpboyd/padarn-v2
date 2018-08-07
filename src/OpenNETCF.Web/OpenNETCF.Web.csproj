@@ -215,7 +215,6 @@
     <Compile Include="Headers\HttpValueCollection.cs" />
     <Compile Include="Headers\HttpMethod.cs" />
     <Compile Include="MultipartContentItem.cs" />
-    <Compile Include="Parsers\AspxInfo.cs" />
     <Compile Include="Routing\IRouteHandler.cs" />
     <Compile Include="Routing\RequestContext.cs" />
     <Compile Include="Routing\Route.cs" />
@@ -272,29 +271,11 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="UI\Control.cs" />
-    <Compile Include="UI\ControlBuilders\BasicControlBuilder.cs" />
-    <Compile Include="UI\ControlBuilders\ControlBuilder.cs" />
-    <Compile Include="UI\ControlCollection.cs" />
-    <Compile Include="UI\HtmlTextWriter.cs" />
-    <Compile Include="UI\HtmlTextWriterAttribute.cs" />
-    <Compile Include="UI\HtmlTextWriterTag.cs" />
-    <Compile Include="UI\IPostBackEventHandler.cs" />
-    <Compile Include="UI\ITextControl.cs" />
-    <Compile Include="UI\Page.cs" />
-    <Compile Include="Handlers\PageHandler.cs" />
     <Compile Include="Configuration\ServerConfigurationHandler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Hosting\DefaultWorkerRequest.cs" />
     <Compile Include="Configuration\ServerConfig.cs" />
     <Compile Include="Handlers\StaticFileHandler.cs" />
-    <Compile Include="Parsers\PageParser.cs" />
-    <Compile Include="UI\WebControls\Button.cs" />
-    <Compile Include="UI\WebControls\Label.cs" />
-    <Compile Include="UI\WebControls\LinkButton.cs" />
-    <Compile Include="UI\WebControls\TextBox.cs" />
-    <Compile Include="UI\WebControls\TextBoxMode.cs" />
-    <Compile Include="UI\WebControls\WebControl.cs" />
     <Compile Include="VirtualPath.cs" />
     <Compile Include="VirtualPathUtility.cs" />
   </ItemGroup>

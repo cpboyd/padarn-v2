@@ -17,10 +17,6 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
-
-using System.Collections.Generic;
-using System.Text;
 
 namespace OpenNETCF.Web.UI
 {
@@ -32,7 +28,7 @@ namespace OpenNETCF.Web.UI
         /// <summary>
         /// Specifies that the HTML align attribute be written to the tag.  
         /// </summary>
-        Align,        
+        Align,
         /// <summary>
         /// Specifies that the HTML alt attribute be written to the tag. 
         /// </summary>
@@ -40,7 +36,7 @@ namespace OpenNETCF.Web.UI
         /// <summary>
         /// Specifies that the HTML border attribute be written to the tag. 
         /// </summary>
-        Border,        
+        Border,
         /// <summary>
         /// Specifies that the HTML checked attribute be written to the tag. 
         /// </summary>
@@ -60,7 +56,7 @@ namespace OpenNETCF.Web.UI
         /// <summary>
         /// Specifies that the HTML content attribute be written to the tag. 
         /// </summary>
-        Content,        
+        Content,
         /// <summary>
         /// Specifies that the HTML disabled attribute be written to the tag. 
         /// </summary>
@@ -80,11 +76,11 @@ namespace OpenNETCF.Web.UI
         /// <summary>
         /// Specifies that the HTML maxlength attribute be written to the tag. 
         /// </summary>
-        Maxlength,        
+        Maxlength,
         /// <summary>
         /// Specifies that the HTML multiple attribute be written to the tag. 
         /// </summary>
-        Multiple,        
+        Multiple,
         /// <summary>
         /// Specifies that the HTML name attribute be written to the tag. 
         /// </summary>
@@ -92,7 +88,7 @@ namespace OpenNETCF.Web.UI
         /// <summary>
         /// Specifies that the HTML nowrap attribute be written to the tag. 
         /// </summary>
-        Nowrap,        
+        Nowrap,
         /// <summary>
         /// Specifies that the HTML onchange attribute be written to the tag. 
         /// </summary>
@@ -104,7 +100,7 @@ namespace OpenNETCF.Web.UI
         /// <summary>
         /// Specifies that the HTML readonly attribute be written to the tag.
         /// </summary>
-        ReadOnly,        
+        ReadOnly,
         /// <summary>
         /// Specifies that the HTML rel attribute be written to the tag. 
         /// </summary>
@@ -120,7 +116,7 @@ namespace OpenNETCF.Web.UI
         /// <summary>
         /// Specifies that the HTML rules attribute be written to the tag. 
         /// </summary>
-        Rules,        
+        Rules,
         /// <summary>
         /// Specifies that the HTML scope attribute be written to the tag. 
         /// </summary>
@@ -132,7 +128,7 @@ namespace OpenNETCF.Web.UI
         /// <summary>
         /// Specifies that the HTML size attribute be written to the tag. 
         /// </summary>
-        Size,        
+        Size,
         /// <summary>
         /// Specifies that the HTML src attribute be written to the tag.
         /// </summary>
@@ -152,7 +148,7 @@ namespace OpenNETCF.Web.UI
         /// <summary>
         /// Specifies that the HTML title attribute be written to the tag. 
         /// </summary>
-        Title,        
+        Title,
         /// <summary>
         /// Specifies that the HTML type attribute be written to the tag. 
         /// </summary>
@@ -169,7 +165,6 @@ namespace OpenNETCF.Web.UI
         /// Specifies that the HTML wrap attribute be written to the tag. 
         /// </summary>
         Wrap,
-
 
 
         //Accesskey Specifies that the HTML accesskey attribute be written to the tag.  

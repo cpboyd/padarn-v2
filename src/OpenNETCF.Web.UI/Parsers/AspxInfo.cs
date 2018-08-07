@@ -18,7 +18,7 @@
 //
 #endregion
 
-namespace OpenNETCF.Web.Parsers
+namespace OpenNETCF.Web.UI.Parsers
 {
     internal class Aspx
     {

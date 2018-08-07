@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace OpenNETCF.Web.UI
+﻿namespace OpenNETCF.Web.UI
 {
     public enum DocumentType
     {

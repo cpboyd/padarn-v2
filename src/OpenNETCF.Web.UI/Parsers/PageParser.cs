@@ -26,10 +26,9 @@ using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
-using OpenNETCF.Web.UI;
 using OpenNETCF.Web.UI.WebControls;
 
-namespace OpenNETCF.Web.Parsers
+namespace OpenNETCF.Web.UI.Parsers
 {
     internal class PageParser
     {

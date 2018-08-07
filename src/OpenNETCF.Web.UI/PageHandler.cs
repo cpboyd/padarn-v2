@@ -18,47 +18,24 @@
 //
 #endregion
 
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Net;
+using System.Reflection;
+using System.Xml;
+using OpenNETCF.Web.UI.Parsers;
+using OpenNETCF.Web.UI.WebControls;
 
-namespace OpenNETCF.Web
+namespace OpenNETCF.Web.UI
 {
-    using System;
-    using System.IO;
-    using System.Reflection;
-    using Configuration;
-    using UI;
-    using System.Diagnostics;
-    using System.Collections.Generic;
-    using OpenNETCF.Web.Parsers;
-    using OpenNETCF.Web.UI.WebControls;
-
     /// <summary>
     /// Padarn Page Handler
     /// </summary>
     public sealed class PageHandler : IHttpHandler
     {
-        private const string CodeBehind = "CodeBehind";
-        private const string Inherits = "Inherits";
-        private const string AutoEventWireup = "AutoEventWireup";
-        private const string Page = "Page";
-
-        private readonly string m_filePath;
-        private string m_mimeType;
-        private HttpResponse m_response;
-
         private static Dictionary<string, Type> m_pageTypeCache = new Dictionary<string, Type>();
-        private static Dictionary<Type, Page> m_pageCache = new Dictionary<Type, Page>();
-
-        /// <summary>
-        /// Creates an instance of the Padarn page handler
-        /// </summary>
-        /// <param name="filePath"></param>
-        /// <param name="mimeType"></param>
-        public PageHandler(string filePath, string mimeType)
-        {
-            m_filePath = filePath;
-            m_mimeType = mimeType;
-        }
 
         /// <summary>
         /// Gets a value indicating whether another request can use the HttpHandler instance.
@@ -74,42 +51,45 @@ namespace OpenNETCF.Web
         /// <param name="context"></param>
         public void ProcessRequest(HttpContext context)
         {
-            m_response = context.Response;
-
-            m_response.ContentType = MimeMapping.GetMimeMapping("default.aspx");
+            HttpResponse response = context.Response;
+            response.ContentType = "text/html";
 
             ParsePage();
 
-            m_response.Flush();
+            response.Flush();
         }
+
+        private string ReadLocalFile()
+        {
+            string localFile = HttpContext.Current.Request.LocalPath;
+            using (StreamReader stream = File.OpenText(localFile))
+            {
+                return stream.ReadToEnd();
+            }
             
+        }
+
         private void ParsePage()
         {
-            var parser = PageParser.GetParser();
+            PageParser parser = PageParser.GetParser();
 
-            AspxInfo aspx;
-            string dtdHeader;
-
-            string pageContent = string.Empty;
-
-            using (var stream = File.OpenText(m_filePath))
-            {
-                pageContent = stream.ReadToEnd();
-            }
+            string pageContent = ReadLocalFile();
 
             // strip the document type header and any ASP tags
+            AspxInfo aspx;
+            string dtdHeader;
             pageContent = parser.PreParse(pageContent, out dtdHeader, out aspx);
             pageContent = pageContent.Trim();
             #region Load the code-behind assembly and invoke the page load event
             // ----------------------------------------------------------------------
-            var pageType = GetCodeBehindClass(aspx.CodeBehindAssemblyName, aspx.CodeBehindTypeName);
+            Type pageType = GetCodeBehindClass(aspx.CodeBehindAssemblyName, aspx.CodeBehindTypeName);
 
             if (pageType == null)
             {
                 throw new TypeLoadException(string.Format("Could not load Page class '{0}!{1}'", aspx.CodeBehindAssemblyName, aspx.CodeBehindTypeName));
             }
 
-            var instance = CreatePageInstance(pageType);
+            Page instance = CreatePageInstance(pageType);
             instance.DTDHeader = dtdHeader;
             instance.AspxInfo = aspx;
 
@@ -119,7 +99,7 @@ namespace OpenNETCF.Web
             {
                 content = parser.Parse(instance, pageContent);
             }
-            catch (System.Xml.XmlException ex)
+            catch (XmlException ex)
             {
                 // TODO: format a custom error screen for this (page parsing issue)
                 throw new HttpException(HttpStatusCode.InternalServerError, ex.Message);
@@ -133,7 +113,7 @@ namespace OpenNETCF.Web
 
             IPostBackEventHandler postbackSource = null;
             string postbackArg = null;
- 
+
             if (instance.IsPostBack)
             {
                 postbackSource = DeterminePostbackSource(instance, out postbackArg);
@@ -177,7 +157,7 @@ namespace OpenNETCF.Web
             // TODO: call DataBind() on controls
 
             instance.CallOnPreRenderComplete(EventArgs.Empty);
-            
+
             // TODO: SaveViewState
 
             // Render
@@ -194,12 +174,12 @@ namespace OpenNETCF.Web
 
         private IPostBackEventHandler DeterminePostbackSource(Page instance, out string argument)
         {
-            var controlName = instance.Request.Form["__EVENTTARGET"];
-            argument = instance.Request.Form["__EVENTARGUMENT"];  
-            
+            string controlName = instance.Request.Form["__EVENTTARGET"];
+            argument = instance.Request.Form["__EVENTARGUMENT"];
+
             // TODO:
             // if controlName is empty, look for a submit button
-            foreach (var c in instance.Controls)
+            foreach (Control c in instance.Controls)
             {
                 if ((c is Button) && (!string.IsNullOrEmpty(instance.Request.Form[c.ID])))
                 {
@@ -213,8 +193,6 @@ namespace OpenNETCF.Web
 
         private Type GetCodeBehindClass(string assemblyName, string className)
         {
-            Type page = null;
-
             string key = string.Format("{0}.{1}", assemblyName, className);
 
             if (m_pageTypeCache.ContainsKey(key))
@@ -222,17 +200,17 @@ namespace OpenNETCF.Web
                 return m_pageTypeCache[key];
             }
 
-            string asmPath = Path.Combine(HttpContext.Current.WorkerRequest.GetAppPathTranslated(), Resources.BinFolderName);
+            string asmPath = HttpContext.Current.BinFolder;
 
             asmPath = Path.Combine(asmPath, assemblyName);
             asmPath = Path.GetFullPath(asmPath);
 
             if (!File.Exists(asmPath))
             {
-                var c = Assembly.GetExecutingAssembly().GetName().CodeBase;
+                string c = Assembly.GetExecutingAssembly().GetName().CodeBase;
                 var u = new Uri(c);
                 // check application path
-                var checkPath = Path.Combine(Path.GetDirectoryName(u.LocalPath), assemblyName);
+                string checkPath = Path.Combine(Path.GetDirectoryName(u.LocalPath), assemblyName);
                 if (File.Exists(checkPath))
                 {
                     asmPath = checkPath;
@@ -243,7 +221,7 @@ namespace OpenNETCF.Web
                 }
             }
 
-            var codeBehindAssembly = CodeBehindAssembly.LoadFrom(asmPath);
+            CodeBehindAssembly codeBehindAssembly = CodeBehindAssembly.LoadFrom(asmPath);
 
             if (codeBehindAssembly == null)
             {
@@ -257,69 +235,55 @@ namespace OpenNETCF.Web
 
             if (pages == null)
             {
-                throw new HttpException(HttpStatusCode.InternalServerError, 
+                throw new HttpException(HttpStatusCode.InternalServerError,
                     string.Format("Unable to load type information from Code Behind assembly at '{0}'. Check the file, reference versions and dependencies",
                     asmPath));
             }
 
-            int count = pages.Length;
+            Type page = pages.FirstOrDefault(t => t.FullName.Equals(className));
 
-            for (int i = 0; i < count; i++)
+            if (page != null && !m_pageTypeCache.ContainsKey(key))
             {
-                if (pages[i].FullName.Equals(className))
-                {
-                    page = pages[i];
-                    break;
-                }
-            }
-
-            if (page != null)
-            {
-                if (!m_pageTypeCache.ContainsKey(key))
-                {
-                    m_pageTypeCache.Add(key, page);
-                }
+                m_pageTypeCache.Add(key, page);
             }
 
             return page;
         }
-            
+
         private Page CreatePageInstance(Type pageType)
         {
-            Page instance;
-
             /// ---- TODO: begin temp fix for incorrect page caching
-            instance = (Page)Activator.CreateInstance(pageType);
+            var instance = (Page)Activator.CreateInstance(pageType);
             return instance;
             /// ---- TODO: end temp fix for incorrect page caching
             /// 
             // do we have a cached version
-//            if (m_pageCache.ContainsKey(pageType))
-//            {
-//                instance = m_pageCache[pageType];
-//                if (instance.IsReusable)
-//                {
-//                    // TODO: Response stream datais duplicated for each call - need to clear that up before enabling caching
-//                    return instance;
-//                }
-//
-//                // not reusable, so remove from the cache (it was changed at run time)
-//                m_pageCache.Remove(pageType);
-//            }
-//
-//            instance = (Page)Activator.CreateInstance(pageType);
-//
-//            if (instance.IsReusable)
-//            {
-//                m_pageCache.Add(pageType, instance);
-//            }
-//
-//            return instance;
+            //if (m_pageCache.ContainsKey(pageType))
+            //{
+            //    instance = m_pageCache[pageType];
+            //    if (instance.IsReusable)
+            //    {
+            //        // TODO: Response stream datais duplicated for each call - need to clear that up before enabling caching
+            //        return instance;
+            //    }
+
+            //    // not reusable, so remove from the cache (it was changed at run time)
+            //    m_pageCache.Remove(pageType);
+            //}
+
+            //instance = (Page)Activator.CreateInstance(pageType);
+
+            //if (instance.IsReusable)
+            //{
+            //    m_pageCache.Add(pageType, instance);
+            //}
+
+            //return instance;
         }
 
         private void WireupPage_Load(Page instance)
         {
-            BindingFlags flags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance;
+            const BindingFlags flags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance;
             MethodInfo pageLoadMethod = instance.GetType().GetMethod("Page_Load", flags);
 
             if (pageLoadMethod == null) return;

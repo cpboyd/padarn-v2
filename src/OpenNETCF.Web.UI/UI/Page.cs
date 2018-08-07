@@ -20,8 +20,8 @@
 
 using System;
 using System.IO;
-using OpenNETCF.Web.Parsers;
 using OpenNETCF.Web.SessionState;
+using OpenNETCF.Web.UI.Parsers;
 
 namespace OpenNETCF.Web.UI
 {

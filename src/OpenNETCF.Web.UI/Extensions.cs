@@ -18,47 +18,18 @@
 //
 #endregion
 
-using System;
-using System.Globalization;
-using System.Linq;
-
-#if NET_20
-namespace System.Runtime.CompilerServices
+namespace OpenNETCF.Web.UI
 {
-    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class | AttributeTargets.Assembly)]
-    public sealed class ExtensionAttribute : Attribute { }
-}
-#endif
-
-namespace OpenNETCF.Web
-{
-    public static class Extensions
+    internal static class Extensions
     {
-        public static bool Implements<T>(this Type t) where T : class
+        public static string AsText(this HtmlTextWriterTag tag)
         {
-            return t.GetInterfaces().Any(type => type == typeof(T));
+            return tag.ToString().ToLowerInvariant();
         }
 
-        public static bool EndsWith(this string str, char c)
+        public static string AsText(this HtmlTextWriterAttribute attrib)
         {
-            return (str[str.Length - 1] == c);
-        }
-
-        public static string ToUpperInvariant(this string str)
-        {
-            return str.ToUpper(CultureInfo.InvariantCulture);
-        }
-
-        public static string ToLowerInvariant(this string str)
-        {
-            return str.ToLower(CultureInfo.InvariantCulture);
-        }
-
-        public static string ToRegex(this string str)
-        {
-            return str
-                    .Replace(".", @"\.")
-                    .Replace("*", ".*");
+            return attrib.ToString().ToLowerInvariant();
         }
     }
 }

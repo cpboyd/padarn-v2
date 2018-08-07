@@ -55,6 +55,12 @@ namespace OpenNETCF.Web
         public abstract void ProcessRequest();
 
         /// <summary>
+        /// Returns the local file path to the requested URI
+        /// </summary>
+        /// <returns>The local file path to the requested URI.</returns>
+        public abstract string GetLocalPath();
+
+        /// <summary>
         /// Returns the virtual path to the requested URI
         /// </summary>
         /// <returns>The path to the requested URI.</returns>
@@ -248,6 +254,5 @@ namespace OpenNETCF.Web
         }
 
         #endregion
-
     }
 }

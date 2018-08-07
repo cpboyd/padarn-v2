@@ -135,6 +135,21 @@ namespace OpenNETCF.Web.Hosting
         }
 
         /// <summary>
+        /// Returns the local file path to the requested URI
+        /// </summary>
+        /// <returns>The local file path to the requested URI.</returns>
+        public override string GetLocalPath()
+        {
+            string physicalPath = HostingEnvironment.MapPath(Path);
+
+            string localFile = ((Path.EndsWith("/")) || (string.IsNullOrEmpty(System.IO.Path.GetExtension(physicalPath))))
+                ? System.IO.Path.Combine(physicalPath, GetDefaultDocument(physicalPath))
+                : physicalPath;
+
+            return GetCasedFileNameFromCaselessName(localFile);
+        }
+
+        /// <summary>
         /// Returns the virtual path to the requested URI
         /// </summary>
         /// <returns>The path to the requested URI.</returns>
@@ -648,26 +663,9 @@ namespace OpenNETCF.Web.Hosting
             IHttpHandler handler = GetCustomHandler(fileName, method);
 
             // TODO: ** check for custom HttpHandlers **
-            if (handler == null)
+            if (handler == null && !fileName.StartsWith("about:"))
             {
-                string extension = System.IO.Path.GetExtension(fileName).ToLowerInvariant();
-                switch (extension)
-                {
-                    case ".aspx":
-                        handler = new PageHandler(fileName, mimeType);
-                        break;
-                    case ".asmx":
-                        // TODO: Web Service call
-                        LogError("XML Web Services not supported: " + fileName, null);
-                        break;
-                    default:
-                        if (!fileName.StartsWith("about:"))
-                        {
-                            handler = new StaticFileHandler(fileName, mimeType);
-                            //handler = new StaticFileHandler(fileName, MimeMapping.GetMimeMapping(extension));
-                        }
-                        break;
-                }
+                handler = new StaticFileHandler(fileName, mimeType);
             }
 
             return handler;
@@ -768,9 +766,9 @@ namespace OpenNETCF.Web.Hosting
         }
 
         /// <summary>
-        /// 
+        /// Returns the physical path to the currently executing server application.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The physical path of the current application.</returns>
         internal override string GetAppPathTranslated()
         {
             // TODO: cache these
@@ -1084,6 +1082,7 @@ namespace OpenNETCF.Web.Hosting
 
                     Debug.WriteLineIf(EnableTracing, string.Format("{0}: {1}", method, Path));
 
+                    // TODO: Refactor to check handlers for path & file together.
                     // do we have a custom HttpHandler handler for the path?
                     IHttpHandler customHandler = GetCustomHandler(Path, method);
                     IDisposable disposableHandler;
@@ -1111,15 +1110,7 @@ namespace OpenNETCF.Web.Hosting
 
                     if (!Path.ToLowerInvariant().StartsWith("about:"))
                     {
-                        string physicalPath = HostingEnvironment.MapPath(Path);
-
-                        localFile = ((Path.EndsWith("/")) || (string.IsNullOrEmpty(System.IO.Path.GetExtension(physicalPath))))
-                            ? System.IO.Path.Combine(physicalPath, GetDefaultDocument(physicalPath))
-                            : physicalPath;
-
-                        string r = System.IO.Path.GetFullPath(ServerConfig.GetConfig().DocumentRoot);
-                        localFile = GetCasedFileNameFromCaselessName(localFile);
-
+                        localFile = GetLocalPath();
                         mime = MimeMapping.GetMimeMapping(localFile);
 
                         if (!File.Exists(localFile))

@@ -43,7 +43,8 @@ namespace OpenNETCF.Web.Configuration
                 // TODO: Better handling for custom HTTP methods
                 HttpMethodFlags method = HttpMethod.GetFlags(verb);
 
-                Add(new HttpHandler(method, node.Attributes["path"].Value, node.Attributes["type"].Value));
+                string regex = node.Attributes["path"].Value.ToRegex();
+                Add(new HttpHandler(method, regex, node.Attributes["type"].Value));
             }
         }
     }
