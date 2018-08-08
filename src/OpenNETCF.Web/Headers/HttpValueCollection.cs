@@ -1,4 +1,4 @@
-#region License
+﻿#region License
 // Copyright ©2017 Tacke Consulting (dba OpenNETCF)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
@@ -19,6 +19,7 @@
 #endregion
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Collections.Specialized;
 using System.Collections;
@@ -33,7 +34,7 @@ namespace OpenNETCF.Web
         }
 
         internal HttpValueCollection(int capacity)
-            : base(capacity, (IEqualityComparer)StringComparer.OrdinalIgnoreCase)
+            : base(capacity, StringComparer.OrdinalIgnoreCase)
         {
         }
 
@@ -42,20 +43,22 @@ namespace OpenNETCF.Web
             if (bytes.Length <= 0) return;
             bool datastart = false;
 
-            string[] list = encoding.GetString(bytes, 0, bytes.Length).Split(new char[] { '\n' } );
+            IEnumerable<string> list = encoding
+                .GetString(bytes, 0, bytes.Length)
+                .Split('\n')
+                .Select(item => item.Trim());
 
-            foreach (string item in list)
+            foreach (string val in list)
             {
-                string val = item.Trim();
                 // find the line break before the post data
                 if ((!isQueryString) && (!datastart) && (!string.IsNullOrEmpty(val))) continue;
                 datastart = true;
 
-                int end = val.IndexOf("=");
+                int end = val.IndexOf('=');
                 if (end < 1)
                 {
                     // key but no value
-                    var name = HttpUtility.UrlDecode(val);
+                    string name = HttpUtility.UrlDecode(val);
                     base.Add(name, null);
                 }
                 else
@@ -66,22 +69,14 @@ namespace OpenNETCF.Web
                         string name = HttpUtility.UrlDecode(val.Substring(start, end - start));
                         start = end + 1;
                         end = val.IndexOf('&', start);
-                        string value;
-                        if (end >= 0)
-                        {
-                            value = HttpUtility.UrlDecode(val.Substring(start, end - start));
-                        }
-                        else
-                        {
-                            value = HttpUtility.UrlDecode(val.Substring(start));
-                        }
+                        string value = HttpUtility.UrlDecode(end < 0 ? val.Substring(start) : val.Substring(start, end - start));
 
                         base.Add(name, value);
 
                         if (end >= 0)
                         {
                             start = end + 1;
-                            end = val.IndexOf("=", start);
+                            end = val.IndexOf('=', start);
                         }
                     }
                 }
@@ -174,12 +169,11 @@ namespace OpenNETCF.Web
             {
                 return string.Empty;
             }
-            StringBuilder builder = new StringBuilder();
-            bool flag = (excludeKeys != null);
+            var builder = new StringBuilder();
             for (int i = 0; i < count; i++)
             {
                 string key = this.GetKey(i);
-                if (((!flag || (key == null)) || (((excludeKeys == null) || (key == null)) || (excludeKeys[key] == null))))
+                if ((((excludeKeys == null) || (key == null)) || (excludeKeys[key] == null)))
                 {
                     string str3;
                     if (urlencoded)
@@ -187,42 +181,44 @@ namespace OpenNETCF.Web
                         key = HttpUtility.UrlEncodeUnicode(key);
                     }
                     string str2 = !string.IsNullOrEmpty(key) ? (key + "=") : string.Empty;
-                    ArrayList list = (ArrayList)base.BaseGet(i);
+                    var list = (ArrayList)base.BaseGet(i);
                     int num3 = (list != null) ? list.Count : 0;
                     if (builder.Length > 0)
                     {
                         builder.Append('&');
                     }
-                    if (num3 == 1)
+                    switch (num3)
                     {
-                        builder.Append(str2);
-                        str3 = (string)list[0];
-                        if (urlencoded)
-                        {
-                            str3 = HttpUtility.UrlEncodeUnicode(str3);
-                        }
-                        builder.Append(str3);
-                    }
-                    else if (num3 == 0)
-                    {
-                        builder.Append(str2);
-                    }
-                    else
-                    {
-                        for (int j = 0; j < num3; j++)
-                        {
-                            if (j > 0)
-                            {
-                                builder.Append('&');
-                            }
+                        case 1:
                             builder.Append(str2);
-                            str3 = (string)list[j];
+                            str3 = (string)list[0];
                             if (urlencoded)
                             {
                                 str3 = HttpUtility.UrlEncodeUnicode(str3);
                             }
                             builder.Append(str3);
-                        }
+                            break;
+
+                        case 0:
+                            builder.Append(str2);
+                            break;
+
+                        default:
+                            for (int j = 0; j < num3; j++)
+                            {
+                                if (j > 0)
+                                {
+                                    builder.Append('&');
+                                }
+                                builder.Append(str2);
+                                str3 = (string)list[j];
+                                if (urlencoded)
+                                {
+                                    str3 = HttpUtility.UrlEncodeUnicode(str3);
+                                }
+                                builder.Append(str3);
+                            }
+                            break;
                     }
                 }
             }

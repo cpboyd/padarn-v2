@@ -1,4 +1,4 @@
-#region License
+﻿#region License
 // Copyright ©2017 Tacke Consulting (dba OpenNETCF)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
@@ -17,9 +17,8 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
 
-using System.Collections.Generic;
+using System;
 using System.Collections.Specialized;
 using System.Text;
 using OpenNETCF.Web.Configuration;
@@ -107,12 +106,7 @@ namespace OpenNETCF.Web
         {
             get
             {
-                if (!this.expirationSet)
-                {
-                    return DateTime.MinValue;
-
-                }
-                return this.expires;
+                return this.expirationSet ? this.expires : DateTime.MinValue;
             }
             set
             {
@@ -250,7 +244,7 @@ namespace OpenNETCF.Web
 
         internal string GetSetCookieHeader(HttpContext context)
         {
-            StringBuilder builder = new StringBuilder();
+            var builder = new StringBuilder();
             builder.Append("Set-Cookie: ");
 
             if (!string.IsNullOrEmpty(this.name))
@@ -315,17 +309,7 @@ namespace OpenNETCF.Web
             }
 
             HttpBrowserCapabilities userAgent = context.Request.Browser;
-            if (userAgent == null)
-            {
-                return false;
-            }
-
-            if (!(userAgent.Type != "IE5"))
-            {
-                return (userAgent.Platform != "MacPPC");
-            }
-
-            return true;
+            return (userAgent != null) && (userAgent.Type != "IE5" || userAgent.Platform != "MacPPC");
         }
     }
 }

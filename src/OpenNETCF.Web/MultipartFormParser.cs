@@ -17,10 +17,10 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
+
 using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Collections;
 
 namespace OpenNETCF.Web
 {
@@ -65,24 +65,15 @@ namespace OpenNETCF.Web
                     return false;
                 }
             }
-            if (this._lineLength != length)
-            {
-                if ((this._data[this._lineStart + length] != 0x2d) || (this._data[(this._lineStart + length) + 1] != 0x2d))
-                {
-                    return false;
-                }
-                this._lastBoundaryFound = true;
-            }
-            return true;
+            return this._lineLength == length ||
+                (this._data[this._lineStart + length] == 0x2d) &&
+                (this._data[(this._lineStart + length) + 1] == 0x2d) &&
+                (this._lastBoundaryFound = true);
         }
 
         private bool AtEndOfData()
         {
-            if (this._pos < this._length)
-            {
-                return this._lastBoundaryFound;
-            }
-            return true;
+            return (this._pos >= this._length) || this._lastBoundaryFound;
         }
 
         private string ExtractValueFromContentDispositionHeader(string l, int pos, string name)
@@ -99,11 +90,7 @@ namespace OpenNETCF.Web
             {
                 return null;
             }
-            if (index == startIndex)
-            {
-                return string.Empty;
-            }
-            return l.Substring(startIndex, index - startIndex);
+            return (index == startIndex) ? string.Empty : l.Substring(startIndex, index - startIndex);
         }
 
         private bool GetNextLine()
@@ -135,7 +122,7 @@ namespace OpenNETCF.Web
 
         internal static List<MultipartContentItem> Parse(HttpRawRequestContent data, int length, byte[] boundary, Encoding encoding)
         {
-            MultipartFormParser parser = new MultipartFormParser(data, length, boundary, encoding);
+            var parser = new MultipartFormParser(data, length, boundary, encoding);
             parser.ParseIntoElementList();
             return parser._elements;
             //return (MultipartContentItem[])parser._elements.ToArray(typeof(MultipartContentItem));
@@ -207,22 +194,25 @@ namespace OpenNETCF.Web
                 {
                     return;
                 }
-                byte[] buffer = new byte[this._lineLength];
+                var buffer = new byte[this._lineLength];
                 this._data.CopyBytes(this._lineStart, buffer, 0, this._lineLength);
-                string l = this._encoding.GetString(buffer,0,buffer.Length);
+                string l = this._encoding.GetString(buffer, 0, buffer.Length);
                 int index = l.IndexOf(':');
-                if (index >= 0)
+                if (index < 0)
                 {
-                    string str2 = l.Substring(0, index);
-                    if (str2.Equals("Content-Disposition",StringComparison.OrdinalIgnoreCase))
-                    {
+                    continue;
+                }
+
+                string str2 = l.Substring(0, index).ToLowerInvariant();
+                switch (str2)
+                {
+                    case "content-disposition":
                         this._partName = this.ExtractValueFromContentDispositionHeader(l, index + 1, "name");
                         this._partFilename = this.ExtractValueFromContentDispositionHeader(l, index + 1, "filename");
-                    }
-                    else if (str2.Equals("Content-Type",StringComparison.OrdinalIgnoreCase))
-                    {
+                        break;
+                    case "content-type":
                         this._partContentType = l.Substring(index + 1).Trim();
-                    }
+                        break;
                 }
             }
         }

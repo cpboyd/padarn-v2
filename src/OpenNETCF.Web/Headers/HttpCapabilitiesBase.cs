@@ -1,4 +1,4 @@
-#region License
+﻿#region License
 // Copyright ©2017 Tacke Consulting (dba OpenNETCF)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
@@ -25,6 +25,7 @@ using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
@@ -287,13 +288,7 @@ namespace OpenNETCF.Web
         ///<returns>The browser capability with the specified key name.</returns>
         public virtual string this[string key]
         {
-            get
-            {
-                if (m_capabilities.ContainsKey(key))
-                    return (string)this.m_capabilities[key];
-                else
-                    return null;
-            }
+            get { return m_capabilities.ContainsKey(key) ? m_capabilities[key] : null; }
         }
 
         ///<summary>
@@ -337,7 +332,7 @@ namespace OpenNETCF.Web
         ///<returns>The common language runtime Version.</returns>
         public Version[] GetClrVersions()
         {
-            var userAgent = m_headers["HTTP_USER_AGENT"] as string;
+            string userAgent = m_headers["HTTP_USER_AGENT"];
             if (string.IsNullOrEmpty(userAgent))
             {
                 return null;
@@ -345,7 +340,7 @@ namespace OpenNETCF.Web
             MatchCollection matchs = new Regex(@"\.NET CLR (?'clrVersion'[0-9\.]*)").Matches(userAgent);
             if (matchs.Count == 0)
             {
-                return new Version[] { new Version(0, 0) };
+                return new[] { new Version(0, 0) };
             }
             var list = new ArrayList();
             foreach (Match match in matchs)
@@ -372,22 +367,10 @@ namespace OpenNETCF.Web
         ///<returns>true if the client browser is the same as the specified browser; otherwise, false. The default is false.</returns>
         public bool IsBrowser(string browserName)
         {
-            if (!string.IsNullOrEmpty(browserName))
-            {
-                if (this._browsers == null)
-                {
-                    return false;
-                }
-                for (int i = 0; i < this._browsers.Count; i++)
-                {
-                    if (string.Equals(browserName, (string)this._browsers[i], StringComparison.OrdinalIgnoreCase))
-                    {
-                        return true;
-                    }
-                }
-            }
-            return false;
+            return !string.IsNullOrEmpty(browserName) && _browsers != null &&
+                   _browsers.Any(t => StringComparer.OrdinalIgnoreCase.Equals(browserName, t));
         }
+
         #endregion
 
         #region Private Methods
@@ -411,12 +394,10 @@ namespace OpenNETCF.Web
                         var xml = new StringBuilder();
                         xml.Append("<browsers>");
                         string[] browserFiles = Directory.GetFiles(ServerConfig.GetConfig().BrowserDefinitions, "*.browser");
-                        StreamReader sr;
-                        string tempLine;
                         foreach (string browserFile in browserFiles)
                         {
-                            sr = new StreamReader(browserFile);
-                            tempLine = sr.ReadToEnd().Replace("<browsers>", "");
+                            var sr = new StreamReader(browserFile);
+                            string tempLine = sr.ReadToEnd().Replace("<browsers>", "");
                             tempLine = tempLine.Replace("</browsers>", "");
                             xml.Append(tempLine);
                             //GetBrowserNodes(sr, xml);
@@ -494,7 +475,6 @@ namespace OpenNETCF.Web
             string browserID = string.Empty;
 
             //Get the config information
-            string tempName = null;
 
             //Load the combineed XmlDocument
             XmlDocument browserDoc = GetCombinedBrowserXmlDoc;
@@ -509,6 +489,7 @@ namespace OpenNETCF.Web
                 //browserID = "Default";
                 if (browserNode != null)
                 {
+                    string tempName;
                     do
                     {
                         tempName = GetConfigInfo(userAgent, browserNode, m_capabilities, browserID);
