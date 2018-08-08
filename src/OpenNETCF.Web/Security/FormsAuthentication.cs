@@ -17,10 +17,9 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
 
+using System;
 using System.Collections.Generic;
-using System.Text;
 using OpenNETCF.Web.Hosting;
 
 namespace OpenNETCF.Web.Security
@@ -30,6 +29,8 @@ namespace OpenNETCF.Web.Security
     /// </summary>
     public sealed class FormsAuthentication
     {
+        private static string m_loginPath;
+
         static FormsAuthentication()
         {
             // set the default
@@ -91,10 +92,7 @@ namespace OpenNETCF.Web.Security
         /// </summary>
         public static bool CookiesSupported
         {
-            get
-            {
-                return true;
-            }
+            get { return true; }
         }
 
         /// <summary>
@@ -115,6 +113,24 @@ namespace OpenNETCF.Web.Security
         /// </summary>
         /// <value>The name of the cookie used to store the forms-authentication ticket. The default is ".ASPXAUTH".</value>
         public static string FormsCookieName { get; internal set; }
+
+        internal static string LoginUrlServerPath
+        {
+            get
+            {
+                if (m_loginPath == null)
+                {
+                    m_loginPath = HostingEnvironment.MapPath(LoginUrl);
+                }
+
+                return m_loginPath;
+            }
+        }
+
+        internal static string ReturnUrl { get; set; }
+
+        internal List<string> DenyUsers { get; set; }
+        internal List<string> AllowsUsers { get; set; }
 
         /// <summary>
         /// Returns the redirect URL for the original request that caused the redirect to the login page.
@@ -140,10 +156,12 @@ namespace OpenNETCF.Web.Security
 
         public static void SetAuthCookie(string userName, bool createPersistentCookie)
         {
-            var authCookie = new OpenNETCF.Web.HttpCookie(FormsCookieName);
+            var authCookie = new HttpCookie(FormsCookieName)
+            {
+                Domain = CookieDomain,
+                Expires = DateTime.Now.Add(Timeout)
+            };
             authCookie.Values["UID"] = userName;
-            authCookie.Domain = FormsAuthentication.CookieDomain;
-            authCookie.Expires = DateTime.Now.Add(FormsAuthentication.Timeout);
 
             if (createPersistentCookie)
             {
@@ -157,7 +175,7 @@ namespace OpenNETCF.Web.Security
         /// </summary>
         public static void RedirectToLoginPage()
         {
-            HttpContext.Current.Response.Redirect(FormsAuthentication.LoginUrl);
+            HttpContext.Current.Response.Redirect(LoginUrl);
         }
 
         /// <summary>
@@ -167,25 +185,5 @@ namespace OpenNETCF.Web.Security
         {
             throw new NotSupportedException();
         }
-
-        private static string m_loginPath = null;
-        internal static string LoginUrlServerPath
-        {
-            get
-            {
-                if (m_loginPath == null)
-                {
-                    m_loginPath = HostingEnvironment.MapPath(FormsAuthentication.LoginUrl);
-                }
-
-                return m_loginPath;
-            }
-        }
-
-        internal static string ReturnUrl { get; set; }
-
-        internal List<string> DenyUsers { get; set; }
-        internal List<string> AllowsUsers { get; set; }
-
     }
 }

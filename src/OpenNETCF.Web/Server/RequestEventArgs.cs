@@ -17,32 +17,30 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
 
-using System.Collections.Generic;
-using System.Text;
+using System;
 
 namespace OpenNETCF.Web.Server
 {
-  class RequestEventArgs : EventArgs
-  {
-    private readonly SocketWrapperBase m_socket;
-    private readonly NetworkStreamWrapperBase m_stream;
-
-    public NetworkStreamWrapperBase Stream
+    class RequestEventArgs : EventArgs
     {
-      get { return m_stream; }
-    }
+        private readonly SocketWrapperBase m_socket;
+        private readonly NetworkStreamWrapperBase m_stream;
 
-    public SocketWrapperBase Socket
-    {
-      get { return m_socket; }
-    }
+        public RequestEventArgs(SocketWrapperBase socket)
+        {
+            m_socket = socket;
+            m_stream = socket.CreateNetworkStream();
+        }
 
-    public RequestEventArgs(SocketWrapperBase socket)
-    {
-      m_socket = socket;
-      m_stream = socket.CreateNetworkStream();
+        public NetworkStreamWrapperBase Stream
+        {
+            get { return m_stream; }
+        }
+
+        public SocketWrapperBase Socket
+        {
+            get { return m_socket; }
+        }
     }
-  }
 }

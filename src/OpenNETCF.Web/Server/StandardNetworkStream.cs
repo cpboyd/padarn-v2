@@ -17,16 +17,14 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
+
 using System;
-using System.Net;
-using System.Net.Sockets;
 using System.IO;
-using System.Collections.Generic;
-using System.Text;
+using System.Net.Sockets;
 
 namespace OpenNETCF.Web.Server
 {
-    class StandardNetworkStream: NetworkStreamWrapperBase
+    class StandardNetworkStream : NetworkStreamWrapperBase
     {
         private NetworkStream m_stream;
         private object m_syncRoot = new object();
@@ -34,14 +32,6 @@ namespace OpenNETCF.Web.Server
         internal StandardNetworkStream(NetworkStream ns)
         {
             m_stream = ns;
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            lock (m_syncRoot)
-            {
-                m_stream.Close();
-            }
         }
 
         public override bool CanRead
@@ -113,6 +103,14 @@ namespace OpenNETCF.Web.Server
                 {
                     m_stream.Position = value; ;
                 }
+            }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            lock (m_syncRoot)
+            {
+                m_stream.Close();
             }
         }
 

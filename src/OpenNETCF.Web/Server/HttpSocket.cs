@@ -17,12 +17,10 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
+
 using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Collections.Generic;
-using System.Text;
-using System.Threading;
 
 namespace OpenNETCF.Web.Server
 {
@@ -31,7 +29,63 @@ namespace OpenNETCF.Web.Server
         private Socket m_socket;
         private object m_syncRoot = new object();
 
-        public override void Create(System.Net.Sockets.AddressFamily af, System.Net.Sockets.SocketType type, System.Net.Sockets.ProtocolType proto)
+        public override bool Connected
+        {
+            get
+            {
+                lock (m_syncRoot)
+                {
+                    return m_socket.Connected;
+                }
+            }
+        }
+
+        public override EndPoint LocalEndPoint
+        {
+            get
+            {
+                lock (m_syncRoot)
+                {
+
+                    return m_socket.LocalEndPoint;
+                }
+            }
+        }
+
+        public override EndPoint RemoteEndPoint
+        {
+            get
+            {
+                lock (m_syncRoot)
+                {
+                    return m_socket.RemoteEndPoint;
+                }
+            }
+        }
+
+        public override int Available
+        {
+            get
+            {
+                lock (m_syncRoot)
+                {
+                    return m_socket.Available;
+                }
+            }
+        }
+
+        public IntPtr Handle
+        {
+            get
+            {
+                lock (m_syncRoot)
+                {
+                    return m_socket.Handle;
+                }
+            }
+        }
+
+        public override void Create(AddressFamily af, SocketType type, ProtocolType proto)
         {
             lock (m_syncRoot)
             {
@@ -60,7 +114,7 @@ namespace OpenNETCF.Web.Server
             }
         }
 
-        public override void Bind(System.Net.IPEndPoint ep)
+        public override void Bind(IPEndPoint ep)
         {
             lock (m_syncRoot)
             {
@@ -104,17 +158,6 @@ namespace OpenNETCF.Web.Server
             }
         }
 
-        public override bool Connected
-        {
-            get
-            {
-                lock (m_syncRoot)
-                {
-                    return m_socket.Connected;
-                }
-            }
-        }
-
         public override SocketWrapperBase EndAccept(IAsyncResult asyncResult)
         {
             if (IsDisposed) return null;
@@ -123,7 +166,7 @@ namespace OpenNETCF.Web.Server
             {
                 if (m_socket == null) return null;
 
-                HttpSocket result = new HttpSocket();
+                var result = new HttpSocket();
                 result.Create(m_socket.EndAccept(asyncResult));
                 return result;
             }
@@ -134,40 +177,6 @@ namespace OpenNETCF.Web.Server
             lock (m_syncRoot)
             {
                 return new StandardNetworkStream(new NetworkStream(m_socket));
-            }
-        }
-
-        public override EndPoint LocalEndPoint
-        {
-            get
-            {
-                lock (m_syncRoot)
-                {
-
-                    return m_socket.LocalEndPoint;
-                }
-            }
-        }
-
-        public override EndPoint RemoteEndPoint
-        {
-            get
-            {
-                lock (m_syncRoot)
-                {
-                    return m_socket.RemoteEndPoint;
-                }
-            }
-        }
-
-        public override int Available
-        {
-            get
-            {
-                lock (m_syncRoot)
-                {
-                    return m_socket.Available;
-                }
             }
         }
 
@@ -194,17 +203,6 @@ namespace OpenNETCF.Web.Server
             lock (m_syncRoot)
             {
                 m_socket.Shutdown(how);
-            }
-        }
-
-        public IntPtr Handle
-        {
-            get
-            {
-                lock (m_syncRoot)
-                {
-                    return m_socket.Handle;
-                }
             }
         }
     }

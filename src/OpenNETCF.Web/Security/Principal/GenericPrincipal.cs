@@ -17,49 +17,51 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
-using System.Collections.Generic;
-using System.Text;
+
+using System.Linq;
 
 namespace OpenNETCF.Security.Principal
 {
     /// <summary>
-    /// Represents a generic user.
+    /// Represents a generic principal.
     /// </summary>
-    public class GenericIdentity : IIdentity
+    public class GenericPrincipal : IPrincipal
     {
-        /// <summary>
-        /// Gets the type of authentication used to identify the user.
-        /// </summary>
-        public string AuthenticationType { get; private set; }
-        /// <summary>
-        /// Gets a value indicating whether the user has been authenticated.
-        /// </summary>
-        public bool IsAuthenticated { get; internal set; }
-        /// <summary>
-        /// Gets the user's name.
-        /// </summary>
-        public string Name { get; private set; }
+        private string[] m_roles;
 
         /// <summary>
-        /// Initializes a new instance of the GenericIdentity class representing the user with the specified name.
+        /// Initializes a new instance of the GenericPrincipal class from a user identity and an array of role names to which the user represented by that identity belongs.
         /// </summary>
-        /// <param name="userName"></param>
-        public GenericIdentity(string userName)
-            : this(userName, null)
+        /// <param name="identity"></param>
+        /// <param name="roles"></param>
+        public GenericPrincipal(IIdentity identity, string[] roles)
         {
+            Identity = identity;
+            m_roles = roles;
         }
 
         /// <summary>
-        /// Initializes a new instance of the GenericIdentity class representing the user with the specified name and authentication type.
+        /// Initializes a new instance of the GenericPrincipal class from a user identity and an array of role names to which the user represented by that identity belongs.
         /// </summary>
-        /// <param name="userName"></param>
-        /// <param name="authType"></param>
-        public GenericIdentity(string userName, string authType)
+        /// <param name="identity"></param>
+        public GenericPrincipal(IIdentity identity)
         {
-            Name = userName;
-            AuthenticationType = authType;
-            IsAuthenticated = false;
+            Identity = identity;
+        }
+
+        /// <summary>
+        /// Gets the GenericIdentity of the user represented by the current GenericPrincipal.
+        /// </summary>
+        public IIdentity Identity { get; private set; }
+
+        /// <summary>
+        /// Determines whether the current GenericPrincipal belongs to the specified role.
+        /// </summary>
+        /// <param name="role"></param>
+        /// <returns></returns>
+        public virtual bool IsInRole(string role)
+        {
+            return m_roles.Any(r => r == role);
         }
     }
 }

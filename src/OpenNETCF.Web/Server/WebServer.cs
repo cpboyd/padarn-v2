@@ -30,8 +30,8 @@ namespace OpenNETCF.Web.Server
 {
     internal interface IRequestListener : IDisposable
     {
-        bool ProcessingRequest { get; }
         event ListenerStateChange OnStateChange;
+        bool ProcessingRequest { get; }
         void StartListening();
         void Shutdown();
     }

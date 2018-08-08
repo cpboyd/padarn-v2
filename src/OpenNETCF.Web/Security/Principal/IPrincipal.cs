@@ -18,19 +18,24 @@
 //
 #endregion
 
-namespace OpenNETCF.Web.Security.Cryptography
+namespace OpenNETCF.Security.Principal
 {
-    public class BasicAuthInfo : IAuthenticationCallbackInfo
+    /// <summary>
+    /// Defines the basic functionality of a principal object.
+    /// </summary>
+    public interface IPrincipal
     {
-        public string Password { get; internal set; }
+        /// <summary>
+        /// Gets the identity of the current principal.
+        /// </summary>
+        IIdentity Identity { get; }
 
-        #region IAuthenticationCallbackInfo Members
+        /// <summary>
+        /// Determines whether the current principal belongs to the specified role.
+        /// </summary>
+        /// <param name="role"></param>
+        /// <returns></returns>
+        bool IsInRole(string role);
 
-        public string UserName { get; internal set; }
-        public string Realm { get; internal set; }
-        public string Uri { get; internal set; }
-        public string Method { get; internal set; }
-
-        #endregion
     }
 }

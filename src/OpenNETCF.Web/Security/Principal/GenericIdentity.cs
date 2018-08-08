@@ -17,28 +17,50 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace OpenNETCF.Security.Principal
 {
     /// <summary>
-    /// Defines the basic functionality of a principal object.
+    /// Represents a generic user.
     /// </summary>
-    public interface IPrincipal
+    public class GenericIdentity : IIdentity
     {
         /// <summary>
-        /// Gets the identity of the current principal.
+        /// Initializes a new instance of the GenericIdentity class representing the user with the specified name.
         /// </summary>
-        IIdentity Identity { get; }
+        /// <param name="userName"></param>
+        public GenericIdentity(string userName)
+            : this(userName, null)
+        {
+        }
 
         /// <summary>
-        /// Determines whether the current principal belongs to the specified role.
+        /// Initializes a new instance of the GenericIdentity class representing the user with the specified name and authentication type.
         /// </summary>
-        /// <param name="role"></param>
-        /// <returns></returns>
-        bool IsInRole(string role);
+        /// <param name="userName"></param>
+        /// <param name="authType"></param>
+        public GenericIdentity(string userName, string authType)
+        {
+            Name = userName;
+            AuthenticationType = authType;
+            IsAuthenticated = false;
+        }
 
+        #region IIdentity Members
+
+        /// <summary>
+        /// Gets the type of authentication used to identify the user.
+        /// </summary>
+        public string AuthenticationType { get; private set; }
+        /// <summary>
+        /// Gets a value indicating whether the user has been authenticated.
+        /// </summary>
+        public bool IsAuthenticated { get; internal set; }
+        /// <summary>
+        /// Gets the user's name.
+        /// </summary>
+        public string Name { get; private set; }
+
+        #endregion
     }
 }

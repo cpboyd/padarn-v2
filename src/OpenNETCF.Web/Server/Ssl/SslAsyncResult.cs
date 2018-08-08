@@ -17,10 +17,8 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
+
 using System;
-using System.Linq;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 
 namespace OpenNETCF.Web.Server.Ssl
@@ -29,15 +27,19 @@ namespace OpenNETCF.Web.Server.Ssl
     {
         public SslAsyncResult(object state)
         {
-            this.AsyncState = state;
+            AsyncState = state;
         }
+
+        #region IAsyncResult Members
 
         public object AsyncState { get; private set; }
 
-        public System.Threading.WaitHandle AsyncWaitHandle { get { throw new NotImplementedException(); } }
+        public WaitHandle AsyncWaitHandle { get { throw new NotImplementedException(); } }
 
         public bool CompletedSynchronously { get { throw new NotImplementedException(); } }
 
         public bool IsCompleted { get { throw new NotImplementedException(); } }
+
+        #endregion
     }
 }

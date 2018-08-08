@@ -17,15 +17,11 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
+
 using System;
-using System.Net;
-using System.Net.Sockets;
 using System.IO;
-using System.Collections.Generic;
-using System.Text;
-using SBSSLServer;
-using SecureBlackbox.SSLSocket.Server;
 using OpenNETCF.Web.Server.Ssl;
+using SecureBlackbox.SSLSocket.Server;
 
 namespace OpenNETCF.Web.Server
 {
@@ -37,14 +33,6 @@ namespace OpenNETCF.Web.Server
         public SslNetworkStream(ElServerSSLSocket socket)
         {
             m_stream = new SslStream(socket);
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            lock (m_syncRoot)
-            {
-                m_stream.Dispose();
-            }
         }
 
         public override bool CanRead
@@ -118,6 +106,14 @@ namespace OpenNETCF.Web.Server
                 {
                     m_stream.Position = value; ;
                 }
+            }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            lock (m_syncRoot)
+            {
+                m_stream.Dispose();
             }
         }
 

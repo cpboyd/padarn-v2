@@ -1,4 +1,4 @@
-#region License
+﻿#region License
 // Copyright ©2017 Tacke Consulting (dba OpenNETCF)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
@@ -17,58 +17,53 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
-using System;
 
 using System.Collections.Generic;
-using System.Text;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace OpenNETCF.Web.Security.Cryptography
 {
     public class DigestAuthInfo : IAuthenticationCallbackInfo
     {
-        public string Method { get; private set; }
         private Dictionary<string, string> m_data;
 
         internal DigestAuthInfo(string httpMethod)
         {
-            m_data = new Dictionary<string,string>();
+            m_data = new Dictionary<string, string>();
 
             Method = httpMethod;
-        }
-
-        public string UserName 
-        {
-            get
-            {
-                return m_data["username"];
-            }
-        }
-
-        public string Realm
-        {
-            get
-            {
-                return m_data["realm"];
-            }
-        }
-
-        public string Uri
-        {
-            get
-            {
-                return m_data["uri"];
-            }
-        }
-
-        internal void AddElement(string key, string value)
-        {
-            m_data.Add(key, value);
         }
 
         internal string this[string name]
         {
             get { return m_data[name]; }
+        }
+
+        #region IAuthenticationCallbackInfo Members
+
+        public string Method { get; private set; }
+
+        public string UserName
+        {
+            get { return m_data["username"]; }
+        }
+
+        public string Realm
+        {
+            get { return m_data["realm"]; }
+        }
+
+        public string Uri
+        {
+            get { return m_data["uri"]; }
+        }
+
+        #endregion
+
+        internal void AddElement(string key, string value)
+        {
+            m_data.Add(key, value);
         }
 
         /// <summary>
@@ -81,14 +76,14 @@ namespace OpenNETCF.Web.Security.Cryptography
             // Calculate the digest hashes (taken from RFC2617)
 
             // A1 = unq(username-value) ":" unq(realm-value) ":" passwd
-            var A1 = String.Format("{0}:{1}:{2}", UserName, Realm, password);
+            string A1 = string.Format("{0}:{1}:{2}", UserName, Realm, password);
             // H(A1) = MD5(A1)
-            var HA1 = MD5Hash(A1);
+            string HA1 = MD5Hash(A1);
 
             // A2 = method ":" digest-uri
-            var A2 = String.Format("{0}:{1}", Method, m_data["uri"]);
+            string A2 = string.Format("{0}:{1}", Method, m_data["uri"]);
             // H(A2) = MD5(A2)
-            var HA2 = MD5Hash(A2);
+            string HA2 = MD5Hash(A2);
 
             // KD(secret, data) = H(concat(secret, ":", data))
             // if qop == auth:
@@ -104,7 +99,7 @@ namespace OpenNETCF.Web.Security.Cryptography
             string unhashedDigest;
             if (m_data["qop"].Equals("auth"))
             {
-                unhashedDigest = String.Format("{0}:{1}:{2}:{3}:{4}:{5}",
+                unhashedDigest = string.Format("{0}:{1}:{2}:{3}:{4}:{5}",
                     HA1,
                     m_data["nonce"],
                     m_data["nc"],
@@ -114,11 +109,11 @@ namespace OpenNETCF.Web.Security.Cryptography
             }
             else
             {
-                unhashedDigest = String.Format("{0}:{1}:{2}",
+                unhashedDigest = string.Format("{0}:{1}:{2}",
                     HA1, m_data["nonce"], HA2);
             }
 
-            var hashedDigest = MD5Hash(unhashedDigest);
+            string hashedDigest = MD5Hash(unhashedDigest);
 
             return hashedDigest;
         }
@@ -138,7 +133,7 @@ namespace OpenNETCF.Web.Security.Cryptography
             MD5 hash = MD5.Create();
             byte[] h = hash.ComputeHash(Encoding.ASCII.GetBytes(str));
 
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
             foreach (byte b in h)
             {
                 sb.Append(b.ToString("x2"));

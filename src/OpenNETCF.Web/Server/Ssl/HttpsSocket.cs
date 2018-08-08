@@ -17,20 +17,22 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
+
 using System;
 using System.IO;
-using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
-using System.Collections.Generic;
-using System.Text;
+using System.Threading;
 using OpenNETCF.Web.Configuration;
 using OpenNETCF.Web.Logging;
-using SBCustomCertStorage;
+using OpenNETCF.Web.Server.Ssl;
+using SBSessionPool;
+using SBSSLCommon;
+using SBWinCertStorage;
 using SBX509;
 using SecureBlackbox.SSLSocket.Server;
-using System.Threading;
-using OpenNETCF.Web.Server.Ssl;
+using Unit = SBUtils.Unit;
+using __Global = SBSSLConstants.__Global;
 
 namespace OpenNETCF.Web.Server
 {
@@ -39,9 +41,9 @@ namespace OpenNETCF.Web.Server
         private ElServerSSLSocket m_socket;
         private ElServerSSLSocket m_clientSocket;
         private ILogProvider m_logProvider;
-        private static SBSessionPool.TElSessionPool m_sessionPool;
+        private static TElSessionPool m_sessionPool;
 #if WindowsCE
-        private static SBWinCertStorage.TElWinCertStorage m_certStorage = new SBWinCertStorage.TElWinCertStorage();
+        private static TElWinCertStorage m_certStorage = new TElWinCertStorage();
 #else
         private static TElMemoryCertStorage m_certStorage = new TElMemoryCertStorage();
 #endif
@@ -52,16 +54,16 @@ namespace OpenNETCF.Web.Server
 
         static HttpsSocket()
         {
-            m_config = Configuration.ServerConfig.GetConfig();
+            m_config = ServerConfig.GetConfig();
 
             if (string.IsNullOrEmpty(m_config.SSLLicenseKey))
             {
                 // Get default License key
-                SBUtils.Unit.SetLicenseKey(SSL_EVAL_LICENSE_KEY);
+                Unit.SetLicenseKey(SSL_EVAL_LICENSE_KEY);
             }
             else
             {
-                SBUtils.Unit.SetLicenseKey(m_config.SSLLicenseKey);
+                Unit.SetLicenseKey(m_config.SSLLicenseKey);
             }
 
             // Set security protocols            
@@ -71,11 +73,12 @@ namespace OpenNETCF.Web.Server
 
             if (m_config.Security.ResumeSession)
             {
-                m_sessionPool = new SBSessionPool.TElSessionPool();
+                m_sessionPool = new TElSessionPool();
             }
 
 #if WindowsCE
             TElX509Certificate cert = LoadCertificate(m_config.CertificateName, m_config.CertificatePassword);
+            // TODO: Handle EElCertStorageError if user blocks adding certificate
             m_certStorage.Add(cert, "Root", true, false, false);
 
             TElX509Certificate a = m_certStorage.GetCertificates(0);
@@ -101,9 +104,9 @@ namespace OpenNETCF.Web.Server
         {
             // We do not use LoadFromFileAuto or LoadFromBuffer here because it works only on desktop => Invalid Certificate Data on WinCe        
             // TODO : deal with PEM & SPC
-            using (FileStream fs = new FileStream(certificateName, FileMode.Open))
+            using (var fs = new FileStream(certificateName, FileMode.Open))
             {
-                TElX509Certificate cert = new TElX509Certificate();
+                var cert = new TElX509Certificate();
                 switch (cert.LoadFromStreamPFX(fs, certificatePassword, 0))
                 {
                     case 0:
@@ -118,15 +121,15 @@ namespace OpenNETCF.Web.Server
             }
         }
 
-        public override void Create(System.Net.Sockets.AddressFamily af, System.Net.Sockets.SocketType type, System.Net.Sockets.ProtocolType proto)
+        public override void Create(AddressFamily af, SocketType type, ProtocolType proto)
         {
             lock (m_syncRoot)
             {
-                m_socket = new ElServerSSLSocket(new Socket(af, type, proto));                
+                m_socket = new ElServerSSLSocket(new Socket(af, type, proto));
                 m_socket.Versions = m_protocols;
 
                 // To speed the answer, we're using only the fastest cipher suites (based on experimentation ...)
-                for (short i = SBSSLConstants.__Global.SB_SUITE_FIRST; i < SBSSLConstants.__Global.SB_SUITE_LAST; i++)
+                for (short i = __Global.SB_SUITE_FIRST; i < __Global.SB_SUITE_LAST; i++)
                 {
                     m_socket.set_CipherSuites(i, false);
                 }
@@ -134,20 +137,20 @@ namespace OpenNETCF.Web.Server
                 // let the user overide cipher suites if they desire
                 if (m_config.Security.CipherList != null && m_config.Security.CipherList.Count > 0)
                 {
-                    foreach (var c in m_config.Security.CipherList)
+                    foreach (short c in m_config.Security.CipherList)
                     {
                         m_socket.set_CipherSuites(c, true);
                     }
                 }
                 else
                 {
-                    m_socket.set_CipherSuites(SBSSLConstants.__Global.SB_SUITE_RSA_3DES_SHA, true);
-                    m_socket.set_CipherSuites(SBSSLConstants.__Global.SB_SUITE_RSA_AES128_SHA, true);
-                    m_socket.set_CipherSuites(SBSSLConstants.__Global.SB_SUITE_RSA_AES256_SHA, true);
+                    m_socket.set_CipherSuites(__Global.SB_SUITE_RSA_3DES_SHA, true);
+                    m_socket.set_CipherSuites(__Global.SB_SUITE_RSA_AES128_SHA, true);
+                    m_socket.set_CipherSuites(__Global.SB_SUITE_RSA_AES256_SHA, true);
                 }
 
                 m_socket.CustomCertStorage = m_certStorage;
-                m_socket.OnError += new SBSSLCommon.TSBErrorEvent(m_socket_OnError);
+                m_socket.OnError += new TSBErrorEvent(m_socket_OnError);
             }
         }
 
@@ -172,7 +175,7 @@ namespace OpenNETCF.Web.Server
             }
         }
 
-        public override void Bind(System.Net.IPEndPoint ep)
+        public override void Bind(IPEndPoint ep)
         {
             lock (m_syncRoot)
             {
@@ -246,7 +249,7 @@ namespace OpenNETCF.Web.Server
             {
                 if (m_socket == null || m_clientSocket == null) return null;
 
-                HttpsSocket result = new HttpsSocket(m_logProvider);
+                var result = new HttpsSocket(m_logProvider);
                 result.Create(m_clientSocket);
 
                 return result;

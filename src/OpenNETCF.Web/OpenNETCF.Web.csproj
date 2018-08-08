@@ -231,10 +231,10 @@
     <Compile Include="Security\Cryptography\IAuthenticationCallbackInfo.cs" />
     <Compile Include="Security\DigestAuthentication.cs" />
     <Compile Include="Security\FormsAuthentication.cs" />
-    <Compile Include="Security\GenericIdentity.cs" />
-    <Compile Include="Security\GenericPrincipal.cs" />
-    <Compile Include="Security\IIdentity.cs" />
-    <Compile Include="Security\IPrincipal.cs" />
+    <Compile Include="Security\Principal\GenericIdentity.cs" />
+    <Compile Include="Security\Principal\GenericPrincipal.cs" />
+    <Compile Include="Security\Principal\IIdentity.cs" />
+    <Compile Include="Security\Principal\IPrincipal.cs" />
     <Compile Include="Server\HttpRequestListener.cs" />
     <Compile Include="HttpResponse.cs" />
     <Compile Include="HttpRuntime.cs" />

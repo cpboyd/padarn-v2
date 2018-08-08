@@ -17,12 +17,9 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
+
 using System;
-using System.Net;
-using System.Net.Sockets;
 using System.IO;
-using System.Collections.Generic;
-using System.Text;
 
 namespace OpenNETCF.Web.Server
 {

@@ -52,8 +52,6 @@ namespace OpenNETCF.Web.Security
         /// <returns></returns>
         public override bool AcceptCredentials(HttpContext context, string authentication)
         {
-            bool auth = false;
-
             ServerConfig config = ServerConfig.GetConfig();
             var digest = new DigestAuthInfo(context.Request.HttpMethod);
 
@@ -62,24 +60,19 @@ namespace OpenNETCF.Web.Security
             foreach (string element in elements)
             {
                 int splitIndex = element.IndexOf('=');
-                string K = element.Substring(0, splitIndex).Trim(new char[] { ' ', '\"' });
-                string V = element.Substring(splitIndex + 1).Trim(new char[] { ' ', '\"' });
+                string K = element.Substring(0, splitIndex).Trim(new[] { ' ', '\"' });
+                string V = element.Substring(splitIndex + 1).Trim(new[] { ' ', '\"' });
                 digest.AddElement(K, V);
             }
 
             m_user = digest["username"];
 
-            if (config.Authentication.AuthenticationCallback == null)
-            {
-                auth = CheckConfigUserList(digest);
-            }
-            else
-            {
-                auth = CheckUserWithServerCallback(digest);
-            }
+            bool auth = (config.Authentication.AuthenticationCallback == null)
+                ? CheckConfigUserList(digest)
+                : CheckUserWithServerCallback(digest);
 
             // set the user info
-            var id = new GenericIdentity(User, this.AuthenticationMethod.ToLowerInvariant()) { IsAuthenticated = auth };
+            var id = new GenericIdentity(User, AuthenticationMethod.ToLowerInvariant()) { IsAuthenticated = auth };
             var principal = new GenericPrincipal(id);
             context.User = principal;
 
@@ -121,12 +114,12 @@ namespace OpenNETCF.Web.Security
             //// Calculate the digest hashes (taken from RFC2617)
 
             //// A1 = unq(username-value) ":" unq(realm-value) ":" passwd
-            //string A1 = String.Format("{0}:{1}:{2}", User, realm, password);
+            //string A1 = string.Format("{0}:{1}:{2}", User, realm, password);
             //// H(A1) = MD5(A1)
             //string HA1 = MD5Hash(A1);
 
             //// A2 = method ":" digest-uri
-            //string A2 = String.Format("{0}:{1}", method, digest["uri"]);
+            //string A2 = string.Format("{0}:{1}", method, digest["uri"]);
             //// H(A2) = MD5(A2)
             //string HA2 = MD5Hash(A2);
 
@@ -144,7 +137,7 @@ namespace OpenNETCF.Web.Security
             //string unhashedDigest;
             //if (digest["qop"].Equals("auth"))
             //{
-            //    unhashedDigest = String.Format("{0}:{1}:{2}:{3}:{4}:{5}",
+            //    unhashedDigest = string.Format("{0}:{1}:{2}:{3}:{4}:{5}",
             //        HA1,
             //        digest["nonce"],
             //        digest["nc"],
@@ -154,7 +147,7 @@ namespace OpenNETCF.Web.Security
             //}
             //else
             //{
-            //    unhashedDigest = String.Format("{0}:{1}:{2}",
+            //    unhashedDigest = string.Format("{0}:{1}:{2}",
             //        HA1, digest["nonce"], HA2);
             //}
 
@@ -176,17 +169,17 @@ namespace OpenNETCF.Web.Security
             string realm = ServerConfig.GetConfig().Authentication.Realm;
             string nonce = GetCurrentNonce();
 
-            var challenge = new StringBuilder("Digest realm=\"");
-            challenge.Append(realm);
-            challenge.Append("\"");
-            challenge.Append(", nonce=\"");
-            challenge.Append(nonce);
-            challenge.Append("\"");
-            challenge.Append(", opaque=\"0000000000000000\"");
-            challenge.Append(", stale=");
-            challenge.Append("false");
-            challenge.Append(", algorithm=MD5");
-            challenge.Append(", qop=\"auth\"");
+            StringBuilder challenge = new StringBuilder("Digest realm=\"")
+                .Append(realm)
+                .Append("\"")
+                .Append(", nonce=\"")
+                .Append(nonce)
+                .Append("\"")
+                .Append(", opaque=\"0000000000000000\"")
+                .Append(", stale=")
+                .Append("false")
+                .Append(", algorithm=MD5")
+                .Append(", qop=\"auth\"");
 
             context.Response.AppendHeader("WWW-Authenticate", challenge.ToString());
         }

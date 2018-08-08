@@ -41,25 +41,25 @@ namespace OpenNETCF.Web.Security
 
         public override bool AcceptCredentials(HttpContext context, string authentication)
         {
-            bool auth = true;
 
             byte[] userpass = Convert.FromBase64String(authentication);
             string[] up = Encoding.UTF8.GetString(userpass, 0, userpass.Length).Split(separator);
             m_user = up[0];
             string password = up[1];
 
-            if (String.IsNullOrEmpty(this.User)) return false;
+            if (string.IsNullOrEmpty(User)) return false;
 
             ServerConfig config = ServerConfig.GetConfig();
+            bool auth = true;
             if (config.Authentication.AuthenticationCallback == null)
             {
-                auth = CheckConfigUserList(this.User, password);
+                auth = CheckConfigUserList(User, password);
             }
             else
             {
                 var info = new BasicAuthInfo
                 {
-                    UserName = this.User,
+                    UserName = User,
                     Password = password,
                     Realm = config.Authentication.Realm,
                     Uri = context.Request.Path,
@@ -70,7 +70,7 @@ namespace OpenNETCF.Web.Security
             }
 
             // set the user info
-            var id = new GenericIdentity(User, this.AuthenticationMethod.ToLowerInvariant()) { IsAuthenticated = auth };
+            var id = new GenericIdentity(User, AuthenticationMethod.ToLowerInvariant()) { IsAuthenticated = auth };
             var principal = new GenericPrincipal(id);
             context.User = principal;
 
@@ -91,18 +91,8 @@ namespace OpenNETCF.Web.Security
 
         private bool CheckConfigUserList(string userName, string password)
         {
-            User user;
-            if ((user = ServerConfig.GetConfig().Authentication.Users.Find(userName)) == null)
-            {
-                return false;
-            }
-
-            if (!user.Password.Equals(password))
-            {
-                return false;
-            }
-
-            return true;
+            User user = ServerConfig.GetConfig().Authentication.Users.Find(userName);
+            return user != null && user.Password.Equals(password);
         }
 
         public override void OnEndRequest(object sender, EventArgs e)
@@ -111,7 +101,7 @@ namespace OpenNETCF.Web.Security
             if (!AuthenticationRequired) return;
 
             string realm = ServerConfig.GetConfig().Authentication.Realm;
-            string challenge = String.Format("{0} realm=\"{1}\"", AuthenticationMethod, realm);
+            string challenge = string.Format("{0} realm=\"{1}\"", AuthenticationMethod, realm);
             context.Response.AppendHeader("WWW-Authenticate", challenge);
         }
     }

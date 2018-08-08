@@ -17,18 +17,17 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
+
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
-using OpenNETCF.Web;
-using OpenNETCF.Web.Hosting;
 using OpenNETCF.Web.Configuration;
+using OpenNETCF.Web.Hosting;
 using OpenNETCF.Web.Logging;
-using System.Diagnostics;
-using System.Collections.Generic;
 
 namespace OpenNETCF.Web.Server
 {
@@ -37,17 +36,15 @@ namespace OpenNETCF.Web.Server
 
     internal class HttpRequestListener : IRequestListener
     {
-        private event RequestEventHandler OnReceiveRequest;
-        public event ListenerStateChange OnStateChange;
-
         private const int MAX_BUFFER = 32768;
-
-        private int m_port;
-        private int m_maxConnections;
-        private SocketWrapperBase m_serverSocket;
-        private ManualResetEvent requestDone = new ManualResetEvent(false);
-        private bool m_shutDown = false;
+        private List<IPAddress> m_clients = new List<IPAddress>();
         private ILogProvider m_logProvider;
+
+        private int m_maxConnections;
+        private int m_port;
+        private SocketWrapperBase m_serverSocket;
+        private bool m_shutDown = false;
+        private ManualResetEvent requestDone = new ManualResetEvent(false);
 
         /// <summary>
         /// Create an instance of the listener on the specified port.
@@ -67,7 +64,7 @@ namespace OpenNETCF.Web.Server
             m_maxConnections = maxConnections;
             m_port = port;
 
-            IPEndPoint localEndpoint = new IPEndPoint(localIP, m_port);
+            var localEndpoint = new IPEndPoint(localIP, m_port);
 
             if (ServerConfig.GetConfig().UseSsl == true)
             {
@@ -80,13 +77,13 @@ namespace OpenNETCF.Web.Server
                 m_serverSocket = new HttpSocket();
             }
             m_serverSocket.Create(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            
+
             try
             {
                 m_logProvider.LogRuntimeInfo(ZoneFlags.RequestListener | ZoneFlags.Startup, string.Format("Binding to {0}:{1}", localEndpoint.Address, localEndpoint.Port));
                 m_serverSocket.Bind(localEndpoint);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 m_logProvider.LogRuntimeInfo(ZoneFlags.RequestListener | ZoneFlags.Startup, string.Format("Failed to binding to {0}:{1}: {2}", localEndpoint.Address, localEndpoint.Port, ex.Message));
                 throw;
@@ -94,6 +91,12 @@ namespace OpenNETCF.Web.Server
 
             OnReceiveRequest += ProcessRequest;
         }
+
+        private event RequestEventHandler OnReceiveRequest;
+
+        #region IRequestListener Members
+
+        public event ListenerStateChange OnStateChange;
 
         /// <summary>
         /// Listen for incoming HTTP requests
@@ -121,18 +124,6 @@ namespace OpenNETCF.Web.Server
             }
         }
 
-        private void RaiseStateChanged(bool running)
-        {
-            if (OnStateChange != null)
-            {
-                try
-                {
-                    OnStateChange(running);
-                }
-                catch { }
-            }
-        }
-
         public void Shutdown()
         {
             RaiseStateChanged(false);
@@ -150,6 +141,25 @@ namespace OpenNETCF.Web.Server
             RaiseStateChanged(false);
         }
 
+        public bool ProcessingRequest
+        {
+            get { return m_clients.Count > 0; }
+        }
+
+        #endregion
+
+        private void RaiseStateChanged(bool running)
+        {
+            if (OnStateChange != null)
+            {
+                try
+                {
+                    OnStateChange(running);
+                }
+                catch { }
+            }
+        }
+
         private void AcceptRequest(IAsyncResult result)
         {
             m_logProvider.LogRuntimeInfo(ZoneFlags.RequestListener, "+HttpRequestListener.AcceptRequest");
@@ -165,7 +175,7 @@ namespace OpenNETCF.Web.Server
                 //    return;
                 //}
 
-                SocketWrapperBase listener = (SocketWrapperBase)result.AsyncState;
+                var listener = (SocketWrapperBase)result.AsyncState;
                 if (listener.IsDisposed) return;
 
                 if (m_serverSocket.IsDisposed || m_shutDown)
@@ -174,8 +184,8 @@ namespace OpenNETCF.Web.Server
                 SocketWrapperBase handler = listener.EndAccept(result);
                 if ((handler == null) || (!handler.Connected)) return;
 
-                RequestEventArgs e = new RequestEventArgs(handler);
-                var orr = OnReceiveRequest;
+                var e = new RequestEventArgs(handler);
+                RequestEventHandler orr = OnReceiveRequest;
                 if (orr != null)
                 {
                     orr(this, e);
@@ -201,27 +211,20 @@ namespace OpenNETCF.Web.Server
             }
         }
 
-        public bool ProcessingRequest
-        {
-            get { return m_clients.Count > 0; }
-        }
-
         private void ProcessRequest(object sender, RequestEventArgs e)
         {
             if (m_shutDown) return;
             ProcessRequestWorker(e.Socket);
         }
 
-        private List<IPAddress> m_clients = new List<IPAddress>();
-
         private void ProcessRequestWorker(object parm)
         {
-            SocketWrapperBase sock = (SocketWrapperBase)parm;
-            var et = Environment.TickCount;
+            var sock = (SocketWrapperBase)parm;
+            int et = Environment.TickCount;
             try
             {
-                var client = (sock.RemoteEndPoint as IPEndPoint).Address;
-                
+                IPAddress client = (sock.RemoteEndPoint as IPEndPoint).Address;
+
                 lock (m_clients)
                 {
                     if (!m_clients.Contains(client))
@@ -276,7 +279,7 @@ namespace OpenNETCF.Web.Server
             if (ns.CanRead)
             {
                 int read = 0;
-                byte[] buffer = new byte[MAX_BUFFER];
+                var buffer = new byte[MAX_BUFFER];
                 do
                 {
                     try

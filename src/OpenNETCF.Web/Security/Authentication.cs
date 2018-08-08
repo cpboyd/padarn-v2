@@ -46,10 +46,16 @@ namespace OpenNETCF.Web.Security
 
         protected bool AuthenticationRequired
         {
-            get { return (string.Compare(AuthenticationMethod, ServerConfig.GetConfig().Authentication.Mode, true) == 0); }
+            get
+            {
+                return StringComparer.InvariantCultureIgnoreCase
+                    .Equals(AuthenticationMethod, ServerConfig.GetConfig().Authentication.Mode);
+            }
         }
 
         internal abstract string User { get; }
+
+        #region IHttpModule Members
 
         public virtual void Dispose()
         {
@@ -58,6 +64,8 @@ namespace OpenNETCF.Web.Security
         public void Init(HttpContext context)
         {
         }
+
+        #endregion
 
         protected void DenyAccess(HttpContext context)
         {
@@ -82,7 +90,7 @@ namespace OpenNETCF.Web.Security
             var context = (HttpContext)sender;
 
             string authData = Authorization(context, AuthenticationMethod);
-            if (String.IsNullOrEmpty(authData) || !AcceptCredentials(context, authData))
+            if (string.IsNullOrEmpty(authData) || !AcceptCredentials(context, authData))
             {
                 DenyAccess(context);
                 return;
