@@ -83,6 +83,7 @@ namespace OpenNETCF.Web
             }
         }
 
+        // Properties
         internal int CurrentReadIndex { get { return m_endofLine; } }
 
         internal NameValueCollection Headers
@@ -115,33 +116,6 @@ namespace OpenNETCF.Web
                     }
                 }
                 return m_lengthOfHeaders;
-            }
-        }
-
-        // Properties
-        internal byte this[int index]
-        {
-            get
-            {
-                if (!this.m_completed)
-                {
-                    throw new InvalidOperationException();
-                }
-                if (this.m_file == null)
-                {
-                    return this.m_data[index];
-                }
-                if ((index >= this.m_chunkOffset) && (index < (this.m_chunkOffset + this.m_chunkLength)))
-                {
-                    return this.m_data[index - this.m_chunkOffset];
-                }
-                if ((index < 0) || (index >= this.m_length))
-                {
-                    throw new ArgumentOutOfRangeException("index");
-                }
-                this.m_chunkLength = this.m_file.GetBytes(index, this.m_data.Length, this.m_data, 0);
-                this.m_chunkOffset = index;
-                return this.m_data[0];
             }
         }
 
@@ -196,6 +170,32 @@ namespace OpenNETCF.Web
                 if (m_rawQueryString == null)
                     ReadContentInfo();
                 return m_rawQueryString;
+            }
+        }
+
+        internal byte this[int index]
+        {
+            get
+            {
+                if (!this.m_completed)
+                {
+                    throw new InvalidOperationException();
+                }
+                if (this.m_file == null)
+                {
+                    return this.m_data[index];
+                }
+                if ((index >= this.m_chunkOffset) && (index < (this.m_chunkOffset + this.m_chunkLength)))
+                {
+                    return this.m_data[index - this.m_chunkOffset];
+                }
+                if ((index < 0) || (index >= this.m_length))
+                {
+                    throw new ArgumentOutOfRangeException("index");
+                }
+                this.m_chunkLength = this.m_file.GetBytes(index, this.m_data.Length, this.m_data, 0);
+                this.m_chunkOffset = index;
+                return this.m_data[0];
             }
         }
 

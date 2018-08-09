@@ -30,8 +30,6 @@ namespace OpenNETCF.Web
     /// </summary>
     public sealed class HttpCookie
     {
-        private bool added;
-        private bool changed;
         private string domain;
         private bool expirationSet;
         private DateTime expires;
@@ -44,7 +42,7 @@ namespace OpenNETCF.Web
 
         internal HttpCookie()
         {
-            this.changed = true;
+            this.Changed = true;
             this.path = "/";
         }
 
@@ -53,9 +51,8 @@ namespace OpenNETCF.Web
         /// </summary>
         /// <param name="name"></param>
         public HttpCookie(string name)
+            : this()
         {
-            this.changed = true;
-            this.path = "/";
             this.SetDefaultsFromConfig();
             this.name = name;
         }
@@ -66,25 +63,14 @@ namespace OpenNETCF.Web
         /// <param name="name"></param>
         /// <param name="value"></param>
         public HttpCookie(string name, string value)
+            : this(name)
         {
-            this.path = "/";
-            this.name = name;
             this.stringValue = value;
-            this.SetDefaultsFromConfig();
-            this.changed = true;
         }
 
-        internal bool Added
-        {
-            get { return this.added; }
-            set { this.added = value; }
-        }
+        internal bool Added { get; set; }
 
-        internal bool Changed
-        {
-            get { return this.changed; }
-            set { this.changed = value; }
-        }
+        internal bool Changed { get; set; }
 
         /// <summary>
         /// Gets or sets the domain to associate the cookie with.
@@ -95,7 +81,7 @@ namespace OpenNETCF.Web
             set
             {
                 this.domain = value;
-                this.changed = true;
+                this.Changed = true;
             }
         }
 
@@ -112,7 +98,7 @@ namespace OpenNETCF.Web
             {
                 this.expires = value;
                 this.expirationSet = true;
-                this.changed = true;
+                this.Changed = true;
             }
         }
 
@@ -133,17 +119,7 @@ namespace OpenNETCF.Web
             set
             {
                 this.httpOnly = value;
-                this.changed = true;
-            }
-        }
-
-        public string this[string key]
-        {
-            get { return this.Values[key]; }
-            set
-            {
-                this.Values[key] = value;
-                this.changed = true;
+                this.Changed = true;
             }
         }
 
@@ -156,7 +132,7 @@ namespace OpenNETCF.Web
             set
             {
                 this.name = value;
-                this.changed = true;
+                this.Changed = true;
             }
         }
 
@@ -169,7 +145,7 @@ namespace OpenNETCF.Web
             set
             {
                 this.path = value;
-                this.changed = true;
+                this.Changed = true;
             }
         }
 
@@ -182,7 +158,7 @@ namespace OpenNETCF.Web
             set
             {
                 this.secure = value;
-                this.changed = true;
+                this.Changed = true;
             }
         }
 
@@ -193,11 +169,7 @@ namespace OpenNETCF.Web
         {
             get
             {
-                if (this.multiValue != null)
-                {
-                    return this.multiValue.ToString(false);
-                }
-                return this.stringValue;
+                return this.multiValue != null ? this.multiValue.ToString(false) : this.stringValue;
             }
             set
             {
@@ -210,7 +182,7 @@ namespace OpenNETCF.Web
                 {
                     this.stringValue = value;
                 }
-                this.changed = true;
+                this.Changed = true;
             }
         }
 
@@ -237,43 +209,49 @@ namespace OpenNETCF.Web
                         this.stringValue = null;
                     }
                 }
-                this.changed = true;
+                this.Changed = true;
                 return this.multiValue;
+            }
+        }
+
+        public string this[string key]
+        {
+            get { return this.Values[key]; }
+            set
+            {
+                this.Values[key] = value;
+                this.Changed = true;
             }
         }
 
         internal string GetSetCookieHeader(HttpContext context)
         {
-            var builder = new StringBuilder();
-            builder.Append("Set-Cookie: ");
+            var builder = new StringBuilder("Set-Cookie: ");
 
             if (!string.IsNullOrEmpty(this.name))
             {
-                builder.Append(this.name);
-                builder.Append('=');
+                builder.Append(this.name)
+                    .Append('=');
             }
-            if (this.multiValue != null)
+            string value = Value;
+            if (value != null)
             {
-                builder.Append(this.multiValue.ToString(false));
-            }
-            else if (this.stringValue != null)
-            {
-                builder.Append(this.stringValue);
+                builder.Append(value);
             }
             if (!string.IsNullOrEmpty(this.domain))
             {
-                builder.Append("; domain=");
-                builder.Append(this.domain);
+                builder.Append("; domain=")
+                    .Append(this.domain);
             }
             if (this.expirationSet && (this.expires != DateTime.MinValue))
             {
-                builder.Append("; expires=");
-                builder.Append(HttpUtility.FormatHttpCookieDateTime(this.expires));
+                builder.Append("; expires=")
+                    .Append(HttpUtility.FormatHttpCookieDateTime(this.expires));
             }
             if (!string.IsNullOrEmpty(this.path))
             {
-                builder.Append("; path=");
-                builder.Append(this.path);
+                builder.Append("; path=")
+                    .Append(this.path);
             }
             if (this.secure)
             {

@@ -1,4 +1,4 @@
-#region License
+﻿#region License
 // Copyright ©2017 Tacke Consulting (dba OpenNETCF)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
@@ -43,53 +43,6 @@ namespace OpenNETCF.Web
             Init(new HttpRequest(wr, this), new HttpResponse(wr, this));
         }
 
-        private void Init(HttpRequest httpRequest, HttpResponse httpResponse)
-        {
-            request = httpRequest;
-            response = httpResponse;
-
-            // set up the default identity.  the DefaultWorkerRequest may change this
-            GenericIdentity identity = new GenericIdentity("anonymous", "anonymous");
-            User = new GenericPrincipal(identity);
-
-            Thread.SetData(httpContextDataStoreSlot, this);
-        }
-
-        internal void InitializeSession()
-        {
-            // when called from the async handler, this is too late
-
-
-            // this gets called from the DefaultWorkerRequest
-            // we have to wait until then so we have the Cookies
-//            Session = SessionManager.Instance.GetSession(this);
-
-            //// create or get the session
-            //// TODO: **allow this to be turned off for better perf**
-            //SessionIDManager manager = new SessionIDManager();
-            //var id = manager.GetSessionID(this);
-
-            //if (id == null)
-            //{
-            //    id = manager.CreateSessionID(this);
-
-            //    bool redirected;
-            //    bool saved;
-            //    manager.SaveSessionID(this, id, out redirected, out saved);
-            //}
-
-            //Session = SessionManager.Instance.GetSession(id);
-            //if (m_sessions.ContainsKey(id))
-            //{
-            //    Session = m_sessions[id];
-            //}
-            //else
-            //{
-            //    Session = new HttpSessionState(id);
-            //    m_sessions.Add(id, Session);
-            //}
-        }
-
 
         /// <summary>
         /// Gets the <see cref="HttpContext"/> object for the current HTTP request.
@@ -100,7 +53,7 @@ namespace OpenNETCF.Web
             [DebuggerStepThrough]
             get
             {
-                HttpContext ctx = Thread.GetData(httpContextDataStoreSlot) as HttpContext;
+                var ctx = Thread.GetData(httpContextDataStoreSlot) as HttpContext;
                 if (ctx == null)
                     throw new ApplicationException("HttpContext does not exist in this thread.");
                 return ctx;
@@ -136,12 +89,9 @@ namespace OpenNETCF.Web
         /// <summary>
         /// Gets the HttpSessionState object for the current HTTP request.
         /// </summary>
-        public HttpSessionState Session 
+        public HttpSessionState Session
         {
-            get
-            {
-                return SessionManager.Instance.GetSession(this);
-            }
+            get { return SessionManager.Instance.GetSession(this); }
         }
 
         internal HttpWorkerRequest WorkerRequest
@@ -154,5 +104,52 @@ namespace OpenNETCF.Web
         /// Gets or sets security information for the current HTTP request.
         /// </summary>
         public IPrincipal User { get; internal set; }
+
+        private void Init(HttpRequest httpRequest, HttpResponse httpResponse)
+        {
+            request = httpRequest;
+            response = httpResponse;
+
+            // set up the default identity.  the DefaultWorkerRequest may change this
+            var identity = new GenericIdentity("anonymous", "anonymous");
+            User = new GenericPrincipal(identity);
+
+            Thread.SetData(httpContextDataStoreSlot, this);
+        }
+
+        internal void InitializeSession()
+        {
+            // when called from the async handler, this is too late
+
+
+            // this gets called from the DefaultWorkerRequest
+            // we have to wait until then so we have the Cookies
+            //Session = SessionManager.Instance.GetSession(this);
+
+            //// create or get the session
+            //// TODO: **allow this to be turned off for better perf**
+            //SessionIDManager manager = new SessionIDManager();
+            //var id = manager.GetSessionID(this);
+
+            //if (id == null)
+            //{
+            //    id = manager.CreateSessionID(this);
+
+            //    bool redirected;
+            //    bool saved;
+            //    manager.SaveSessionID(this, id, out redirected, out saved);
+            //}
+
+            //Session = SessionManager.Instance.GetSession(id);
+            //if (m_sessions.ContainsKey(id))
+            //{
+            //    Session = m_sessions[id];
+            //}
+            //else
+            //{
+            //    Session = new HttpSessionState(id);
+            //    m_sessions.Add(id, Session);
+            //}
+        }
     }
 }

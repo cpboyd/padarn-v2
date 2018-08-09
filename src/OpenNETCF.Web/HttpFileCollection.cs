@@ -36,6 +36,41 @@ namespace OpenNETCF.Web
         internal HttpFileCollection()
         { }
 
+        /// <summary>
+        /// Gets a string array containing the keys (names) of all members in the file collection.
+        /// </summary>
+        public string[] AllKeys
+        {
+            get
+            {
+                if (_allKeys == null)
+                {
+                    _allKeys = base.BaseGetAllKeys();
+                }
+                return _allKeys;
+            }
+        }
+
+        /// <summary>
+        /// Gets the object with the specified name from the file collection.
+        /// </summary>
+        /// <param name="name">Name of item to be returned.</param>
+        /// <returns>The HttpPostedFile specified by name.</returns>
+        public HttpPostedFile this[string name]
+        {
+            get { return Get(name); }
+        }
+
+        /// <summary>
+        /// Gets the object with the specified numerical index from the HttpFileCollection.
+        /// </summary>
+        /// <param name="index">The index of the item to get from the file collection. </param>
+        /// <returns>The HttpPostedFile specified by index.</returns>
+        public HttpPostedFile this[int index]
+        {
+            get { return Get(index); }
+        }
+
         internal void AddFile(string key, HttpPostedFile file)
         {
             _all = null;
@@ -93,41 +128,6 @@ namespace OpenNETCF.Web
         public string GetKey(int index)
         {
             return base.BaseGetKey(index);
-        }
-
-        /// <summary>
-        /// Gets a string array containing the keys (names) of all members in the file collection.
-        /// </summary>
-        public string[] AllKeys
-        {
-            get
-            {
-                if (_allKeys == null)
-                {
-                    _allKeys = base.BaseGetAllKeys();
-                }
-                return _allKeys;
-            }
-        }
-
-        /// <summary>
-        /// Gets the object with the specified name from the file collection.
-        /// </summary>
-        /// <param name="name">Name of item to be returned.</param>
-        /// <returns>The HttpPostedFile specified by name.</returns>
-        public HttpPostedFile this[string name]
-        {
-            get { return Get(name); }
-        }
-
-        /// <summary>
-        /// Gets the object with the specified numerical index from the HttpFileCollection.
-        /// </summary>
-        /// <param name="index">The index of the item to get from the file collection. </param>
-        /// <returns>The HttpPostedFile specified by index.</returns>
-        public HttpPostedFile this[int index]
-        {
-            get { return Get(index); }
         }
     }
 

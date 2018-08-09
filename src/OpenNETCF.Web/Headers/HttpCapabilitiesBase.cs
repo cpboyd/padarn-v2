@@ -281,15 +281,6 @@ namespace OpenNETCF.Web
         }
 
         #region Public Methods
-        ///<summary>
-        /// Gets the value of the specified browser capability. In C#, this property is the indexer for the class.
-        /// </summary>
-        /// <param name="key">The name of the browser capability to retrieve.</param>
-        ///<returns>The browser capability with the specified key name.</returns>
-        public virtual string this[string key]
-        {
-            get { return m_capabilities.ContainsKey(key) ? m_capabilities[key] : null; }
-        }
 
         ///<summary>
         /// Used internally to get the defined capabilities of the browser.
@@ -305,6 +296,16 @@ namespace OpenNETCF.Web
                 }
                 return m_capabilities;
             }
+        }
+
+        ///<summary>
+        /// Gets the value of the specified browser capability. In C#, this property is the indexer for the class.
+        /// </summary>
+        /// <param name="key">The name of the browser capability to retrieve.</param>
+        ///<returns>The browser capability with the specified key name.</returns>
+        public virtual string this[string key]
+        {
+            get { return m_capabilities.ContainsKey(key) ? m_capabilities[key] : null; }
         }
 
         ///<summary>

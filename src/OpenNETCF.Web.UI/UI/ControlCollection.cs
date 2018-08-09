@@ -31,6 +31,14 @@ namespace OpenNETCF.Web.UI
         private List<Control> m_controls = new List<Control>();
 
         /// <summary>
+        /// Gets the number of server controls in the ControlCollection object for the specified ASP.NET server control.
+        /// </summary>
+        public virtual int Count
+        {
+            get { return m_controls.Count; }
+        }
+
+        /// <summary>
         /// Gets a reference to the server control at the specified index location in the ControlCollection object.
         /// </summary>
         /// <param name="index"></param>
@@ -40,13 +48,7 @@ namespace OpenNETCF.Web.UI
             get { return m_controls[index]; }
         }
 
-        /// <summary>
-        /// Gets the number of server controls in the ControlCollection object for the specified ASP.NET server control.
-        /// </summary>
-        public virtual int Count
-        {
-            get { return m_controls.Count; }
-        }
+        #region IEnumerable<Control> Members
 
         public IEnumerator<Control> GetEnumerator()
         {
@@ -57,6 +59,8 @@ namespace OpenNETCF.Web.UI
         {
             return m_controls.GetEnumerator();
         }
+
+        #endregion
 
         /// <summary>
         /// Adds the specified Control object to the collection.

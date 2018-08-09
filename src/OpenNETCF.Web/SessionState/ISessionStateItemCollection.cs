@@ -29,6 +29,12 @@ namespace OpenNETCF.Web.SessionState
         /// Gets or sets a value indicating whether the collection has been marked as changed.
         /// </summary>
         bool Dirty { get; set; }
+
+        /// <summary>
+        /// Gets a collection of the variable names for all values stored in the collection.
+        /// </summary>
+        NameObjectCollectionBase.KeysCollection Keys { get; }
+
         /// <summary>
         /// Gets or sets a value in the collection by name.
         /// </summary>
@@ -41,10 +47,6 @@ namespace OpenNETCF.Web.SessionState
         /// <param name="index"></param>
         /// <returns></returns>
         object this[int index] { get; set; }
-        /// <summary>
-        /// Gets a collection of the variable names for all values stored in the collection.
-        /// </summary>
-        NameObjectCollectionBase.KeysCollection Keys { get; }
 
         /// <summary>
         /// Removes all values and keys from the session-state collection.
