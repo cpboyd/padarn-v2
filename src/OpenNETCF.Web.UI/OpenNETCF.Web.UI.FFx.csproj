@@ -56,10 +56,6 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="OpenNETCF.Extensions, Version=1.0.16256.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\..\packages\com.opennetcf.extensions.ffx.1.0.16256.0\lib\net40\OpenNETCF.Extensions.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="OpenNETCF.IoC, Version=1.0.16259.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\..\packages\com.opennetcf.ioc.ffx.1.0.16259.0\lib\net40\OpenNETCF.IoC.dll</HintPath>
       <Private>True</Private>

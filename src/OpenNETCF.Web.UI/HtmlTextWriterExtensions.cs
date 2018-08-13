@@ -16,18 +16,12 @@ namespace OpenNETCF.Web.UI
         /// <returns>The writer.</returns>
         public static HtmlTextWriter Tag(this HtmlTextWriter writer, HtmlTextWriterTag tag)
         {
-            writer.RenderBeginTag(tag);
-
-            return writer;
+            return Tag(writer, tag.AsText());
         }
 
         public static HtmlTextWriter Tag(this HtmlTextWriter writer, bool condition, HtmlTextWriterTag tag)
         {
-            if (!condition) return writer;
-
-            writer.RenderBeginTag(tag);
-
-            return writer;
+            return condition ? Tag(writer, tag) : writer;
         }
 
         /// <summary>
@@ -53,32 +47,12 @@ namespace OpenNETCF.Web.UI
         /// <returns>The writer.</returns>
         public static HtmlTextWriter Tag(this HtmlTextWriter writer, HtmlTextWriterTag tag, Func<HtmlAttributeManager, HtmlAttributeManager> appender)
         {
-            Validate.Begin()
-                .IsNotNull(appender)
-                .Check();
-
-            var manager = new HtmlAttributeManager(writer);
-            appender(manager);
-
-            writer.RenderBeginTag(tag);
-
-            return writer;
+            return Tag(writer, tag.AsText(), appender);
         }
 
         public static HtmlTextWriter Tag(this HtmlTextWriter writer, bool condition, HtmlTextWriterTag tag, Func<HtmlAttributeManager, HtmlAttributeManager> appender)
         {
-            if (!condition) return writer;
-
-            Validate.Begin()
-                .IsNotNull(appender)
-                .Check();
-
-            var manager = new HtmlAttributeManager(writer);
-            appender(manager);
-
-            writer.RenderBeginTag(tag);
-
-            return writer;
+            return condition ? Tag(writer, tag, appender) : writer;
         }
 
         /// <summary>
@@ -91,9 +65,10 @@ namespace OpenNETCF.Web.UI
         /// <returns>The writer.</returns>
         public static HtmlTextWriter Tag(this HtmlTextWriter writer, string tag, Func<HtmlAttributeManager, HtmlAttributeManager> appender)
         {
-            Validate.Begin()
-                .IsNotNull(appender)
-                .Check();
+            if (appender == null)
+            {
+                throw new ArgumentNullException("appender");
+            }
 
             var manager = new HtmlAttributeManager(writer);
             appender(manager);
@@ -215,10 +190,14 @@ namespace OpenNETCF.Web.UI
         /// <returns>The writer.</returns>
         public static HtmlTextWriter A(this HtmlTextWriter writer, string href, string title)
         {
-            Validate.Begin()
-                .IsNotNullOrEmpty(href)
-                .IsNotNullOrEmpty(title)
-                .Check();
+            if (string.IsNullOrEmpty(href))
+            {
+                throw new ArgumentNullException("href");
+            }
+            if (string.IsNullOrEmpty(title))
+            {
+                throw new ArgumentNullException("title");
+            }
 
             return writer.Tag(HtmlTextWriterTag.A, e => e[HtmlTextWriterAttribute.Href, href][HtmlTextWriterAttribute.Title, title]);
         }
@@ -291,14 +270,7 @@ namespace OpenNETCF.Web.UI
         /// <returns>The writer.</returns>
         public static HtmlTextWriter Text(this HtmlTextWriter writer, string text, bool htmlEncode)
         {
-            if (htmlEncode)
-            {
-                writer.Write(HttpUtility.HtmlEncode(text));
-            }
-            else
-            {
-                writer.Write(text);
-            }
+            writer.Write(htmlEncode ? HttpUtility.HtmlEncode(text) : text);
 
             return writer;
         }
@@ -341,10 +313,14 @@ namespace OpenNETCF.Web.UI
         public static HtmlTextWriter Bind<T>(this HtmlTextWriter writer,
             IEnumerable<T> collection, Func<T, int, HtmlTextWriter, HtmlTextWriter> binder)
         {
-            Validate.Begin()
-                .IsNotNull(collection)
-                .IsNotNull(binder)
-                .Check();
+            if (collection == null)
+            {
+                throw new ArgumentNullException("collection");
+            }
+            if (binder == null)
+            {
+                throw new ArgumentNullException("binder");
+            }
 
             int index = 0;
             foreach (T item in collection)
@@ -367,11 +343,15 @@ namespace OpenNETCF.Web.UI
         public static HtmlTextWriter Repeat(this HtmlTextWriter writer, int times,
             Func<int, HtmlTextWriter, HtmlTextWriter> binder)
         {
-            Validate.Begin()
-                .IsNotNull(binder)
-                .Check();
+            if (binder == null)
+            {
+                throw new ArgumentNullException("binder");
+            }
 
-            if (times < 0) throw new ArgumentOutOfRangeException("times");
+            if (times < 0)
+            {
+                throw new ArgumentOutOfRangeException("times");
+            }
 
             for (int i = 1; i <= times; i++)
             {

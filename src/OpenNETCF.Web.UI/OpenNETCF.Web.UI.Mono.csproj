@@ -48,10 +48,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\extensions\OpenNETCF.Extensions.Mono.csproj">
-      <Project>{56CD76B8-1C79-41A4-ACD4-303EB8ABCC3A}</Project>
-      <Name>OpenNETCF.Extensions.Mono</Name>
-    </ProjectReference>
     <ProjectReference Include="..\OpenNETCF.Web\OpenNETCF.Web.Mono.csproj">
       <Project>{A71ADD39-CC93-4D74-83E4-F8B26FA0EC10}</Project>
       <Name>OpenNETCF.Web.Mono</Name>

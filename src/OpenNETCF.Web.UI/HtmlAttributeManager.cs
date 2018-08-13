@@ -15,9 +15,10 @@ namespace OpenNETCF.Web.UI
         /// <param name="writer">The writer to use for writing.</param>
         public HtmlAttributeManager(HtmlTextWriter writer)
         {
-            Validate.Begin()
-                .IsNotNull(writer)
-                .Check();
+            if (writer == null)
+            {
+                throw new ArgumentNullException("writer");
+            }
 
             this.Writer = writer;
         }
