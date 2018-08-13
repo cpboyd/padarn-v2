@@ -24,7 +24,7 @@ namespace OpenNETCF.Web
     /// </summary>
     internal static class HttpApplicationFactory
     {
-        private static DefaultHttpHandler m_defaultHandler;
+        private static HttpApplication m_defaultHandler;
         /// <summary>
         /// 
         /// </summary>
@@ -34,7 +34,7 @@ namespace OpenNETCF.Web
         {
             if (m_defaultHandler == null)
             {
-                m_defaultHandler = new DefaultHttpHandler();
+                return m_defaultHandler = new HttpApplication();
             }
 
             if (m_defaultHandler.IsReusable)
@@ -42,7 +42,7 @@ namespace OpenNETCF.Web
                 return m_defaultHandler;
             }
 
-            return new DefaultHttpHandler();
+            return new HttpApplication();
         }
     }
 }

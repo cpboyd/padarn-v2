@@ -18,12 +18,14 @@
 //
 #endregion
 
+using System;
+
 namespace OpenNETCF.Web
 {
     /// <summary>
     /// The default handler for HTTP requests
     /// </summary>
-    public sealed class DefaultHttpHandler : IHttpHandler
+    public class DefaultHttpHandler : IHttpAsyncHandler
     {
         /// <summary>
         /// Process the HTTP request
@@ -38,6 +40,16 @@ namespace OpenNETCF.Web
         public bool IsReusable
         {
             get { return true; }
+        }
+
+        public IAsyncResult BeginProcessRequest(HttpContext context, AsyncCallback cb, object extraData)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void EndProcessRequest(IAsyncResult result)
+        {
+            throw new NotImplementedException();
         }
     }
 }

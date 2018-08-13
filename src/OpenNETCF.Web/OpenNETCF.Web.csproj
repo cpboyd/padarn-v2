@@ -1,4 +1,4 @@
-﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -142,6 +142,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Configuration\VirtualDirectoryMapping.cs" />
+    <Compile Include="Handlers\IHttpAsyncHandler.cs" />
+    <Compile Include="HttpApplication.cs" />
     <Compile Include="Handlers\CodeBehindAssembly.cs" />
     <Compile Include="Configuration\AuthenticationConfiguration.cs" />
     <Compile Include="Configuration\CacheLocation.cs" />
