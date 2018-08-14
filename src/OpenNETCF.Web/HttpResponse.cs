@@ -367,7 +367,16 @@ namespace OpenNETCF.Web
         /// </summary>
         public void Flush()
         {
-            m_wr.FlushResponse(false);
+            Flush(false);
+        }
+
+        /// <summary>
+        /// Flush the HttpResponse stream to the client.
+        /// </summary>
+        /// <param name="final">Specifies whether or not to close the connection.</param>
+        public void Flush(bool final)
+        {
+            m_wr.FlushResponse(final);
         }
 
         internal void Write(byte[] b)

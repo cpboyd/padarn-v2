@@ -59,6 +59,16 @@ namespace OpenNETCF.Web.Security.Cryptography
             get { return m_data["uri"]; }
         }
 
+        /// <summary>
+        /// Checks to see if the HashCode generated with the supplied password matches the hash stored in the Digest
+        /// </summary>
+        /// <param name="password"></param>
+        /// <returns></returns>
+        public bool MatchCredentials(string password)
+        {
+            return GetHashCode(password).Equals(m_data["response"]);
+        }
+
         #endregion
 
         internal void AddElement(string key, string value)
@@ -116,16 +126,6 @@ namespace OpenNETCF.Web.Security.Cryptography
             string hashedDigest = MD5Hash(unhashedDigest);
 
             return hashedDigest;
-        }
-
-        /// <summary>
-        /// Checks to see if the HashCode generated with the supplied password matches the hash stored in the Digest
-        /// </summary>
-        /// <param name="password"></param>
-        /// <returns></returns>
-        public bool MatchCredentials(string password)
-        {
-            return GetHashCode(password).Equals(m_data["response"]);
         }
 
         private static string MD5Hash(string str)

@@ -46,43 +46,23 @@ namespace OpenNETCF.Web.Hosting
     /// </summary>
     public class AsyncWorkerRequest : HttpWorkerRequest
     {
-#if TRACE
-        private const string TRACE = "TRACE";
-#endif
-
-        private bool EnableTracing { get; set; }
-
         #region Fields
 
-        private SocketWrapperBase m_client;
-        private Stream m_output;
-        private bool m_headersSent;
-        private string m_serverHeader;
-        private StringBuilder m_responseHeaders;
-        private HttpRawRequestContent m_httpRawRequestContent;
-        private MemoryStream m_response;
-        private bool m_partialDownload = true;
-        private ILogProvider m_logProvider;
-        private bool m_headersCleared;
-
         private static Dictionary<Type, IHttpHandler> m_httpHandlerCache = new Dictionary<Type, IHttpHandler>();
-
-        internal NameValueCollection m_headers;
-
         private static readonly char[] s_ColonOrNL = { ':', '\n' };
+        private SocketWrapperBase m_client;
+        internal NameValueCollection m_headers;
+        private bool m_headersCleared;
+        private bool m_headersSent;
+        private HttpRawRequestContent m_httpRawRequestContent;
+        private ILogProvider m_logProvider;
+        private Stream m_output;
+        private bool m_partialDownload = true;
+        private MemoryStream m_response;
+        private StringBuilder m_responseHeaders;
+        private string m_serverHeader;
 
         #endregion // Fields
-
-        internal override string Status { get; set; }
-
-        /// <summary>
-        /// Returns a value indicating whether the connection uses SSL.
-        /// </summary>
-        /// <returns>true if the connection is an SSL connection; otherwise, false.</returns>
-        public override bool IsSecure()
-        {
-            return m_client is HttpsSocket;
-        }
 
         /// <summary>
         /// Initializes an instance of <see cref="AsyncWorkerRequest"/>
@@ -134,6 +114,26 @@ namespace OpenNETCF.Web.Hosting
         {
         }
 
+        internal override string Status { get; set; }
+
+        /// <summary>
+        /// Provides access to the response stream.
+        /// </summary>
+        /// <returns>The response stream.</returns>
+        public override Stream ResponseStream
+        {
+            get { return m_response; }
+        }
+
+        /// <summary>
+        /// Returns a value indicating whether the connection uses SSL.
+        /// </summary>
+        /// <returns>true if the connection is an SSL connection; otherwise, false.</returns>
+        public override bool IsSecure()
+        {
+            return m_client is HttpsSocket;
+        }
+
         /// <summary>
         /// Returns the local file path to the requested URI
         /// </summary>
@@ -164,63 +164,9 @@ namespace OpenNETCF.Web.Hosting
 
             try
             {
-                // Get the request binary contents
-                try
-                {
-                    if (m_client.Connected)
-                    {
-                        m_httpRawRequestContent = GetPartialRawRequestContent(m_client);
-                        if (m_client.Connected && m_httpRawRequestContent.Length == 0 && m_client.Available > 0)
-                        {
-                            // try again since we should not have a 0 length on the request
-                            int retries = 5;
-                            while (retries-- != 0 && m_client.Connected)
-                            {
-                                m_httpRawRequestContent = GetPartialRawRequestContent(m_client);
-                                if (m_httpRawRequestContent.Length > 0)
-                                {
-                                    break;
-                                }
-                                Debug.WriteLineIf(EnableTracing, "! AsyncWorkerRequest::ProcessRequest timeout getting partial content");
-                                Thread.Sleep(100);
-                            }
-                        }
-                    }
-                }
-                catch (SocketException e)
-                {
-                    if (e.ErrorCode == 10054)
-                    {
-                        // An existing connection was forcibly closed by the remote host
-                        CloseConnection();
-                        return;
-                    }
-                }
-
-                // TODO; ctacke 2/4/10 - need to vet this isVirtualPath
-                bool isVirtualPath = UrlPath.IsVirtualDirectory(m_httpRawRequestContent.Path);
-
-
-                //if the raw content is null or we have no data just close the connection
-                if (m_httpRawRequestContent == null
-                    || m_httpRawRequestContent.Length == 0
-                    || m_httpRawRequestContent.Path == null)
-                {
-                    CloseConnection();
-                }
-                else if ((!m_httpRawRequestContent.Path.EndsWith("/")) && (m_httpRawRequestContent.Path.LastIndexOf('.') == -1) && (isVirtualPath))
-                {
-                    //first check to see if we have a forward slash
-                    //this is needed because if a url is hit for example http://site/virtualDir without the slash the header for subsequent
-                    //requests for images, css etc will return GET HTTP/1.1 /images/image.png instead of GET HTTP/1.1 /virtualDir/images/image.png
-                    //if a slash is added at the end of the url there is no issue
-                    //Even after implementing keep alive this is the only workaround i can see at this point
-                    //The following describes persistent connections http://www.w3.org/Protocols/rfc2616/rfc2616-sec8.html#sec8 and is implemented in
-                    //FlushResponse()
-                    HttpContext.Current.Response.Redirect(m_httpRawRequestContent.Path + "/");
-                    CloseConnection();
-                }
-                else
+                // ctacke - lock added to see if it addresses concurrency NativeException
+                // but doesn't appear to fix anything
+                lock (m_client)
                 {
                     ProcessRequestInternal();
                 }
@@ -231,13 +177,11 @@ namespace OpenNETCF.Web.Hosting
                 et = Environment.TickCount - et;
                 if (et > 10)
                 {
-                    Debug.WriteLineIf(EnableTracing, string.Format("AsyncWorkerRequest::ProcessRequest took {0}ms", et));
+                    HttpRuntime.WriteTrace(string.Format("AsyncWorkerRequest::ProcessRequest took {0}ms", et));
                 }
 #endif
             }
         }
-
-        #region Overriden Members
 
         /// <summary>
         /// 
@@ -534,26 +478,9 @@ namespace OpenNETCF.Web.Hosting
         /// <summary>
         /// Reads the HTTP headers from the request
         /// </summary>
-        protected override void GetRequestHeaders()
+        protected override NameValueCollection ReadRequestHeaders()
         {
-            ReadRequestHeaders();
-        }
-
-        /// <summary>
-        /// Reads the HTTP headers from the request
-        /// </summary>
-        protected override void ReadRequestHeaders()
-        {
-            m_headers = m_httpRawRequestContent.Headers;
-        }
-
-        /// <summary>
-        /// Provides access to the response stream.
-        /// </summary>
-        /// <returns>The response stream.</returns>
-        public override Stream ResponseStream
-        {
-            get { return m_response; }
+            return m_headers = m_httpRawRequestContent.Headers;
         }
 
         /// <summary>
@@ -616,9 +543,40 @@ namespace OpenNETCF.Web.Hosting
             return (m_client != null) && m_client.Connected;
         }
 
-        #endregion
-
         #region Private Methods
+
+        private static string m_versionString;
+        private static Dictionary<string, Type> m_handlerTypeCache = new Dictionary<string, Type>();
+
+        /// <summary>
+        /// Determins if the connection should be kept alive
+        /// </summary>
+        private bool KeepConnectionAlive
+        {
+            get
+            {
+                return StringComparer.OrdinalIgnoreCase
+                    .Equals(m_httpRawRequestContent.Headers["HTTP_CONNECTION"], "keep-alive");
+            }
+        }
+
+        private Exception LastError { get; set; }
+
+        private bool HasAuthorizationHeader
+        {
+            get { return !string.IsNullOrEmpty(m_headers["HTTP_AUTHORIZATION"]); }
+        }
+
+        internal string Path
+        {
+            get { return m_httpRawRequestContent.Path; }
+            set { m_httpRawRequestContent.Path = value; }
+        }
+
+        internal HttpRawRequestContent HttpRawRequestContent
+        {
+            get { return m_httpRawRequestContent; }
+        }
 
         /// <summary>
         /// initializes the resposen.  Called from ctor and before closing the connection to see if keep alive is available
@@ -628,8 +586,6 @@ namespace OpenNETCF.Web.Hosting
             m_response = new MemoryStream();
             m_responseHeaders = new StringBuilder();
         }
-
-        private static string m_versionString;
 
         /// <summary>
         /// Sets the default headers.  Called from ctor and before closing the connection to see if keep alive is available
@@ -645,18 +601,6 @@ namespace OpenNETCF.Web.Hosting
             Status = "HTTP/1.1 200 OK\r\n";
         }
 
-        /// <summary>
-        /// Determins if the connection should be kept alive
-        /// </summary>
-        private bool KeepConnectionAlive
-        {
-            get
-            {
-                return StringComparer.OrdinalIgnoreCase
-                    .Equals(m_httpRawRequestContent.Headers["HTTP_CONNECTION"], "keep-alive");
-            }
-        }
-
         private IHttpHandler GetHandlerForFilename(string fileName, string mimeType, HttpMethodFlags method)
         {
             // Load the correct file handler
@@ -670,8 +614,6 @@ namespace OpenNETCF.Web.Hosting
 
             return handler;
         }
-
-        private static Dictionary<string, Type> m_handlerTypeCache = new Dictionary<string, Type>();
 
         private Type CheckType(string typeName, ServerConfig config)
         {
@@ -811,78 +753,7 @@ namespace OpenNETCF.Web.Hosting
                 ).FirstOrDefault();
         }
 
-        private static string m_lastRequestFrom;
-        private static int m_requestCount;
-
-        private void HandleNonFormsAuthentication()
-        {
-            if (HasAuthorizationHeader && AuthenticateRequest())
-            {
-                return;
-            }
-
-            if (!HasAuthorizationHeader)
-            {
-                m_requestCount = 0;
-            }
-            else if (m_lastRequestFrom == HttpContext.Current.Request.UserHostAddress)
-            {
-                m_requestCount++;
-                Debug.WriteLineIf(EnableTracing, string.Format("{0} requests from {1}", m_requestCount, m_lastRequestFrom));
-                if (m_requestCount >= 3)
-                {
-                    m_requestCount = 0;
-                    m_lastRequestFrom = string.Empty;
-                    throw new HttpException(HttpStatusCode.Unauthorized, "Unauthorized");
-                }
-
-            }
-            else
-            {
-                m_lastRequestFrom = HttpContext.Current.Request.UserHostAddress;
-            }
-
-            SendAuthRequest();
-            FlushResponse(true);
-        }
-
-        private void HandleFormsAuthentication()
-        {
-            // is this a page that requires auth?
-            string absolutePath = HostingEnvironment.MapPath(Path);
-            if (StringComparer.InvariantCultureIgnoreCase.Equals(absolutePath, FormsAuthentication.LoginUrlServerPath))
-            {
-                return;
-            }
-
-            // are we already authenticated
-            HttpCookie authCookie = HttpContext.Current.Request.Cookies[FormsAuthentication.FormsCookieName];
-            if (authCookie != null &&
-                // verify the cookie domain
-                authCookie.Domain == FormsAuthentication.CookieDomain &&
-                // verify it hasn't expired
-                authCookie.Expires > DateTime.Now)
-            {
-                // reset expiration
-                if (FormsAuthentication.SlidingExpiration)
-                {
-                    FormsAuthentication.SetAuthCookie(authCookie["UID"], false);
-                    //                                HttpContext.Current.Response.Cookies[FormsAuthentication.FormsCookieName]
-                    authCookie.Expires = DateTime.Now.AddMinutes(30);
-                }
-
-                return;
-            }
-
-            // Redirect to login
-            FormsAuthentication.ReturnUrl = string.IsNullOrEmpty(Path)
-                ? FormsAuthentication.DefaultUrl : Path;
-            string authUrl = string.Format("{0}?ReturnURL={1}", FormsAuthentication.LoginUrl, Path);
-            HttpContext.Current.Response.Redirect(authUrl);
-            FlushResponse(true);
-        }
-
-        private void HandleRequestException(Exception e, LogDataItem ldi)
+        internal override void HandleRequestException(Exception e, LogDataItem ldi)
         {
             LastError = e;
 
@@ -981,7 +852,7 @@ namespace OpenNETCF.Web.Hosting
             {
                 Status = StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusInternalServerError);
                 exceptionPage = string.Format(StringHelper.ConvertVerbatimLineEndings(Resources.ContextualErrorTemplate),
-                                              Resources.TypeLoadTitle, e.Message, Resources.TypeLoadDesc);
+                    Resources.TypeLoadTitle, e.Message, Resources.TypeLoadDesc);
             }
             else // Unhandled Exception
             {
@@ -1006,178 +877,236 @@ namespace OpenNETCF.Web.Hosting
             FlushResponse(true);
         }
 
-        private void ProcessRequestInternal()
+        /// <summary>
+        /// Process the incoming HTTP request
+        /// </summary>
+        internal bool PreprocessRequest()
         {
-            // ctacke - lock added to see if it addresses concurrency NativeException
-            // but doesn't appear to fix anything
-            lock (m_client)
+            // Get the request binary contents
+            try
             {
-                LogDataItem ldi = null;
-
-                try
+                if (m_client.Connected)
                 {
-                    try
+                    m_httpRawRequestContent = GetPartialRawRequestContent(m_client);
+                    if (m_client.Connected && m_httpRawRequestContent.Length == 0 && m_client.Available > 0)
                     {
-                        //Get the content info (determines if it's a POST or GET
-                        if (!GetContentInfo())
+                        // try again since we should not have a 0 length on the request
+                        int retries = 5;
+                        while (retries-- > 0 && m_client.Connected)
                         {
-                            CloseConnection();
+                            m_httpRawRequestContent = GetPartialRawRequestContent(m_client);
+                            if (m_httpRawRequestContent.Length > 0)
+                            {
+                                break;
+                            }
+                            HttpRuntime.WriteTrace("! AsyncWorkerRequest::ProcessRequest timeout getting partial content");
+                            Thread.Sleep(100);
                         }
-
-                        //Get the headers
-                        GetRequestHeaders();
-
-                        // set the header
-                        HttpContext.Current.Request.Headers = m_headers;
-
-                        // set the URI
-                        HttpContext.Current.Request.Url = new Uri(string.Format("{0}://{1}{2}{3}",
-                            this.IsSecure() ? "https" : "http",
-                            this.m_client.LocalEndPoint.ToString(),
-                            this.m_httpRawRequestContent.Path,
-                            string.IsNullOrEmpty(this.m_httpRawRequestContent.RawQueryString) ? string.Empty : "?" + this.m_httpRawRequestContent.RawQueryString));
-
-                        //Read the content data
-                        if (HttpContext.Current.Request.ContentLength > 0)
-                        {
-                            HttpContext.Current.Request.RawPostContent = GetEntireRawContent();
-                        }
-                    }
-                    catch (IOException e)
-                    {
-                        // we had a stream issue - most likely we're out of space trying to write the temp file
-                        throw new HttpException(Resources.DiskError, e);
-                    }
-                    catch (OutOfMemoryException oom)
-                    {
-                        throw new HttpException(Resources.OutOfMemoryException, oom);
-                    }
-                    catch (ObjectDisposedException)
-                    {
-                        // if the underlying socket has been disposed
-                        Debug.WriteLine("Socket Disposed - aborting request");
-                        return;
-                    }
-                    catch (Exception e)
-                    {
-                        throw new HttpException(Resources.HttpErrorParsingHeader, e);
-                    }
-
-                    // create the session now (we needed the headers for the cookies)
-                    //HttpContext.Current.InitializeSession();
-
-                    if (AuthenticationEnabled || RequestRequiresAuthentication())
-                    {
-                        if (FormsAuthentication.IsEnabled)
-                        {
-                            HandleFormsAuthentication();
-                        }
-                        else
-                        {
-                            HandleNonFormsAuthentication();
-                        }
-                    }
-
-                    HttpMethodFlags method = HttpMethod.ParseFlag(HttpContext.Current.Request.HttpMethod);
-
-                    Debug.WriteLineIf(EnableTracing, string.Format("{0}: {1}", method, Path));
-
-                    // TODO: Refactor to check handlers for path & file together.
-                    // do we have a custom HttpHandler handler for the path?
-                    IHttpHandler customHandler = GetCustomHandler(Path, method);
-                    IDisposable disposableHandler;
-                    if (customHandler != null)
-                    {
-                        customHandler.ProcessRequest(HttpContext.Current);
-
-                        // Do the final flush to the server
-                        FlushResponse(true);
-
-                        disposableHandler = customHandler as IDisposable;
-                        if (disposableHandler != null)
-                        {
-                            disposableHandler.Dispose();
-                        }
-
-                        return;
-                    }
-
-                    // check for virtual file
-                    if (ProcessRequestForVirtualFile(Path))
-                        return;
-
-                    string localFile, mime, defaultDoc = null;
-
-                    if (!Path.ToLowerInvariant().StartsWith("about:"))
-                    {
-                        localFile = GetLocalPath();
-                        mime = MimeMapping.GetMimeMapping(localFile);
-
-                        if (!File.Exists(localFile))
-                        {
-                            string name = UrlPath.FixVirtualPathSlashes(System.IO.Path.Combine(Path, defaultDoc ?? string.Empty));
-                            throw new HttpException(HttpStatusCode.NotFound, string.Format("The file '{0}' cannot be found.", name));
-                        }
-
-                        // validate the requested file is *beneath* the server root (no navigating above the root)
-                        if (!IsSubDirectoryOf(localFile, ServerConfig.GetConfig().DocumentRoot))
-                        {
-                            throw new HttpException(HttpStatusCode.NotFound, "Not found");
-                        }
-                    }
-                    else
-                    {
-                        localFile = Path.Substring(1);
-                        mime = "text/html";
-                    }
-
-                    ldi = new LogDataItem(m_headers, localFile, m_client.RemoteEndPoint.ToString(),
-                        ServerConfig.GetConfig());
-
-                    IHttpHandler handler = GetHandlerForFilename(localFile, mime, method);
-
-                    LogPageAccess(ldi);
-
-                    HttpCachePolicy globalPolicy = CheckGlobalCachePolicy(localFile);
-                    if (globalPolicy != null) HttpContext.Current.Response.Cache = globalPolicy;
-
-                    // Now pass the request processing onto the relevant handler
-                    if (handler == null)
-                    {
-                        throw new HttpException(Resources.NoHttpHandler);
-                    }
-
-                    handler.ProcessRequest(HttpContext.Current);
-
-                    //Do the final flush to the server
-                    FlushResponse(true);
-
-                    EndOfRequest();
-
-                    disposableHandler = handler as IDisposable;
-                    if (disposableHandler != null)
-                    {
-                        disposableHandler.Dispose();
                     }
                 }
-                catch (Exception e)
+            }
+            catch (SocketException e)
+            {
+                if (e.ErrorCode == 10054)
                 {
-                    if (Environment.OSVersion.Platform == PlatformID.Unix)
-                    {
-                        Console.WriteLine("Request exception: " + e.Message);
-                    }
+                    // An existing connection was forcibly closed by the remote host
+                    return false;
+                }
+            }
 
-                    HandleRequestException(e, ldi);
+            // TODO; ctacke 2/4/10 - need to vet this isVirtualPath
+            bool isVirtualPath = UrlPath.IsVirtualDirectory(m_httpRawRequestContent.Path);
+
+            // if the raw content is null or we have no data just close the connection
+            if (m_httpRawRequestContent == null
+                || m_httpRawRequestContent.Length == 0
+                || m_httpRawRequestContent.Path == null)
+            {
+                return false;
+            }
+
+            if ((!m_httpRawRequestContent.Path.EndsWith("/")) && (m_httpRawRequestContent.Path.LastIndexOf('.') == -1) && (isVirtualPath))
+            {
+                //first check to see if we have a forward slash
+                //this is needed because if a url is hit for example http://site/virtualDir without the slash the header for subsequent
+                //requests for images, css etc will return GET HTTP/1.1 /images/image.png instead of GET HTTP/1.1 /virtualDir/images/image.png
+                //if a slash is added at the end of the url there is no issue
+                //Even after implementing keep alive this is the only workaround i can see at this point
+                //The following describes persistent connections http://www.w3.org/Protocols/rfc2616/rfc2616-sec8.html#sec8 and is implemented in
+                //FlushResponse()
+                HttpContext.Current.Response.Redirect(m_httpRawRequestContent.Path + "/");
+                return false;
+            }
+
+            return true;
+        }
+
+        internal override bool ReadRequest(HttpRequest request)
+        {
+            try
+            {
+                // Get the content info (determines if it's a POST or GET
+                if (!PreprocessRequest() || !GetContentInfo())
+                {
+                    return false;
+                }
+
+                // Get the headers
+                request.Headers = ReadRequestHeaders();
+
+                // set the URI
+                request.Url = new Uri(string.Format("{0}://{1}{2}{3}",
+                    this.IsSecure() ? "https" : "http",
+                    this.m_client.LocalEndPoint.ToString(),
+                    this.m_httpRawRequestContent.Path,
+                    string.IsNullOrEmpty(this.m_httpRawRequestContent.RawQueryString) ? string.Empty : "?" + this.m_httpRawRequestContent.RawQueryString));
+
+                // Read the content data
+                if (request.ContentLength > 0)
+                {
+                    request.RawPostContent = GetEntireRawContent();
+                }
+            }
+            catch (IOException e)
+            {
+                // we had a stream issue - most likely we're out of space trying to write the temp file
+                throw new HttpException(Resources.DiskError, e);
+            }
+            catch (OutOfMemoryException oom)
+            {
+                throw new HttpException(Resources.OutOfMemoryException, oom);
+            }
+            catch (ObjectDisposedException)
+            {
+                // if the underlying socket has been disposed
+                Debug.WriteLine("Socket Disposed - aborting request");
+                return false;
+            }
+            catch (Exception e)
+            {
+                throw new HttpException(Resources.HttpErrorParsingHeader, e);
+            }
+
+            return true;
+        }
+
+        internal override void ExecuteRequest(out LogDataItem ldi)
+        {
+            ldi = null;
+            HttpMethodFlags method = HttpMethod.ParseFlag(HttpContext.Current.Request.HttpMethod);
+
+            HttpRuntime.WriteTrace(string.Format("{0}: {1}", method, Path));
+
+            // TODO: Refactor to check handlers for path & file together.
+            // do we have a custom HttpHandler handler for the path?
+            IHttpHandler customHandler = GetCustomHandler(Path, method);
+            IDisposable disposableHandler;
+            if (customHandler != null)
+            {
+                customHandler.ProcessRequest(HttpContext.Current);
+
+                // Do the final flush to the server
+                FlushResponse(true);
+
+                disposableHandler = customHandler as IDisposable;
+                if (disposableHandler != null)
+                {
+                    disposableHandler.Dispose();
+                }
+
+                return;
+            }
+
+            // check for virtual file
+            if (ProcessRequestForVirtualFile(Path))
+                return;
+
+            string localFile, mime, defaultDoc = null;
+
+            if (!Path.ToLowerInvariant().StartsWith("about:"))
+            {
+                localFile = GetLocalPath();
+                mime = MimeMapping.GetMimeMapping(localFile);
+
+                if (!File.Exists(localFile))
+                {
+                    string name = UrlPath.FixVirtualPathSlashes(System.IO.Path.Combine(Path, defaultDoc ?? string.Empty));
+                    throw new HttpException(HttpStatusCode.NotFound, string.Format("The file '{0}' cannot be found.", name));
+                }
+
+                // validate the requested file is *beneath* the server root (no navigating above the root)
+                if (!IsSubDirectoryOf(localFile, ServerConfig.GetConfig().DocumentRoot))
+                {
+                    throw new HttpException(HttpStatusCode.NotFound, "Not found");
+                }
+            }
+            else
+            {
+                localFile = Path.Substring(1);
+                mime = "text/html";
+            }
+
+            ldi = new LogDataItem(m_headers, localFile, m_client.RemoteEndPoint.ToString(),
+                ServerConfig.GetConfig());
+
+            IHttpHandler handler = GetHandlerForFilename(localFile, mime, method);
+
+            LogPageAccess(ldi);
+
+            HttpCachePolicy globalPolicy = CheckGlobalCachePolicy(localFile);
+            if (globalPolicy != null) HttpContext.Current.Response.Cache = globalPolicy;
+
+            // Now pass the request processing onto the relevant handler
+            if (handler == null)
+            {
+                throw new HttpException(Resources.NoHttpHandler);
+            }
+
+            handler.ProcessRequest(HttpContext.Current);
+
+            //Do the final flush to the server
+            FlushResponse(true);
+
+            EndOfRequest();
+
+            disposableHandler = handler as IDisposable;
+            if (disposableHandler != null)
+            {
+                disposableHandler.Dispose();
+            }
+        }
+
+        internal void ProcessRequestInternal()
+        {
+            LogDataItem ldi = null;
+            try
+            {
+                if (!ReadRequest(HttpContext.Current.Request))
+                {
+                    CloseConnection();
                     return;
                 }
-                finally
+
+                ExecuteRequest(out ldi);
+            }
+            catch (Exception e)
+            {
+                if (Environment.OSVersion.Platform == PlatformID.Unix)
                 {
-                    //Get rid of the uploaded content if available.  This will delete any temp files
-                    if (HttpContext.Current.Request.RawPostContent != null)
-                    {
-                        HttpContext.Current.Request.RawPostContent.Dispose();
-                        HttpContext.Current.Request.RawPostContent = null;
-                    }
+                    Console.WriteLine("Request exception: " + e.Message);
+                }
+
+                HandleRequestException(e, ldi);
+                return;
+            }
+            finally
+            {
+                //Get rid of the uploaded content if available.  This will delete any temp files
+                HttpRequest request = HttpContext.Current.Request;
+                if (request.RawPostContent != null)
+                {
+                    request.RawPostContent.Dispose();
+                    request.RawPostContent = null;
                 }
             }
         }
@@ -1216,7 +1145,7 @@ namespace OpenNETCF.Web.Hosting
 #if WindowsCE
             return caselessName;
 #else
-            // remove any relative pathing
+    // remove any relative pathing
             caselessName = System.IO.Path.GetFullPath(caselessName);
 
             string searchFile = System.IO.Path.GetFileName(caselessName);
@@ -1267,8 +1196,6 @@ namespace OpenNETCF.Web.Hosting
             return casedFile;
 #endif
         }
-
-        private Exception LastError { get; set; }
 
         private string GetCustomErrorPage(HttpStatusCode errorCode)
         {
@@ -1352,21 +1279,13 @@ namespace OpenNETCF.Web.Hosting
 
         private bool ProcessRequestForVirtualFile(string requestPath)
         {
-            if (HostingEnvironment.VirtualPathProvider == null)
+            if (HostingEnvironment.VirtualPathProvider == null ||
+                !HostingEnvironment.VirtualPathProvider.FileExists(requestPath))
             {
                 return false;
             }
 
-            VirtualFile vf = null;
-            if (HostingEnvironment.VirtualPathProvider.FileExists(requestPath))
-            {
-                vf = HostingEnvironment.VirtualPathProvider.GetFile(requestPath);
-            }
-            else
-            {
-                return false;
-            }
-
+            VirtualFile vf = HostingEnvironment.VirtualPathProvider.GetFile(requestPath);
             if (vf == null)
             {
                 throw new HttpException(HttpStatusCode.NotFound, Resources.HttpFileNotFound);
@@ -1417,22 +1336,6 @@ namespace OpenNETCF.Web.Hosting
             }
         }
 
-        private bool RequestRequiresAuthentication()
-        {
-            // Crawl the request path and check each virtual directory 
-            string normalizedPath = this.Path.Trim('/');
-
-            if (string.IsNullOrEmpty(normalizedPath))
-            {
-                return false;
-            }
-
-            return normalizedPath.Split('/')
-                .Where(UrlPath.IsVirtualDirectory)
-                .Select(directory => ServerConfig.GetConfig().VirtualDirectories[directory])
-                .Any(dir => dir.RequiresAuthentication);
-        }
-
         private static string GetDefaultDocument(string physicalPath)
         {
             string defaultDocument = "default.html";
@@ -1467,89 +1370,6 @@ namespace OpenNETCF.Web.Hosting
             return defaultDocument;
         }
 
-        private bool AuthenticateRequest()
-        {
-            string challengeResponse = m_headers["HTTP_AUTHORIZATION"];
-            if (challengeResponse == null)
-                return false;
-            int separator = challengeResponse.IndexOf(' ');
-            string mode = challengeResponse.Substring(0, separator);
-            if (!StringComparer.InvariantCultureIgnoreCase.Equals(mode, ServerConfig.GetConfig().Authentication.Mode))
-            {
-                return false;
-            }
-
-            string credentials = challengeResponse.Substring(separator + 1);
-            Authentication auth;
-
-            switch (mode.ToLowerInvariant())
-            {
-                case "basic":
-                    auth = new BasicAuthentication();
-                    break;
-                case "digest":
-                    auth = new DigestAuthentication();
-                    break;
-                default:
-                    throw new NotSupportedException(string.Format("Authorization type {0} is not supported.", mode));
-            }
-
-            return auth.AcceptCredentials(HttpContext.Current, credentials);
-        }
-
-        private void SendAuthRequest()
-        {
-            /*
-             * "HTTP/1.0 401 UNAUTHORIZED " +
-                                "Server: SokEvo/1.0 " +
-                                "Date: Sat, 27 Nov 2004 10:18:15 GMT " +
-                                "WWW-Authenticate: Basic realm=\"SokEvo\" " +
-                                "Content-Type: text/html " +
-                                "Content-Length: 311 " +
-                                "     " +
-             */
-            //string resp = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/1999/REC-html401-19991224/loose.dtd\"> " +
-            //                    "<HTML> " +
-            //                    "  <HEAD> " +
-            //                    "    <TITLE>Error</TITLE> " +
-            //                    "    <META HTTP-EQUIV=\"Content-Type\" CONTENT=\"text/html; charset=ISO-8859-1\"> " +
-            //                    "  </HEAD> " +
-            //                    "  <BODY><H1>401 Unauthorised.</H1></BODY> " +
-            //                    "</HTML> ";
-            Status = "HTTP/1.1 401 UNAUTHORIZED";
-            Authentication auth;
-
-            switch (ServerConfig.GetConfig().Authentication.Mode.ToLowerInvariant())
-            {
-                case "basic":
-                    //responseHeaders.AppendFormat("WWW-Authenticate: Basic realm=\"{0}\"\r\n", ServerConfig.GetConfig().Authentication.Realm);
-                    auth = new BasicAuthentication();
-                    break;
-                case "digest":
-                    auth = new DigestAuthentication();
-                    break;
-                default:
-                    throw new Exception();
-            }
-
-            auth.OnEndRequest(HttpContext.Current, EventArgs.Empty);
-            HttpContext.Current.Response.SendStatus(401, "Access Denied", true);
-        }
-
-        private bool AuthenticationEnabled
-        {
-            get
-            {
-                AuthenticationConfiguration authCfg;
-                return ((authCfg = ServerConfig.GetConfig().Authentication) != null) && authCfg.Enabled;
-            }
-        }
-
-        private bool HasAuthorizationHeader
-        {
-            get { return !string.IsNullOrEmpty(m_headers["HTTP_AUTHORIZATION"]); }
-        }
-
         /// <summary>
         /// Gets the remaing request content.  Primarly used for posted data
         /// </summary>
@@ -1557,7 +1377,7 @@ namespace OpenNETCF.Web.Hosting
         private HttpRawRequestContent GetEntireRawContent()
         {
             int length = HttpContext.Current.Request.ContentLength;
-            Debug.WriteLineIf(EnableTracing, string.Format("Content-Length: {0}\nMax Request Length: {1}", length, HttpRuntimeConfig.GetConfig().MaxRequestLengthBytes), TRACE);
+            HttpRuntime.WriteTrace(string.Format("Content-Length: {0}\nMax Request Length: {1}", length, HttpRuntimeConfig.GetConfig().MaxRequestLengthBytes));
             //check to max sure we have not exceeded the maxlength
             if (length > HttpRuntimeConfig.GetConfig().MaxRequestLengthBytes)
             {
@@ -1566,14 +1386,14 @@ namespace OpenNETCF.Web.Hosting
             //See if we only downloaded partial data
             if (m_partialDownload)
             {
-                Debug.WriteLineIf(EnableTracing, "Partial data download.", TRACE);
+                HttpRuntime.WriteTrace("Partial data download.");
 
                 int totalLength = Int32.Parse(m_httpRawRequestContent.Headers["HTTP_CONTENT_LENGTH"]) + m_httpRawRequestContent.LengthOfHeaders;
                 //Create a new raw content to download the data
                 m_httpRawRequestContent = new HttpRawRequestContent(HttpRuntimeConfig.GetConfig().RequestLengthDiskThresholdBytes,
-                                3024,
-                              ((IPEndPoint)m_client.RemoteEndPoint).Address,
-                              m_httpRawRequestContent);
+                    3024,
+                    ((IPEndPoint)m_client.RemoteEndPoint).Address,
+                    m_httpRawRequestContent);
 
                 //Temp buffer
                 byte[] buffer;
@@ -1581,7 +1401,7 @@ namespace OpenNETCF.Web.Hosting
                 //See if the browser wants a response code of 100 to continue sending posted data
                 if (m_headers["HTTP_EXPECT"] != null && m_headers["HTTP_EXPECT"] == "100" && HttpContext.Current.Request.ContentType.StartsWith("multipart/form-data"))
                 {
-                    Debug.WriteLineIf(EnableTracing, "Request contains multi-part form data", TRACE);
+                    HttpRuntime.WriteTrace("Request contains multi-part form data");
 
                     //Tell the browser to continue sending data if required.  This is needed when uploading bigger files.
                     //HTTP/1.1 100 Continue
@@ -1609,7 +1429,7 @@ namespace OpenNETCF.Web.Hosting
                         int received = m_client.Receive(buffer);
                         m_httpRawRequestContent.AddBytes(buffer, 0, received);
                         totalReceived += received;
-                        Debug.WriteLineIf(EnableTracing, string.Format("Bytes received: {0}", totalReceived), TRACE);
+                        HttpRuntime.WriteTrace(string.Format("Bytes received: {0}", totalReceived));
                     }
                     else
                     {
@@ -1631,9 +1451,9 @@ namespace OpenNETCF.Web.Hosting
         private HttpRawRequestContent GetPartialRawRequestContent(SocketWrapperBase client)
         {
             var rawContent = new HttpRawRequestContent(
-                  HttpRuntimeConfig.GetConfig().RequestLengthDiskThresholdBytes,
-                  3072/*Use 3k of memory then go to file if we go out of this threshold*/,
-                  ((IPEndPoint)client.RemoteEndPoint).Address);
+                HttpRuntimeConfig.GetConfig().RequestLengthDiskThresholdBytes,
+                3072/*Use 3k of memory then go to file if we go out of this threshold*/,
+                ((IPEndPoint)client.RemoteEndPoint).Address);
 
             //TODO: I don't like this magic number, needs to get cleaned up
             // was fixed in 12259, but may have introduced other bugs (reverted in 13136)
@@ -1670,8 +1490,8 @@ namespace OpenNETCF.Web.Hosting
             if (retryCount < 0)
             {
                 newContent = new HttpRawRequestContent(HttpRuntimeConfig.GetConfig().RequestLengthDiskThresholdBytes,
-                3072/*Use 3k of memory then go to file if we go out of this threshold*/,
-                ((IPEndPoint)client.RemoteEndPoint).Address);
+                    3072/*Use 3k of memory then go to file if we go out of this threshold*/,
+                    ((IPEndPoint)client.RemoteEndPoint).Address);
                 newContent.DoneAddingBytes();
             }
             else
@@ -1681,8 +1501,8 @@ namespace OpenNETCF.Web.Hosting
                 if (content.Headers["HTTP_CONTENT_LENGTH"] == null)
                 {
                     newContent = new HttpRawRequestContent(HttpRuntimeConfig.GetConfig().RequestLengthDiskThresholdBytes,
-                      3072/*Use 3k of memory then go to file if we go out of this threshold*/,
-                      ((IPEndPoint)client.RemoteEndPoint).Address);
+                        3072/*Use 3k of memory then go to file if we go out of this threshold*/,
+                        ((IPEndPoint)client.RemoteEndPoint).Address);
                     byte[] buffer = content.GetAsByteArray();
                     newContent.AddBytes(buffer, 0, buffer.Length);
                     content.Dispose();
@@ -1717,28 +1537,11 @@ namespace OpenNETCF.Web.Hosting
         {
             string requestLine = m_httpRawRequestContent.ReadContentInfo();
             if (requestLine == null)
-                throw new InvalidOperationException(string.Format(Resources.UnsupportedMethod, requestLine));
+                throw new InvalidOperationException(string.Format(Resources.UnsupportedMethod, ""));
             return m_httpRawRequestContent.HttpMethod != null &&
-                m_httpRawRequestContent.HttpVersion != null &&
-                m_httpRawRequestContent.Path != null;
+                   m_httpRawRequestContent.HttpVersion != null &&
+                   m_httpRawRequestContent.Path != null;
 
-        }
-
-        internal string Path
-        {
-            get
-            {
-                return m_httpRawRequestContent.Path;
-            }
-            set
-            {
-                m_httpRawRequestContent.Path = value;
-            }
-        }
-
-        internal HttpRawRequestContent HttpRawRequestContent
-        {
-            get { return m_httpRawRequestContent; }
         }
 
         #endregion // Private Methods

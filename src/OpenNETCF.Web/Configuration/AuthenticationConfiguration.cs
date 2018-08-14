@@ -18,7 +18,6 @@
 //
 #endregion
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Xml;
@@ -52,6 +51,13 @@ namespace OpenNETCF.Web.Configuration
         /// </summary>
         public string Mode { get; internal set; }
 
+        internal bool IsForms
+        {
+            get { return Mode.ToLowerInvariant() == "forms"; }
+        }
+
+        internal IHttpModule Module { get; private set; }
+
         /// <summary>
         /// Gets the authentication realm for HTTP Authentication.
         /// </summary>
@@ -76,9 +82,13 @@ namespace OpenNETCF.Web.Configuration
         {
             Mode = node.Attributes["Mode"].Value;
 
-            if (StringComparer.InvariantCultureIgnoreCase.Equals(Mode, "forms"))
+            if (IsForms)
             {
-                FormsAuthentication.IsEnabled = true;
+                Module = new FormsAuthenticationModule();
+            }
+            else
+            {
+                Module = new AuthenticationModule(Mode);
             }
 
             XmlAttribute attr = node.Attributes["Enabled"];
@@ -130,6 +140,7 @@ namespace OpenNETCF.Web.Configuration
                         }
                         break;
                     case "forms":
+                        var formsModule = (FormsAuthenticationModule)Module;
                         //loginUrl="login.aspx"
                         //name=".PADARNAUTH"
                         //domain="testdomain"
@@ -146,13 +157,7 @@ namespace OpenNETCF.Web.Configuration
                         attr = child.Attributes["loginUrl"];
                         if (attr != null)
                         {
-                            FormsAuthentication.LoginUrl = attr.Value;
-                        }
-
-                        attr = child.Attributes["loginUrl"];
-                        if (attr != null)
-                        {
-                            FormsAuthentication.LoginUrl = attr.Value;
+                            formsModule.LoginUrl = attr.Value;
                         }
                         break;
                 }

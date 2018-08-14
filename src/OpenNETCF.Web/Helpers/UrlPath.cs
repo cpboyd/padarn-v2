@@ -34,11 +34,22 @@ namespace OpenNETCF.Web.Helpers
     internal static class UrlPath
     {
         private readonly static char[] trims = { '/' };
-        private readonly static char[] slashChars;
+        private readonly static char[] slashChars = { '\\', '/' };
 
-        static UrlPath()
+        public static bool RequiresAuthentication(string path)
         {
-            slashChars = new[] { '\\', '/' };
+            // Crawl the request path and check each virtual directory 
+            string normalizedPath = path.Trim('/');
+
+            if (string.IsNullOrEmpty(normalizedPath))
+            {
+                return false;
+            }
+
+            return normalizedPath.Split('/')
+                .Where(IsVirtualDirectory)
+                .Select(directory => ServerConfig.GetConfig().VirtualDirectories[directory])
+                .Any(dir => dir.RequiresAuthentication);
         }
 
         public static bool IsVirtualDirectory(string urlDirectory)

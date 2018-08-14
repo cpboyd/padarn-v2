@@ -19,10 +19,12 @@
 #endregion
 
 using System;
+using System.Collections.Specialized;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
 using OpenNETCF.Web.Hosting;
+using OpenNETCF.Web.Logging;
 
 namespace OpenNETCF.Web
 {
@@ -45,9 +47,24 @@ namespace OpenNETCF.Web
         public abstract void FlushResponse(bool finalFlush);
 
         /// <summary>
+        /// Read the entire request.
+        /// </summary>
+        internal abstract bool ReadRequest(HttpRequest request);
+
+        /// <summary>
         /// Read the headers from the request
         /// </summary>
-        protected abstract void ReadRequestHeaders();
+        protected abstract NameValueCollection ReadRequestHeaders();
+
+        /// <summary>
+        /// Process the HTTP request
+        /// </summary>
+        internal abstract void ExecuteRequest(out LogDataItem ldi);
+
+        /// <summary>
+        /// Translate exceptions into user-friendly error pages.
+        /// </summary>
+        internal abstract void HandleRequestException(Exception e, LogDataItem ldi);
 
         /// <summary>
         /// Process the HTTP request
@@ -167,13 +184,6 @@ namespace OpenNETCF.Web
         public virtual string GetServerVariable(string name)
         {
             return null;
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        protected virtual void GetRequestHeaders()
-        {
         }
 
         /// <summary>

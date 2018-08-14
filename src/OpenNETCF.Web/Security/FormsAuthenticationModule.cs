@@ -20,6 +20,8 @@
 
 using System;
 using System.Collections.Generic;
+using OpenNETCF.Web.Configuration;
+using OpenNETCF.Web.Helpers;
 using OpenNETCF.Web.Hosting;
 
 namespace OpenNETCF.Web.Security
@@ -27,11 +29,14 @@ namespace OpenNETCF.Web.Security
     /// <summary>
     /// Manages forms-authentication services for Web applications. This class cannot be inherited.
     /// </summary>
-    public sealed class FormsAuthentication
+    public sealed class FormsAuthenticationModule : IHttpModule
     {
-        private static string m_loginPath;
+        private string m_loginPath;
 
-        static FormsAuthentication()
+        /// <summary>
+        /// Initializes a new instance of the FormsAuthenticationModule class.
+        /// </summary>
+        public FormsAuthenticationModule()
         {
             // set the default
             LoginUrl = "login.aspx";
@@ -49,72 +54,64 @@ namespace OpenNETCF.Web.Security
         /// <summary>
         /// Gets the amount of time before an authentication ticket expires.
         /// </summary>
-        public static TimeSpan Timeout { get; internal set; }
+        public TimeSpan Timeout { get; internal set; }
 
         /// <summary>
         /// Gets a value indicating whether sliding expiration is enabled.
         /// </summary>
-        public static bool SlidingExpiration { get; internal set; }
+        public bool SlidingExpiration { get; internal set; }
 
         /// <summary>
         /// Gets a value indicating whether the forms-authentication cookie requires SSL in order to be returned to the server.
         /// </summary>
-        public static bool RequireSSL { get; internal set; }
+        public bool RequireSSL { get; internal set; }
 
         /// <summary>
         /// Gets the path for the forms-authentication cookie.
         /// </summary>
         /// <value>The path of the cookie where the forms-authentication ticket information is stored. The default is "/".</value>
-        public static string FormsCookiePath { get; internal set; }
+        public string FormsCookiePath { get; internal set; }
 
         /// <summary>
-        /// Gets the URL that the FormsAuthentication class will redirect to if no redirect URL is specified.
+        /// Gets the URL that the FormsAuthenticationModule class will redirect to if no redirect URL is specified.
         /// </summary>
-        public static string DefaultUrl { get; internal set; }
+        public string DefaultUrl { get; internal set; }
 
         /// <summary>
         /// Gets the value of the domain of the forms-authentication cookie.
         /// </summary>
-        public static string CookieDomain { get; internal set; }
+        public string CookieDomain { get; internal set; }
 
         /// <summary>
         /// Gets a value that indicates whether the application is configured for cookieless forms authentication.
         /// </summary>
-        public static HttpCookieMode CookieMode { get; internal set; }
+        public HttpCookieMode CookieMode { get; internal set; }
 
         /// <summary>
         /// Gets a value indicating whether authenticated users can be redirected to URLs in other Web applications.
         /// </summary>
-        public static bool EnableCrossAppRedirects { get; internal set; }
+        public bool EnableCrossAppRedirects { get; internal set; }
 
         /// <summary>
         /// Gets a value that indicates whether the application is configured to support cookieless forms authentication.
         /// </summary>
-        public static bool CookiesSupported
+        public bool CookiesSupported
         {
             get { return true; }
         }
 
         /// <summary>
-        /// Gets the Padarn server's enabled state for Forms Authentication.
+        /// Gets the URL for the login page that the FormsAuthenticationModule class will redirect to.
         /// </summary>
-        /// <remarks>
-        /// To Enable Forms Authentication, set the authentication type in the app.config file
-        /// </remarks>
-        public static bool IsEnabled { get; internal set; }
-
-        /// <summary>
-        /// Gets the URL for the login page that the FormsAuthentication class will redirect to.
-        /// </summary>
-        public static string LoginUrl { get; internal set; }
+        public string LoginUrl { get; internal set; }
 
         /// <summary>
         /// Gets the name of the cookie used to store the forms-authentication ticket.
         /// </summary>
         /// <value>The name of the cookie used to store the forms-authentication ticket. The default is ".ASPXAUTH".</value>
-        public static string FormsCookieName { get; internal set; }
+        public string FormsCookieName { get; internal set; }
 
-        internal static string LoginUrlServerPath
+        internal string LoginUrlServerPath
         {
             get
             {
@@ -127,10 +124,66 @@ namespace OpenNETCF.Web.Security
             }
         }
 
-        internal static string ReturnUrl { get; set; }
+        internal string ReturnUrl { get; set; }
 
         internal List<string> DenyUsers { get; set; }
         internal List<string> AllowsUsers { get; set; }
+
+        #region IHttpModule Members
+
+        public void Dispose()
+        {
+        }
+
+        public void Init(HttpApplication context)
+        {
+            context.AuthenticateRequest += OnAuthenticateRequest;
+        }
+
+        #endregion
+
+        public void OnAuthenticateRequest(object sender, EventArgs e)
+        {
+            var context = (HttpContext)sender;
+            string path = context.Request.Path;
+            if (!ServerConfig.GetConfig().Authentication.IsForms ||
+                !UrlPath.RequiresAuthentication(path))
+            {
+                return;
+            }
+            // is this a page that requires auth?
+            string absolutePath = HostingEnvironment.MapPath(path);
+            if (StringComparer.InvariantCultureIgnoreCase.Equals(absolutePath, LoginUrlServerPath))
+            {
+                return;
+            }
+
+            // are we already authenticated
+            HttpCookie authCookie = context.Request.Cookies[FormsCookieName];
+            if (authCookie != null &&
+                // verify the cookie domain
+                authCookie.Domain == CookieDomain &&
+                // verify it hasn't expired
+                authCookie.Expires > DateTime.Now)
+            {
+                // reset expiration
+                if (SlidingExpiration)
+                {
+                    SetAuthCookie(authCookie["UID"], false);
+                    //context.Response.Cookies[FormsCookieName]
+                    authCookie.Expires = DateTime.Now.AddMinutes(30);
+                }
+
+                return;
+            }
+
+            // Redirect to login
+            ReturnUrl = string.IsNullOrEmpty(path)
+                ? DefaultUrl : path;
+            string authUrl = string.Format("{0}?ReturnURL={1}", LoginUrl, path);
+            context.Response.Redirect(authUrl);
+            context.Response.Flush(true);
+        }
 
         /// <summary>
         /// Returns the redirect URL for the original request that caused the redirect to the login page.
@@ -138,7 +191,7 @@ namespace OpenNETCF.Web.Security
         /// <param name="userName">The name of the authenticated user.</param>
         /// <param name="createPersistentCookie">This parameter is ignored.</param>
         /// <returns>A string that contains the redirect URL.</returns>
-        public static string GetRedirectUrl(string userName, bool createPersistentCookie)
+        public string GetRedirectUrl(string userName, bool createPersistentCookie)
         {
             throw new NotSupportedException();
         }
@@ -148,13 +201,13 @@ namespace OpenNETCF.Web.Security
         /// </summary>
         /// <param name="userName">The authenticated user name.</param>
         /// <param name="createPersistentCookie"><b>true</b> to create a durable cookie (one that is saved across browser sessions); otherwise, <b>false</b>.</param>
-        public static void RedirectFromLoginPage(string userName, bool createPersistentCookie)
+        public void RedirectFromLoginPage(string userName, bool createPersistentCookie)
         {
             SetAuthCookie(userName, createPersistentCookie);
             HttpContext.Current.Response.Redirect(ReturnUrl);
         }
 
-        public static void SetAuthCookie(string userName, bool createPersistentCookie)
+        public void SetAuthCookie(string userName, bool createPersistentCookie)
         {
             var authCookie = new HttpCookie(FormsCookieName)
             {
@@ -173,7 +226,7 @@ namespace OpenNETCF.Web.Security
         /// <summary>
         /// Redirects the browser to the login URL.
         /// </summary>
-        public static void RedirectToLoginPage()
+        public void RedirectToLoginPage()
         {
             HttpContext.Current.Response.Redirect(LoginUrl);
         }
@@ -181,7 +234,7 @@ namespace OpenNETCF.Web.Security
         /// <summary>
         /// Removes the forms-authentication ticket from the browser.
         /// </summary>
-        public static void SignOut()
+        public void SignOut()
         {
             throw new NotSupportedException();
         }

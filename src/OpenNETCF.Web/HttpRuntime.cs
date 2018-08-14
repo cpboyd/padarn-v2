@@ -30,6 +30,16 @@ namespace OpenNETCF.Web
     /// </summary>
     public static class HttpRuntime
     {
+#if TRACE
+        private const string TRACE = "TRACE";
+#endif
+        private static bool EnableTracing { get; set; }
+
+        public static void WriteTrace(string line)
+        {
+            Debug.WriteLineIf(EnableTracing, line, TRACE);
+        }
+
         /// <summary>
         /// Drives all Padarn Web processing execution.
         /// </summary>

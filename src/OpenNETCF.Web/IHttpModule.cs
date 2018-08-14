@@ -33,6 +33,6 @@ namespace OpenNETCF.Web
         /// <summary>
         /// 
         /// </summary>
-        void Init(HttpContext context);
+        void Init(HttpApplication context);
     }
 }

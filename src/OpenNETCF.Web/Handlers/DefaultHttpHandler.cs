@@ -31,10 +31,9 @@ namespace OpenNETCF.Web
         /// Process the HTTP request
         /// </summary>
         /// <param name="context">The current context of the request</param>
-        public void ProcessRequest(HttpContext context)
+        public virtual void ProcessRequest(HttpContext context)
         {
-            HttpWorkerRequest wr = context.WorkerRequest;
-            wr.ProcessRequest();
+            context.WorkerRequest.ProcessRequest();
         }
 
         public bool IsReusable

@@ -17,6 +17,9 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 #endregion
+
+using OpenNETCF.Web.Configuration;
+
 namespace OpenNETCF.Web
 {
     /// <summary>
@@ -25,6 +28,19 @@ namespace OpenNETCF.Web
     internal static class HttpApplicationFactory
     {
         private static HttpApplication m_defaultHandler;
+
+        private static HttpApplication InitApplication()
+        {
+            var application = new HttpApplication();
+
+            AuthenticationConfiguration authCfg = ServerConfig.GetConfig().Authentication;
+            if ((authCfg != null) && authCfg.Enabled && (authCfg.Module != null))
+            {
+                authCfg.Module.Init(application);
+            }
+            return application;
+        }
+
         /// <summary>
         /// 
         /// </summary>
@@ -34,7 +50,7 @@ namespace OpenNETCF.Web
         {
             if (m_defaultHandler == null)
             {
-                return m_defaultHandler = new HttpApplication();
+                return m_defaultHandler = InitApplication();
             }
 
             if (m_defaultHandler.IsReusable)
@@ -42,7 +58,7 @@ namespace OpenNETCF.Web
                 return m_defaultHandler;
             }
 
-            return new HttpApplication();
+            return InitApplication();
         }
     }
 }

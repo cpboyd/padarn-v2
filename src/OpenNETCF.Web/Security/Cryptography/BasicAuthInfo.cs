@@ -31,6 +31,11 @@ namespace OpenNETCF.Web.Security.Cryptography
         public string Uri { get; internal set; }
         public string Method { get; internal set; }
 
+        public bool MatchCredentials(string password)
+        {
+            return password.Equals(Password);
+        }
+
         #endregion
     }
 }

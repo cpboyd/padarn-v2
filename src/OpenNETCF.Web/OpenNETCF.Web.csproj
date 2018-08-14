@@ -226,13 +226,11 @@
     <Compile Include="Routing\RouteTable.cs" />
     <Compile Include="Routing\RouteValueDictionary.cs" />
     <Compile Include="Routing\VirtualPathData.cs" />
-    <Compile Include="Security\Authentication.cs" />
-    <Compile Include="Security\BasicAuthentication.cs" />
+    <Compile Include="Security\AuthenticationModule.cs" />
     <Compile Include="Security\Cryptography\BasicAuthInfo.cs" />
     <Compile Include="Security\Cryptography\DigestAuthInfo.cs" />
     <Compile Include="Security\Cryptography\IAuthenticationCallbackInfo.cs" />
-    <Compile Include="Security\DigestAuthentication.cs" />
-    <Compile Include="Security\FormsAuthentication.cs" />
+    <Compile Include="Security\FormsAuthenticationModule.cs" />
     <Compile Include="Security\Principal\GenericIdentity.cs" />
     <Compile Include="Security\Principal\GenericPrincipal.cs" />
     <Compile Include="Security\Principal\IIdentity.cs" />

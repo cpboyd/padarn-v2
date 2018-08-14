@@ -26,5 +26,12 @@ namespace OpenNETCF.Web.Security.Cryptography
         string Realm { get; }
         string Uri { get; }
         string Method { get; }
+
+        /// <summary>
+        /// Checks to see if the Authentication matches the supplied password.
+        /// </summary>
+        /// <param name="password"></param>
+        /// <returns></returns>
+        bool MatchCredentials(string password);
     }
 }
