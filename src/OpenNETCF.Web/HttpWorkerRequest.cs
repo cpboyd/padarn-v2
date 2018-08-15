@@ -36,7 +36,8 @@ namespace OpenNETCF.Web
         #region Abstract methods
 
         /// <summary>
-        /// Used by the runtime to notify the HttpWorkerRequest that request processing for the current request is complete.
+        /// Used by the runtime to notify the HttpWorkerRequest that request processing
+        /// for the current request is complete.
         /// </summary>
         public abstract void EndOfRequest();
 
@@ -57,9 +58,9 @@ namespace OpenNETCF.Web
         protected abstract NameValueCollection ReadRequestHeaders();
 
         /// <summary>
-        /// Process the HTTP request
+        /// Find an IHttpHandler for the HTTP request
         /// </summary>
-        internal abstract void ExecuteRequest(out LogDataItem ldi);
+        internal abstract IHttpHandler MapRequestHandler(out LogDataItem ldi);
 
         /// <summary>
         /// Translate exceptions into user-friendly error pages.

@@ -429,47 +429,10 @@ namespace OpenNETCF.Web
             //{
             //    DefaultWorkerRequest ps = (DefaultWorkerRequest)m_wr;
             //    string host = ps.HttpRawRequestContent.Headers["HTTP_HOST"];
-            //    url = UriCombine(host, url, ps.IsSecure());
+            //    url = UrlPath.Combine(host, url, ps.IsSecure());
             //}
 
             return url;
-        }
-
-        private static string UriCombine(string host, string virtualPath, bool isSSL)
-        {
-            var uri = new StringBuilder();
-            uri.Append("http");
-            if (isSSL)
-                uri.Append("s");
-            uri.Append("://");
-            uri.Append(host);
-
-            if (!virtualPath.StartsWith("/"))
-                uri.Append("/");
-
-            uri.Append(virtualPath);
-
-            return uri.ToString();
-        }
-
-        internal void WriteVirtualFile(VirtualFile vf)
-        {
-            using (Stream stream = vf.Open())
-            {
-                // Make sure all the bytes are written to the stream 
-                // and move to the start
-                stream.Flush();
-                stream.Seek(0, SeekOrigin.Begin);
-
-                long length = stream.Length;
-                if (length > 0)
-                {
-                    var buffer = new byte[(int)length];
-                    stream.Read(buffer, 0x0, (int)length);
-                    BinaryWrite(buffer);
-                    Flush();
-                }
-            }
         }
     }
 }

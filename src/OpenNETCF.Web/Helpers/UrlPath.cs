@@ -36,6 +36,41 @@ namespace OpenNETCF.Web.Helpers
         private readonly static char[] trims = { '/' };
         private readonly static char[] slashChars = { '\\', '/' };
 
+        public static string Combine(string host, string path, bool isSsl)
+        {
+            return Combine(host, path, null, isSsl);
+        }
+
+        public static string Combine(string host, string path, string query, bool isSsl)
+        {
+            var uri = new StringBuilder("http");
+            if (isSsl)
+                uri.Append("s");
+            uri.Append("://");
+            uri.Append(host);
+
+            if (!string.IsNullOrEmpty(path))
+            {
+                if (path[0] != '/')
+                {
+                    uri.Append("/");
+                }
+
+                uri.Append(path);
+            }
+
+            if (!string.IsNullOrEmpty(query))
+            {
+                if (query[0] != '?')
+                {
+                    uri.Append("?");
+                }
+                uri.Append(query);
+            }
+
+            return uri.ToString();
+        }
+
         public static bool RequiresAuthentication(string path)
         {
             // Crawl the request path and check each virtual directory 

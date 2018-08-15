@@ -62,6 +62,15 @@ namespace OpenNETCF.Web
         }
 
         /// <summary>
+        /// Occurs when ASP.NET has mapped the current request to the appropriate event handler.
+        /// </summary>
+        public event EventHandler PostMapRequestHandler
+        {
+            add { Events.AddHandler(Event.PostMapRequestHandler, value); }
+            remove { Events.RemoveHandler(Event.PostMapRequestHandler, value); }
+        }
+
+        /// <summary>
         /// Occurs just before ASP.NET starts executing an event handler (for example, a page or an XML Web service).
         /// </summary>
         public event EventHandler PreRequestHandlerExecute
@@ -208,16 +217,26 @@ namespace OpenNETCF.Web
 #endif
         }
 
+        /// <summary>
+        /// Causes ASP.NET to bypass all events and filtering in the HTTP pipeline chain
+        /// of execution and directly execute the <see cref="EndRequest"/> event.
+        /// </summary>
+        public void CompleteRequest()
+        {
+            HttpContext.Current.WorkerRequest.EndOfRequest();
+            HandleEvent(Event.EndRequest);
+        }
+
         private void HandleRequest(HttpContext context)
         {
-            LogDataItem ldi = null;
-            var wr = context.WorkerRequest;
+            HttpWorkerRequest wr = context.WorkerRequest;
             HttpRequest request = context.Request;
+            LogDataItem ldi = null;
+            IHttpHandler handler = null;
             try
             {
                 if (!wr.ReadRequest(request))
                 {
-                    wr.CloseConnection();
                     return;
                 }
 
@@ -233,7 +252,8 @@ namespace OpenNETCF.Web
                 // PostResolveRequestCache
 
                 // MapRequestHandler
-                // PostMapRequestHandler
+                handler = wr.MapRequestHandler(out ldi);
+                HandleEvent(Event.PostMapRequestHandler);
 
                 // AcquireRequestState
                 // create the session now (we needed the headers for the cookies)
@@ -241,7 +261,7 @@ namespace OpenNETCF.Web
                 // PostAcquireRequestState
 
                 HandleEvent(Event.PreRequestHandlerExecute);
-                wr.ExecuteRequest(out ldi);
+                handler.ProcessRequest(context);
                 HandleEvent(Event.PostRequestHandlerExecute);
 
                 // ReleaseRequestState
@@ -252,8 +272,6 @@ namespace OpenNETCF.Web
 
                 HandleEvent(Event.LogRequest);
                 HandleEvent(Event.PostLogRequest);
-
-                HandleEvent(Event.EndRequest);
             }
             catch (Exception e)
             {
@@ -267,11 +285,20 @@ namespace OpenNETCF.Web
             }
             finally
             {
-                //Get rid of the uploaded content if available.  This will delete any temp files
+                CompleteRequest();
+
+                // Get rid of the uploaded content if available.  This will delete any temp files
                 if (request.RawPostContent != null)
                 {
                     request.RawPostContent.Dispose();
                     request.RawPostContent = null;
+                }
+
+                // If the HttpHandler implements IDisposable, let's try to dispose of it.
+                var disposableHandler = handler as IDisposable;
+                if (disposableHandler != null)
+                {
+                    disposableHandler.Dispose();
                 }
             }
         }
@@ -300,6 +327,7 @@ namespace OpenNETCF.Web
             internal static readonly object PostAuthenticateRequest = new object();
             internal static readonly object AuthorizeRequest = new object();
             internal static readonly object PostAuthorizeRequest = new object();
+            internal static readonly object PostMapRequestHandler = new object();
             internal static readonly object PreRequestHandlerExecute = new object();
             internal static readonly object PostRequestHandlerExecute = new object();
             internal static readonly object LogRequest = new object();

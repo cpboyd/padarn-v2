@@ -33,9 +33,9 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using OpenNETCF.Web.Configuration;
+using OpenNETCF.Web.Handlers;
 using OpenNETCF.Web.Helpers;
 using OpenNETCF.Web.Logging;
-using OpenNETCF.Web.Security;
 using OpenNETCF.Web.Server;
 using OpenNETCF.WindowsCE;
 
@@ -184,10 +184,13 @@ namespace OpenNETCF.Web.Hosting
         }
 
         /// <summary>
-        /// 
+        /// Used by the runtime to notify the HttpWorkerRequest that request processing
+        /// for the current request is complete.
         /// </summary>
         public override void EndOfRequest()
         {
+            // Do the final flush to the server
+            FlushResponse(true);
             CloseConnection();
         }
 
@@ -459,7 +462,7 @@ namespace OpenNETCF.Web.Hosting
         /// </summary>
         public override void CloseConnection()
         {
-            //Dispose of the raw request content
+            // Dispose of the raw request content
             if (m_httpRawRequestContent != null)
             {
                 m_httpRawRequestContent.Dispose();
@@ -955,11 +958,9 @@ namespace OpenNETCF.Web.Hosting
                 request.Headers = ReadRequestHeaders();
 
                 // set the URI
-                request.Url = new Uri(string.Format("{0}://{1}{2}{3}",
-                    this.IsSecure() ? "https" : "http",
-                    this.m_client.LocalEndPoint.ToString(),
-                    this.m_httpRawRequestContent.Path,
-                    string.IsNullOrEmpty(this.m_httpRawRequestContent.RawQueryString) ? string.Empty : "?" + this.m_httpRawRequestContent.RawQueryString));
+                request.Url = new Uri(UrlPath.Combine(
+                    m_client.LocalEndPoint.ToString(), m_httpRawRequestContent.Path,
+                    m_httpRawRequestContent.RawQueryString, IsSecure()));
 
                 // Read the content data
                 if (request.ContentLength > 0)
@@ -990,7 +991,7 @@ namespace OpenNETCF.Web.Hosting
             return true;
         }
 
-        internal override void ExecuteRequest(out LogDataItem ldi)
+        internal override IHttpHandler MapRequestHandler(out LogDataItem ldi)
         {
             ldi = null;
             HttpMethodFlags method = HttpMethod.ParseFlag(HttpContext.Current.Request.HttpMethod);
@@ -999,27 +1000,13 @@ namespace OpenNETCF.Web.Hosting
 
             // TODO: Refactor to check handlers for path & file together.
             // do we have a custom HttpHandler handler for the path?
-            IHttpHandler customHandler = GetCustomHandler(Path, method);
-            IDisposable disposableHandler;
+            IHttpHandler customHandler = GetCustomHandler(Path, method) ??
+                                         // check for virtual file
+                                         GetVirtualFileHandler(Path);
             if (customHandler != null)
             {
-                customHandler.ProcessRequest(HttpContext.Current);
-
-                // Do the final flush to the server
-                FlushResponse(true);
-
-                disposableHandler = customHandler as IDisposable;
-                if (disposableHandler != null)
-                {
-                    disposableHandler.Dispose();
-                }
-
-                return;
+                return customHandler;
             }
-
-            // check for virtual file
-            if (ProcessRequestForVirtualFile(Path))
-                return;
 
             string localFile, mime, defaultDoc = null;
 
@@ -1062,23 +1049,30 @@ namespace OpenNETCF.Web.Hosting
                 throw new HttpException(Resources.NoHttpHandler);
             }
 
-            handler.ProcessRequest(HttpContext.Current);
+            return handler;
+        }
 
-            //Do the final flush to the server
-            FlushResponse(true);
-
-            EndOfRequest();
-
-            disposableHandler = handler as IDisposable;
-            if (disposableHandler != null)
+        private VirtualFileHandler GetVirtualFileHandler(string requestPath)
+        {
+            if (HostingEnvironment.VirtualPathProvider == null ||
+                !HostingEnvironment.VirtualPathProvider.FileExists(requestPath))
             {
-                disposableHandler.Dispose();
+                return null;
             }
+
+            VirtualFile vf = HostingEnvironment.VirtualPathProvider.GetFile(requestPath);
+            if (vf == null)
+            {
+                throw new HttpException(HttpStatusCode.NotFound, Resources.HttpFileNotFound);
+            }
+
+            return new VirtualFileHandler(vf, MimeMapping.GetMimeMapping(requestPath));
         }
 
         internal void ProcessRequestInternal()
         {
             LogDataItem ldi = null;
+            IHttpHandler handler = null;
             try
             {
                 if (!ReadRequest(HttpContext.Current.Request))
@@ -1087,7 +1081,10 @@ namespace OpenNETCF.Web.Hosting
                     return;
                 }
 
-                ExecuteRequest(out ldi);
+                handler = MapRequestHandler(out ldi);
+                handler.ProcessRequest(HttpContext.Current);
+
+                EndOfRequest();
             }
             catch (Exception e)
             {
@@ -1107,6 +1104,13 @@ namespace OpenNETCF.Web.Hosting
                 {
                     request.RawPostContent.Dispose();
                     request.RawPostContent = null;
+                }
+
+                // If the HttpHandler implements IDisposable, let's try to dispose of it.
+                var disposableHandler = handler as IDisposable;
+                if (disposableHandler != null)
+                {
+                    disposableHandler.Dispose();
                 }
             }
         }
@@ -1275,27 +1279,6 @@ namespace OpenNETCF.Web.Hosting
                 default:
                     return string.Format(StringHelper.ConvertVerbatimLineEndings(Resources.HttpStatusGeneric), ((int)error).ToString());
             }
-        }
-
-        private bool ProcessRequestForVirtualFile(string requestPath)
-        {
-            if (HostingEnvironment.VirtualPathProvider == null ||
-                !HostingEnvironment.VirtualPathProvider.FileExists(requestPath))
-            {
-                return false;
-            }
-
-            VirtualFile vf = HostingEnvironment.VirtualPathProvider.GetFile(requestPath);
-            if (vf == null)
-            {
-                throw new HttpException(HttpStatusCode.NotFound, Resources.HttpFileNotFound);
-            }
-
-            HttpContext.Current.Response.ContentType = MimeMapping.GetMimeMapping(requestPath);
-            HttpContext.Current.Response.WriteVirtualFile(vf);
-            FlushResponse(true);
-
-            return true;
         }
 
         private string ParseStackTrace(string stackTrace)
