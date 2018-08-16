@@ -77,126 +77,100 @@ namespace OpenNETCF.Web
         /// <param name="context">The HttpContext for the request</param>
         public void ProcessRequest(HttpContext context)
         {
+            int et = Environment.TickCount;
             HttpRequest request = context.Request;
             HttpResponse response = context.Response;
 
             string filename = GetFilename(context); // TODO: Re-instate request.PhysicalPath;
 
-            using (var fs = new FileStream(filename, FileMode.Open, FileAccess.Read))
+            FileInfo requestedFile;
+
+            try
+            {
+                requestedFile = new FileInfo(filename);
+            }
+            catch (IOException)
+            {
+                throw new HttpException(HttpStatusCode.NotFound, Resources.HttpEnumeratorError);
+            }
+            catch (SecurityException)
+            {
+                throw new HttpException(HttpStatusCode.Unauthorized, Resources.HttpEnumeratorDenied);
+            }
+
+            DateTime lastModTime = requestedFile.LastWriteTime;//File.GetLastWriteTime(filename);
+
+            string ims = request.Headers["HTTP_IF_MODIFIED_SINCE"];
+            if (!string.IsNullOrEmpty(ims))
             {
                 try
                 {
-                    FileInfo requestedFile;
-
-                    try
+                    DateTime t = DateTime.Parse(ims, DateTimeFormatInfo.CurrentInfo);
+                    if (lastModTime.Subtract(t.ToUniversalTime()).TotalSeconds < 1)
                     {
-                        requestedFile = new FileInfo(filename);
-                    }
-                    catch (IOException)
-                    {
-                        throw new HttpException(HttpStatusCode.NotFound, Resources.HttpEnumeratorError);
-                    }
-                    catch (SecurityException)
-                    {
-                        throw new HttpException(HttpStatusCode.Unauthorized, Resources.HttpEnumeratorDenied);
-                    }
-
-                    string ims = request.Headers["HTTP_IF_MODIFIED_SINCE"];
-                    if (!string.IsNullOrEmpty(ims))
-                    {
-                        try
-                        {
-                            DateTime t = DateTime.Parse(ims, DateTimeFormatInfo.CurrentInfo);
-                            if (requestedFile.LastWriteTime.Subtract(t.ToUniversalTime()).TotalSeconds < 1)
-                            {
-                                HttpContext.Current.Response.SendStatus(304, "Not Modified: " + m_mime, true);
-                                return;
-                            }
-                        }
-                        catch
-                        {
-                            Debug.WriteLine("Unable to parse header 'HTTP_IF_MODIFIED_SINCE' value: " + ims);
-                            // ignore and continue, we just won't return a 304
-                        }
-                    }
-
-                    if ((requestedFile.Attributes & FileAttributes.Hidden) != 0)
-                    {
-                        throw new HttpException(HttpStatusCode.NotFound, Resources.HttpFileHidden);
-                    }
-
-                    if (filename[filename.Length - 1].Equals('.'))
-                    {
-                        throw new HttpException(HttpStatusCode.NotFound, Resources.HttpFileNotFound);
-                    }
-
-                    DateTime lastModTime = requestedFile.LastWriteTime;
-
-                    if (lastModTime > DateTime.Now)
-                    {
-                        lastModTime = DateTime.Now;
-                    }
-
-                    string strETag = GenerateETag(context, lastModTime);
-
-                    try
-                    {
-                        BuildFileItemResponse(context, filename, requestedFile.Length, lastModTime, strETag, requestedFile.LastWriteTime);
-                    }
-                    catch (Exception)
-                    {
-                        throw new HttpException(HttpStatusCode.Unauthorized, Resources.HttpAccessForbidden);
-                    }
-
-
-                    HttpContext.Current.Response.ForcedContentLength = fs.Length;
-                    HttpContext.Current.Response.ContentType = m_mime;
-
-                    // packetize output to prevent OOMs on serving large files
-                    using (var r = new BinaryReader(fs))
-                    {
-                        int totalSent = 0;
-
-                        try
-                        {
-                            do
-                            {
-                                // TODO: allow this to be configurable
-                                byte[] content = r.ReadBytes(0x40000);
-
-                                if (content.Length > 0)
-                                {
-                                    // check for a broken connection (i.e. a cancelled download)
-                                    if (!HttpContext.Current.Response.IsClientConnected)
-                                    {
-                                        return;
-                                    }
-
-                                    HttpContext.Current.Response.Write(content);
-                                    HttpContext.Current.Response.Flush();
-                                }
-
-                                totalSent += content.Length;
-                            } while (totalSent < fs.Length);
-                        }
-                        finally
-                        {
-                            r.Close();
-
-                            // if we sent more than 1MB, clean up
-                            if (totalSent > 0x100000)
-                            {
-                                GC.Collect();
-                            }
-                        }
+                        response.SendStatus(304, "Not Modified: " + m_mime, true);
+                        return;
                     }
                 }
-                finally
+                catch
                 {
-                    fs.Close();
+                    Debug.WriteLine("Unable to parse header 'HTTP_IF_MODIFIED_SINCE' value: " + ims);
+                    // ignore and continue, we just won't return a 304
                 }
             }
+
+            if ((requestedFile.Attributes & FileAttributes.Hidden) != 0)
+            {
+                throw new HttpException(HttpStatusCode.NotFound, Resources.HttpFileHidden);
+            }
+
+            // https://stackoverflow.com/questions/429963/the-resource-cannot-be-found-error-when-there-is-a-dot-at-the-end-of-the-ur
+            if (filename.EndsWith('.'))
+            {
+                throw new HttpException(HttpStatusCode.NotFound, Resources.HttpFileNotFound);
+            }
+
+            if (lastModTime > DateTime.Now)
+            {
+                lastModTime = DateTime.Now;
+            }
+
+            string strETag = GenerateETag(context, lastModTime);
+
+            long fileLength = requestedFile.Length;
+            try
+            {
+                BuildFileItemResponse(context, filename, fileLength, lastModTime, strETag, lastModTime);
+            }
+            catch (Exception)
+            {
+                throw new HttpException(HttpStatusCode.Unauthorized, Resources.HttpAccessForbidden);
+            }
+
+            response.ForcedContentLength = fileLength;
+            response.ContentType = m_mime;
+
+#if DEBUG
+            int et2 = Environment.TickCount - et;
+#endif
+            response.TransmitFile(filename);
+#if DEBUG
+            et = Environment.TickCount - et;
+            WriteTrace(et2, filename, "PreTransmit");
+            WriteTrace(et, filename, "ProcessRequest");
+#endif
         }
+
+#if DEBUG
+        private void WriteTrace(int ticks, string filename, string func)
+        {
+            if (ticks > 10)
+            {
+                HttpRuntime.WriteTrace(string.Format("FileHandler::{0} took {1}ms: {2}", func, ticks, filename));
+            }
+            
+        }
+#endif
 
         #endregion
 
@@ -235,13 +209,13 @@ namespace OpenNETCF.Web
             // Prefer Brotli if available:
             if (acceptBrotli && File.Exists(filename + ".br"))
             {
-                HttpContext.Current.Response.ContentEncoding = ContentEncoding.Brotli;
+                response.ContentEncoding = ContentEncoding.Brotli;
                 return filename + ".br";
             }
 
             if (acceptGzip && File.Exists(filename + ".gz"))
             {
-                HttpContext.Current.Response.ContentEncoding = ContentEncoding.Gzip;
+                response.ContentEncoding = ContentEncoding.Gzip;
                 return filename + ".gz";
             }
 

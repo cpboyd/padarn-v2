@@ -22,7 +22,6 @@ using System;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
-using OpenNETCF.Web.Hosting;
 
 namespace OpenNETCF.Web
 {
@@ -313,12 +312,7 @@ namespace OpenNETCF.Web
         /// <param name="buffer">The bytes to write to the output stream.</param>
         public void BinaryWrite(byte[] buffer)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException("buffer");
-            }
-
-            m_wr.SendResponseFromMemory(buffer, buffer.Length);
+            BinaryWrite(buffer, 0, buffer.Length);
         }
 
         /// <summary>
@@ -332,7 +326,7 @@ namespace OpenNETCF.Web
                 throw new ArgumentNullException("buffer");
             }
 
-            m_wr.SendResponseFromMemory(buffer, buffer.Length);
+            m_wr.SendResponseFromMemory(buffer, offset, length);
         }
 
         /// <summary>
@@ -379,9 +373,25 @@ namespace OpenNETCF.Web
             m_wr.FlushResponse(final);
         }
 
-        internal void Write(byte[] b)
+        /// <summary>
+        /// Writes the specified file directly to an HTTP response output stream, without buffering it in memory.
+        /// </summary>
+        /// <param name="filename">The name of the file to write to the HTTP output.</param>
+        public void TransmitFile(string filename)
         {
-            m_wr.SendResponseFromMemory(b, b.Length);
+            TransmitFile(filename, 0, -1);
+        }
+
+        /// <summary>
+        /// Writes the specified part of a file directly to an HTTP response output stream without buffering it in memory.
+        /// </summary>
+        /// <param name="filename">The name of the file to write to the HTTP output.</param>
+        /// <param name="offset">The position in the file to begin to write to the HTTP output.</param>
+        /// <param name="length">The number of bytes to be transmitted.</param>
+        /// <remarks>If you specify 0 as the <paramref name="offset"/> parameter and -1 as the <paramref name="length"/> parameter, the whole file is sent.</remarks>
+        public void TransmitFile(string filename, long offset, long length)
+        {
+            m_wr.SendResponseFromFile(filename, offset, length);
         }
 
         internal void Redirect(string url, bool endResponse)

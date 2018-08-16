@@ -127,6 +127,16 @@ namespace OpenNETCF.Web
         /// <param name="length">The number of bytes to send, starting at the first byte.</param>
         public abstract void SendResponseFromMemory(byte[] data, int length);
 
+        internal abstract void SendResponseFromMemory(byte[] data, int offset, int length);
+
+        /// <summary>
+        /// Adds the contents of the specified file to the response and specifies the starting position in the file and the number of bytes to send.
+        /// </summary>
+        /// <param name="filename">The name of the file to send.</param>
+        /// <param name="offset">The starting position in the file.</param>
+        /// <param name="length">The number of bytes to send.</param>
+        public abstract void SendResponseFromFile(string filename, long offset, long length);
+
         /// <summary>
         /// Adds a standard HTTP header to the response.
         /// </summary>
@@ -148,7 +158,7 @@ namespace OpenNETCF.Web
         /// Provides access to the response stream.
         /// </summary>
         /// <returns>The response stream.</returns>
-        public virtual Stream ResponseStream
+        internal virtual Stream ResponseStream
         {
             get { throw new HttpException("Response stream is not available."); }
         }
@@ -157,6 +167,13 @@ namespace OpenNETCF.Web
         {
             get { return string.Empty; }
             set { string s = value; } // TODO: Check this is correct
+        }
+
+        /// <summary>
+        /// Terminates the connection with the client.
+        /// </summary>
+        public virtual void CloseConnection()
+        {
         }
 
         /// <summary>
@@ -206,6 +223,16 @@ namespace OpenNETCF.Web
             return GetLocalAddress();
         }
 
+        internal virtual string GetLocalPortAsString()
+        {
+            return GetLocalPort().ToString(NumberFormatInfo.InvariantInfo);
+        }
+
+        internal virtual byte[] GetQueryStringRawBytes()
+        {
+            return null;
+        }
+
         /// <summary>
         /// Maps a virtual path to a physical path on the server.
         /// </summary>
@@ -217,11 +244,6 @@ namespace OpenNETCF.Web
             return HostingEnvironment.MapPath(virtualPath);
         }
 
-        internal virtual string GetLocalPortAsString()
-        {
-            return GetLocalPort().ToString(NumberFormatInfo.InvariantInfo);
-        }
-
         /// <summary>
         /// Returns a value indicating whether the connection uses SSL.
         /// </summary>
@@ -229,18 +251,6 @@ namespace OpenNETCF.Web
         public virtual bool IsSecure()
         {
             return false;
-        }
-
-        internal virtual byte[] GetQueryStringRawBytes()
-        {
-            return null;
-        }
-
-        /// <summary>
-        /// Terminates the connection with the client.
-        /// </summary>
-        public virtual void CloseConnection()
-        {
         }
 
         /// <summary>

@@ -120,7 +120,7 @@ namespace OpenNETCF.Web.Hosting
         /// Provides access to the response stream.
         /// </summary>
         /// <returns>The response stream.</returns>
-        public override Stream ResponseStream
+        internal override Stream ResponseStream
         {
             get { return m_response; }
         }
@@ -240,102 +240,135 @@ namespace OpenNETCF.Web.Hosting
         }
 
         /// <summary>
+        /// Returns a value indicating whether HTTP response headers have been sent to the client for the current request.
+        /// </summary>
+        /// <returns>true if HTTP response headers have been sent to the client; otherwise, false.</returns>
+        public override bool HeadersSent()
+        {
+            return m_headersSent;
+        }
+
+        internal override void ClearHeaders()
+        {
+            m_headers.Clear();
+            m_headersCleared = true;
+        }
+
+        private void SendHeaders(HttpContext context)
+        {
+            if (m_headersSent)
+            {
+                return;
+            }
+
+            HttpResponse response = context.Response;
+
+            // http://www.w3.org/Protocols/rfc2616/rfc2616-sec6.html
+            m_responseHeaders.Insert(0, m_serverHeader);
+            // status line
+            m_responseHeaders.Insert(0, Status);
+
+            // general header fields - see http://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.5
+            m_responseHeaders.Append(response.Cache.GetHeaderString());
+
+            // entity header fields - see http://www.w3.org/Protocols/rfc2616/rfc2616-sec7.html#sec7.1
+            // Content-Encoding https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.11
+            if (!string.IsNullOrEmpty(response.ContentEncoding))
+            {
+                m_responseHeaders.AppendFormat("Content-Encoding: {0}\r\n", response.ContentEncoding);
+            }
+
+            // Content-Type https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.17
+            m_responseHeaders.AppendFormat("Content-Type: {0}\r\n", response.ContentType);
+
+            // Cookies
+            if (response.Cookies != null)
+            {
+                int count = response.Cookies.Count;
+                for (int i = 0; i < count; i++)
+                {
+                    m_responseHeaders.AppendFormat(CultureInfo.CurrentCulture, "{0}\r\n", response.Cookies[i].GetSetCookieHeader(context));
+                }
+            }
+
+            // append the content-length unless it was explicitly cleared
+            if (!m_headersCleared && !m_responseHeaders.ToString().Contains("Content-Length:"))
+            {
+                int contentLength = 0;
+
+                if ((!response.ForcedContentLength.HasValue) || (response.ForcedContentLength >= 0))
+                {
+                    if (response.ForcedContentLength.HasValue)
+                    {
+                        contentLength = (int)response.ForcedContentLength.Value;
+                    }
+                    else
+                    {
+                        contentLength += (int)m_response.Length;
+                        //SendCalculatedContentLength(contentLength);
+                    }
+
+                    SendCalculatedContentLength(contentLength);
+                    m_responseHeaders.Append("\r\n");
+                }
+            }
+
+            // ensure the headers are terminated with \r\n\r\n
+            int index = m_responseHeaders.Length - 4;
+
+            while ((index < m_responseHeaders.Length) && (m_responseHeaders[index] != '\r')) index++;
+            m_responseHeaders.Length = index;
+            m_responseHeaders.Append("\r\n\r\n");
+
+            byte[] buffer = Encoding.UTF8.GetBytes(m_responseHeaders.ToString());
+            WriteToOutput(buffer);
+
+            response.HeadersWritten = m_headersSent = true;
+        }
+
+        private void WriteToOutput(byte[] buffer)
+        {
+            WriteToOutput(buffer, 0, buffer.Length);
+        }
+
+        private void WriteToOutput(byte[] buffer, int offset, int count)
+        {
+            try
+            {
+                int retry = 3;
+                while (retry-- > 0)
+                {
+                    if (m_output.CanWrite)
+                        break;
+
+                    Thread.Sleep(250);
+                }
+                if (retry < 0) throw new IOException("Unable to write to underlying stream.");
+
+                m_output.Write(buffer, offset, count);
+            }
+            catch (IOException ioEx)
+            {
+                // this is seen occasionally - need to protect it
+                // todo: what do we do when this occurs?  for now rethrow
+                if (Marshal.GetHRForException(ioEx) == -2146232800)
+                {
+                    //An existing connection was forcibly closed by the remote host
+                    //Unable to write data to the transport connection.
+                    CloseConnection();
+                    return;
+                }
+                throw;
+            }
+        }
+
+        /// <summary>
         /// Flush the response stream to the client
         /// </summary>
         /// <param name="finalFlush"></param>
         public override void FlushResponse(bool finalFlush)
         {
-            if (!m_headersSent)
-            {
-
-                // http://www.w3.org/Protocols/rfc2616/rfc2616-sec6.html
-                m_responseHeaders.Insert(0, m_serverHeader);
-                // status line
-                m_responseHeaders.Insert(0, Status);
-
-                // general header fields - see http://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html#sec4.5
-                m_responseHeaders.Append(HttpContext.Current.Response.Cache.GetHeaderString());
-
-                // entity header fields - see http://www.w3.org/Protocols/rfc2616/rfc2616-sec7.html#sec7.1
-                // Content-Encoding https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.11
-                if (!string.IsNullOrEmpty(HttpContext.Current.Response.ContentEncoding))
-                {
-                    m_responseHeaders.AppendFormat("Content-Encoding: {0}\r\n", HttpContext.Current.Response.ContentEncoding);
-                }
-
-                // Content-Type https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.17
-                m_responseHeaders.AppendFormat("Content-Type: {0}\r\n", HttpContext.Current.Response.ContentType);
-
-                // Cookies
-                if (HttpContext.Current.Response.Cookies != null)
-                {
-                    int count = HttpContext.Current.Response.Cookies.Count;
-                    for (int i = 0; i < count; i++)
-                    {
-                        m_responseHeaders.AppendFormat(CultureInfo.CurrentCulture, "{0}\r\n", HttpContext.Current.Response.Cookies[i].GetSetCookieHeader(HttpContext.Current));
-                    }
-                }
-
-                // append the content-length unless it was explicitly cleared
-                if ((!m_headersCleared) && (m_responseHeaders.ToString().IndexOf("Content-Length:") == -1))
-                {
-                    int contentLength = 0;
-
-                    if ((!HttpContext.Current.Response.ForcedContentLength.HasValue) || (HttpContext.Current.Response.ForcedContentLength >= 0))
-                    {
-                        if (HttpContext.Current.Response.ForcedContentLength.HasValue)
-                        {
-                            contentLength = (int)HttpContext.Current.Response.ForcedContentLength.Value;
-                        }
-                        else
-                        {
-                            contentLength += (int)m_response.Length;
-                            //SendCalculatedContentLength(contentLength);
-                        }
-
-                        SendCalculatedContentLength(contentLength);
-                        m_responseHeaders.Append("\r\n");
-                    }
-                }
-
-                // ensure the headers are terminated with \r\n\r\n
-                int index = m_responseHeaders.Length - 4;
-
-                while ((index < m_responseHeaders.Length) && (m_responseHeaders[index] != '\r')) index++;
-                m_responseHeaders.Length = index;
-                m_responseHeaders.Append("\r\n\r\n");
-
-                byte[] buffer = Encoding.UTF8.GetBytes(m_responseHeaders.ToString());
-                try
-                {
-                    int retry = 3;
-                    while (retry-- > 0)
-                    {
-                        if (m_output.CanWrite)
-                            break;
-
-                        Thread.Sleep(250);
-                    }
-                    if (retry < 0) throw new IOException("Unable to write to underlying stream.");
-
-                    m_output.Write(buffer, 0, buffer.Length);
-                }
-                catch (IOException ioEx)
-                {
-                    // this is seen occasionally - need to protect it
-                    // todo: what do we do when this occurs?  for now rethrow
-                    if (Marshal.GetHRForException(ioEx) == -2146232800)
-                    {
-                        //An existing connection was forcibly closed by the remote host
-                        //Unable to write data to the transport connection.
-                        CloseConnection();
-                        return;
-                    }
-                    throw;
-                }
-
-                HttpContext.Current.Response.HeadersWritten = m_headersSent = true;
-            }
+            SendHeaders(HttpContext.Current);
 
             //if (Path.EndsWith(".aspx"))
             //{
@@ -387,21 +420,6 @@ namespace OpenNETCF.Web.Hosting
                 m_logProvider.LogPadarnError("AsyncWorkerRequest.FlushResponse: " + e.Message, null);
                 CloseConnection();
             }
-        }
-
-        internal override void ClearHeaders()
-        {
-            m_headers.Clear();
-            m_headersCleared = true;
-        }
-
-        /// <summary>
-        /// Returns a value indicating whether HTTP response headers have been sent to the client for the current request.
-        /// </summary>
-        /// <returns></returns>
-        public override bool HeadersSent()
-        {
-            return m_headersSent;
         }
 
         private void WriteResponse(IAsyncResult ar)
@@ -487,18 +505,89 @@ namespace OpenNETCF.Web.Hosting
         }
 
         /// <summary>
-        /// Writes the specifide byte array to the response stream
+        /// Adds the specified number of bytes from a byte array to the response.
         /// </summary>
-        /// <param name="data"></param>
-        /// <param name="length"></param>
+        /// <param name="data">The byte array to send.</param>
+        /// <param name="length">The number of bytes to send, starting at the first byte.</param>
         public override void SendResponseFromMemory(byte[] data, int length)
+        {
+            SendResponseFromMemory(data, 0, length);
+        }
+
+        internal override void SendResponseFromMemory(byte[] data, int offset, int length)
         {
             if (length <= 0)
             {
                 return;
             }
 
-            m_response.Write(data, 0, data.Length);
+            m_response.Write(data, offset, length);
+        }
+
+        /// <summary>
+        /// Adds the contents of the specified file to the response and specifies the starting position in the file and the number of bytes to send.
+        /// </summary>
+        /// <param name="filename">The name of the file to send.</param>
+        /// <param name="offset">The starting position in the file.</param>
+        /// <param name="length">The number of bytes to send.</param>
+        public override void SendResponseFromFile(string filename, long offset, long length)
+        {
+            int et = Environment.TickCount;
+
+            // TODO: allow this to be configurable
+            const int maxBytesToRead = 0x40000;
+
+            // Flush headers to HTTP output stream
+            FlushResponse(false);
+
+            long totalBytesRead = 0;
+            using (FileStream fs = File.OpenRead(filename))
+            {
+                long fileSize = fs.Length;
+                // If length is -1, transmit the remainder of the file:
+                if (length == -1)
+                {
+                    length = fileSize - offset;
+                }
+
+                // check for a broken connection (i.e. a cancelled download)
+                //if (!IsClientConnected())
+                //{
+                //    return;
+                //}
+
+                // Don't allocate a larger array than necessary:
+                var bytesToRead = (int)Math.Min(maxBytesToRead, length);
+                var content = new byte[bytesToRead];
+
+                fs.Seek(offset, SeekOrigin.Begin);
+
+                // packetize output to prevent OOMs on serving large files
+                while (totalBytesRead < length)
+                {
+                    int bytesRead = fs.Read(content, 0, bytesToRead);
+                    // Stop if we didn't read any bytes:
+                    if (bytesRead < 1)
+                        break;
+                    totalBytesRead += bytesRead;
+
+                    // Write directly to the HTTP output stream
+                    WriteToOutput(content, 0, bytesRead);
+                }
+            }
+
+            // if we sent more than 1MB, clean up
+            if (totalBytesRead > 0x100000)
+            {
+                GC.Collect();
+            }
+#if DEBUG
+            et = Environment.TickCount - et;
+            if (et > 10)
+            {
+                HttpRuntime.WriteTrace(string.Format("AsyncWorkerRequest::SendResponseFromFile took {0}ms: {1}", et, filename));
+            }
+#endif
         }
 
         /// <summary>
@@ -1396,7 +1485,7 @@ namespace OpenNETCF.Web.Hosting
 
                      */
                     buffer = Encoding.ASCII.GetBytes(Resources.HttpContinue);
-                    m_output.Write(buffer, 0, buffer.Length);
+                    WriteToOutput(buffer);
                     m_output.Flush();
                 }
 
