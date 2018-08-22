@@ -77,18 +77,16 @@ namespace OpenNETCF.Web.Hosting
 
             this.m_client = client;
             m_logProvider.LogRuntimeInfo(ZoneFlags.WorkerRequest, string.Format("Creating network stream to {0}", m_client.RemoteEndPoint));
+
             m_output = output;
-
-            if (m_output != null)
-            {
-                SetDefaultServerHeaderAndStatus();
-
-                InitializeResponse();
-            }
-            else
+            if (m_output == null)
             {
                 m_logProvider.LogRuntimeInfo(ZoneFlags.WorkerRequest, "Network stream is null!");
             }
+
+            SetDefaultServerHeaderAndStatus();
+            InitializeResponse();
+
             m_logProvider.LogRuntimeInfo(ZoneFlags.WorkerRequest, "-AsyncWorkerRequest");
         }
 
@@ -123,6 +121,18 @@ namespace OpenNETCF.Web.Hosting
         internal override Stream ResponseStream
         {
             get { return m_response; }
+        }
+
+        internal Stream OutputStream
+        {
+            get
+            {
+                if (m_output == null)
+                {
+                    m_output = m_client.CreateNetworkStream();
+                }
+                return m_output;
+            }
         }
 
         /// <summary>
@@ -338,14 +348,14 @@ namespace OpenNETCF.Web.Hosting
                 int retry = 3;
                 while (retry-- > 0)
                 {
-                    if (m_output.CanWrite)
+                    if (OutputStream.CanWrite)
                         break;
 
                     Thread.Sleep(250);
                 }
                 if (retry < 0) throw new IOException("Unable to write to underlying stream.");
 
-                m_output.Write(buffer, offset, count);
+                OutputStream.Write(buffer, offset, count);
             }
             catch (IOException ioEx)
             {
@@ -380,7 +390,7 @@ namespace OpenNETCF.Web.Hosting
                 // coalesce output
                 if (m_response.Length > 0)
                 {
-                    m_response.WriteTo(m_output);
+                    m_response.WriteTo(OutputStream);
                 }
                 m_response.SetLength(0);
                 if (finalFlush)
@@ -417,7 +427,7 @@ namespace OpenNETCF.Web.Hosting
             }
             catch (Exception e)
             {
-                m_logProvider.LogPadarnError("AsyncWorkerRequest.FlushResponse: " + e.Message, null);
+                LogError("AsyncWorkerRequest.FlushResponse: " + e.Message, null);
                 CloseConnection();
             }
         }
@@ -427,8 +437,8 @@ namespace OpenNETCF.Web.Hosting
             try
             {
                 var finalFlush = (bool)ar.AsyncState;
-                m_output.EndWrite(ar);
-                m_output.Flush();
+                OutputStream.EndWrite(ar);
+                OutputStream.Flush();
                 m_response.SetLength(0);
                 if (finalFlush)
                 {
@@ -1486,7 +1496,7 @@ namespace OpenNETCF.Web.Hosting
                      */
                     buffer = Encoding.ASCII.GetBytes(Resources.HttpContinue);
                     WriteToOutput(buffer);
-                    m_output.Flush();
+                    OutputStream.Flush();
                 }
 
                 // Loop until we get all the content downloaded
