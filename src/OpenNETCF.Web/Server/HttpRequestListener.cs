@@ -37,14 +37,16 @@ namespace OpenNETCF.Web.Server
     internal class HttpRequestListener : IRequestListener
     {
         private const int MAX_BUFFER = 32768;
+        private readonly AutoResetEvent _pendingRequest = new AutoResetEvent(false);
+        private Thread _workerThread;
+        private List<SocketWrapperBase> m_sockets = new List<SocketWrapperBase>();
         private List<IPAddress> m_clients = new List<IPAddress>();
         private ILogProvider m_logProvider;
 
         private int m_maxConnections;
         private int m_port;
         private SocketWrapperBase m_serverSocket;
-        private bool m_shutDown = false;
-        private ManualResetEvent requestDone = new ManualResetEvent(false);
+        private bool m_shutDown;
 
         /// <summary>
         /// Create an instance of the listener on the specified port.
@@ -66,7 +68,7 @@ namespace OpenNETCF.Web.Server
 
             var localEndpoint = new IPEndPoint(localIP, m_port);
 
-            if (ServerConfig.GetConfig().UseSsl == true)
+            if (ServerConfig.GetConfig().UseSsl)
             {
                 m_logProvider.LogRuntimeInfo(ZoneFlags.RequestListener | ZoneFlags.Startup, "SSL Enabled");
                 m_serverSocket = new HttpsSocket(m_logProvider);
@@ -108,8 +110,14 @@ namespace OpenNETCF.Web.Server
             try
             {
                 m_shutDown = false;
+                _workerThread = new Thread(WorkerThreadLoop)
+                {
+                    Name = "HttpRequestListenerWorker",
+                    IsBackground = true,
+                };
+                _workerThread.Start();
+                
                 m_serverSocket.Listen(m_maxConnections);
-
                 m_serverSocket.BeginAccept(AcceptRequest, m_serverSocket);
 
                 RaiseStateChanged(true);
@@ -130,6 +138,8 @@ namespace OpenNETCF.Web.Server
             OnReceiveRequest -= ProcessRequest;
             m_shutDown = true;
             m_serverSocket.Close();
+            // Release worker thread:
+            _pendingRequest.Set();
         }
 
         public void Dispose()
@@ -242,26 +252,8 @@ namespace OpenNETCF.Web.Server
                     }
                 }
 
-                ThreadPool.QueueUserWorkItem(delegate
-                {
-                    try
-                    {
-                        HttpWorkerRequest wr = new AsyncWorkerRequest(sock, m_logProvider);
-                        HttpRuntime.ProcessRequest(wr, m_logProvider);
-                    }
-                    catch (Exception ex)
-                    {
-                        string text = string.Format("HttpRuntime.ProcessRequest thread threw {0}: {1}", ex.GetType().Name, ex.Message);
-                        m_logProvider.LogPadarnError(text, null);
-                    }
-                    finally
-                    {
-                        lock (m_clients)
-                        {
-                            m_clients.Remove(client);
-                        }
-                    }
-                });
+                m_sockets.Add(sock);
+                _pendingRequest.Set();
             }
             catch (Exception ex)
             {
@@ -270,32 +262,78 @@ namespace OpenNETCF.Web.Server
             }
             finally
             {
+#if DEBUG
                 et = Environment.TickCount - et;
+                HttpRuntime.WriteTrace(string.Format("HttpRequestListener.ProcessRequest: {0}ms", et));
+#endif
+            }
+        }
+
+        private void WorkerThreadLoop()
+        {
+            while (!m_shutDown)
+            {
+                // Wait for a pending request to respond to.
+                _pendingRequest.WaitOne();
+                while (!m_shutDown && m_sockets.Count > 0)
+                {
+                    SocketWrapperBase sock = m_sockets[0];
+                    ProcessThread(sock);
+                    m_sockets.Remove(sock);
+                }
+            }
+            // Close & Dispose of WaitHandle after shutdown:
+            _pendingRequest.Close();
+        }
+
+        private void ProcessThread(SocketWrapperBase sock)
+        {
+            try
+            {
+                HttpWorkerRequest wr = new AsyncWorkerRequest(sock, m_logProvider);
+                HttpRuntime.ProcessRequest(wr, m_logProvider);
+            }
+            catch (Exception ex)
+            {
+                string text = string.Format("HttpRuntime.ProcessRequest thread threw {0}: {1}", ex.GetType().Name, ex.Message);
+                m_logProvider.LogPadarnError(text, null);
+            }
+            finally
+            {
+                try
+                {
+                    lock (m_clients)
+                    {
+                        IPAddress client = (sock.RemoteEndPoint as IPEndPoint).Address;
+                        m_clients.Remove(client);
+                    }
+                }
+                catch { }
             }
         }
 
         private string ReadAvailableData(NetworkStream ns)
         {
-            if (ns.CanRead)
+            if (!ns.CanRead)
             {
-                int read = 0;
-                var buffer = new byte[MAX_BUFFER];
-                do
-                {
-                    try
-                    {
-                        read += ns.Read(buffer, 0, 1024);
-                    }
-                    catch (IOException)
-                    {
-                        break;
-                    }
-                } while (read <= MAX_BUFFER && ns.DataAvailable);
-
-                return Encoding.UTF8.GetString(buffer, 0, read);
-            }
-            else
                 return string.Empty;
+            }
+
+            int read = 0;
+            var buffer = new byte[MAX_BUFFER];
+            do
+            {
+                try
+                {
+                    read += ns.Read(buffer, 0, 1024);
+                }
+                catch (IOException)
+                {
+                    break;
+                }
+            } while (read <= MAX_BUFFER && ns.DataAvailable);
+
+            return Encoding.UTF8.GetString(buffer, 0, read);
         }
     }
 }
