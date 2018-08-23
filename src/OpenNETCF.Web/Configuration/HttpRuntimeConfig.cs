@@ -19,8 +19,8 @@
 #endregion
 
 using System;
+using System.Threading;
 using System.Xml;
-
 #if WindowsCE
 using OpenNETCF.Configuration;
 #else
@@ -39,23 +39,21 @@ namespace OpenNETCF.Web.Configuration
     public sealed class HttpRuntimeConfig
     {
         private static HttpRuntimeConfig config;
-        private int maxRequestLength = 4096;
         private int maxRequestLengthBytes = -1;
         private int requestLengthDiskThreshold = 256;
         private int requestLengthDiskThresholdBytes = -1;
 
         internal HttpRuntimeConfig()
         {
+            MaxRequestLength = 4096;
+            RequestThreadPriority = ThreadPriority.Normal;
         }
 
         /// <summary>
-        /// Specifies the limit for the input stream buffering threshold, in KB. This limit can be used to prevent denial of service attacks that are caused, for example, by users posting large files to the server. 
+        /// Specifies the limit for the input stream buffering threshold, in KB.
+        /// This limit can be used to prevent denial of service attacks that are caused, for example, by users posting large files to the server. 
         /// </summary>
-        public int MaxRequestLength
-        {
-            get { return maxRequestLength; }
-            internal set { maxRequestLength = value; }
-        }
+        public int MaxRequestLength { get; internal set; }
 
         /// <summary>
         /// Specifies the limit for the input stream buffering threshold, in bytes. This value should not exceed the maxRequestLength attribute.
@@ -66,10 +64,15 @@ namespace OpenNETCF.Web.Configuration
             internal set
             {
                 requestLengthDiskThreshold = value;
-                if (requestLengthDiskThreshold > maxRequestLength)
+                if (requestLengthDiskThreshold > MaxRequestLength)
                     throw new ArgumentException("requestLengthDiskThreshold cannot exceed maxRequestLength");
             }
         }
+
+        /// <summary>
+        /// Specifies the ThreadPriority to use for handling HTTP requests. Defaults to Normal.
+        /// </summary>
+        public ThreadPriority RequestThreadPriority { get; internal set; }
 
         internal int RequestLengthDiskThresholdBytes
         {
@@ -172,6 +175,9 @@ namespace OpenNETCF.Web.Configuration
                             break;
                         case "maxRequestLength":
                             cfg.MaxRequestLength = Int32.Parse(attribute.Value);
+                            break;
+                        case "requestThreadPriority":
+                            cfg.RequestThreadPriority = (ThreadPriority)Enum.Parse(typeof(ThreadPriority), attribute.Value, true);
                             break;
                         case "xmlns":
                             break;

@@ -114,6 +114,7 @@ namespace OpenNETCF.Web.Server
                 {
                     Name = "HttpRequestListenerWorker",
                     IsBackground = true,
+                    Priority = HttpRuntimeConfig.GetConfig().RequestThreadPriority
                 };
                 _workerThread.Start();
                 

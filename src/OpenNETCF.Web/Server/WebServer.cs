@@ -177,11 +177,14 @@ namespace OpenNETCF.Web.Server
 
             m_listener = new HttpRequestListener(bindAddress, bindPort, connections, m_logProvider);
 
-            m_listener.OnStateChange += new ListenerStateChange(listener_OnStateChange);
-            m_listeningThread = new Thread(m_listener.StartListening);
-            m_listeningThread.IsBackground = true;
+            m_listener.OnStateChange += listener_OnStateChange;
+            m_listeningThread = new Thread(m_listener.StartListening)
+            {
+                Name = "HttpRequestListener",
+                IsBackground = true,
+                Priority = HttpRuntimeConfig.GetConfig().RequestThreadPriority
+            };
             m_listeningThread.Start();
-            m_listeningThread.Name = "HttpRequestListener";
             Running = true;
         }
 
