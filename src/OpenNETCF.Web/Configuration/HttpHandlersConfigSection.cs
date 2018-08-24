@@ -25,14 +25,16 @@ namespace OpenNETCF.Web.Configuration
 {
     internal class HttpHandlersConfigSection : List<HttpHandler>
     {
+        internal HttpHandlersConfigSection() { }
+
         internal HttpHandlersConfigSection(XmlNode section, XmlNamespaceManager nsMgr)
         {
-            ParseSection(section, nsMgr);
+            AddRange(section, nsMgr);
         }
 
         public IEnumerable<string> AssemblyNames { get; private set; }
 
-        private void ParseSection(XmlNode section, XmlNamespaceManager nsMgr)
+        internal void AddRange(XmlNode section, XmlNamespaceManager nsMgr)
         {
             AssemblyNames = section.GetAssemblies(nsMgr);
 
@@ -48,7 +50,6 @@ namespace OpenNETCF.Web.Configuration
             }
         }
     }
-
 
     internal class HttpHandler
     {

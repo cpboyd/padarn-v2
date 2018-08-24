@@ -141,6 +141,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Configuration\HttpModulesConfigSection.cs" />
     <Compile Include="Configuration\HttpModuleCollection.cs" />
     <Compile Include="Configuration\VirtualDirectoryMapping.cs" />
     <Compile Include="Handlers\VirtualFileHandler.cs" />
@@ -154,7 +155,7 @@
     <Compile Include="Configuration\ConfigExtensions.cs" />
     <Compile Include="Configuration\CookiesConfiguration.cs" />
     <None Include="Configuration\HandlerBase.cs" />
-    <Compile Include="Configuration\HttpHandlersConfig.cs" />
+    <Compile Include="Configuration\HttpHandlersConfigSection.cs" />
     <Compile Include="Configuration\HttpRuntimeConfig.cs" />
     <Compile Include="Configuration\RestConfig.cs" />
     <Compile Include="Configuration\Role.cs" />

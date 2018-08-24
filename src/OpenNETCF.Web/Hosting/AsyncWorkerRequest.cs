@@ -729,17 +729,12 @@ namespace OpenNETCF.Web.Hosting
                 }
                 else
                 {
-                    t = Type.GetType(typeName);
+                    t = config.GetType(typeName);
 
                     if (t == null)
                     {
-                        t = config.GetType(typeName);
-
-                        if (t == null)
-                        {
-                            throw new HttpException(HttpStatusCode.InternalServerError,
-                                string.Format("Unable To load type '{0}'", typeName));
-                        }
+                        throw new HttpException(HttpStatusCode.InternalServerError,
+                            string.Format("Unable to load type '{0}'", typeName));
                     }
 
                     m_handlerTypeCache.Add(typeName, t);
@@ -754,7 +749,7 @@ namespace OpenNETCF.Web.Hosting
             string subPath = null;
 
             ServerConfig config = ServerConfig.GetConfig();
-            foreach (HttpHandler h in config.HttpHandlers.Where(h => (h.Verb & method) == method))
+            foreach (HttpHandler h in config.HttpHandlersConfig.Where(h => (h.Verb & method) == method))
             {
                 Match match = Regex.Match(fileName, h.Path, RegexOptions.IgnoreCase);
                 if (!match.Success)

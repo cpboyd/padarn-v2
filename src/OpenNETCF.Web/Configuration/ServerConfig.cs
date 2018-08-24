@@ -1,4 +1,4 @@
-#region License
+﻿#region License
 // Copyright ©2017 Tacke Consulting (dba OpenNETCF)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
@@ -71,7 +71,8 @@ namespace OpenNETCF.Web.Configuration
             Security = new SecurityConfig();
             VirtualDirectories = new VirtualDirectoryMappingCollection();
             VirtualPathProviders = new VirtualPathProviders();
-            HttpHandlers = new List<HttpHandler>();
+            HttpHandlersConfig = new HttpHandlersConfigSection();
+            HttpModulesConfig = new HttpModulesConfigSection();
             HttpModules = new HttpModuleCollection();
             AssembliesToLoad = new List<string>();
             m_loadedAssemblies = new List<Assembly>();
@@ -282,6 +283,8 @@ namespace OpenNETCF.Web.Configuration
                 config.HttpModules.Add("authentication", config.Authentication.Module);
             }
 
+            config.HttpModulesConfig.AppendTo(config);
+
             if (cache)
             {
                 m_instance = config;
@@ -292,7 +295,11 @@ namespace OpenNETCF.Web.Configuration
 
         internal Type GetType(string typeName)
         {
-            Type t = null;
+            Type t = Type.GetType(typeName);
+            if (t != null)
+            {
+                return t;
+            }
 
             foreach (Assembly a in m_loadedAssemblies)
             {
@@ -386,7 +393,8 @@ namespace OpenNETCF.Web.Configuration
         /// </summary>
         public VirtualPathProviders VirtualPathProviders { get; internal set; }
 
-        internal List<HttpHandler> HttpHandlers { get; private set; }
+        internal HttpHandlersConfigSection HttpHandlersConfig { get; private set; }
+        internal HttpModulesConfigSection HttpModulesConfig { get; private set; }
         internal HttpModuleCollection HttpModules { get; private set; }
         internal List<string> AssembliesToLoad { get; private set; }
 

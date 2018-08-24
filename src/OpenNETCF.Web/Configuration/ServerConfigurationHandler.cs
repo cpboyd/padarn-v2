@@ -179,9 +179,12 @@ namespace OpenNETCF.Web.Configuration
                             break;
 
                         case "httpHandlers":
-                            var h = new HttpHandlersConfigSection(node, nsMgr);
-                            cfg.AssembliesToLoad.AddRange(h.AssemblyNames); // for backward compatibility
-                            cfg.HttpHandlers.AddRange(h);
+                            cfg.HttpHandlersConfig.AddRange(node, nsMgr);
+                            cfg.AssembliesToLoad.AddRange(cfg.HttpHandlersConfig.AssemblyNames); // for backward compatibility
+                            break;
+
+                        case "httpModules":
+                            cfg.HttpModulesConfig.AddRange(node, nsMgr);
                             break;
 
                         case "session":
