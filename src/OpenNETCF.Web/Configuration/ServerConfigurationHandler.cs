@@ -100,9 +100,6 @@ namespace OpenNETCF.Web.Configuration
                     case "BrowserDefinitions":
                         cfg.BrowserDefinitions = attribute.Value;
                         break;
-                    case "AuthenticationEnabled":
-                        cfg.AuthenticationEnabled = bool.Parse(attribute.Value);
-                        break;
                     case "CertificateName":
                         cfg.CertificateName = attribute.Value;
                         break;

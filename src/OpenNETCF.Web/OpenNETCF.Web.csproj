@@ -141,6 +141,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Configuration\HttpModuleCollection.cs" />
     <Compile Include="Configuration\VirtualDirectoryMapping.cs" />
     <Compile Include="Handlers\VirtualFileHandler.cs" />
     <Compile Include="Handlers\IHttpAsyncHandler.cs" />

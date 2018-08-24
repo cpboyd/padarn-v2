@@ -27,17 +27,14 @@ namespace OpenNETCF.Web
     /// </summary>
     internal static class HttpApplicationFactory
     {
-        private static HttpApplication m_defaultHandler;
+        private static IHttpHandler m_defaultHandler;
 
-        private static HttpApplication InitApplication()
+        private static IHttpHandler InitApplication()
         {
             var application = new HttpApplication();
 
-            AuthenticationConfiguration authCfg = ServerConfig.GetConfig().Authentication;
-            if ((authCfg != null) && authCfg.Enabled && (authCfg.Module != null))
-            {
-                authCfg.Module.Init(application);
-            }
+            // Initialize HTTP modules:
+            ServerConfig.GetConfig().HttpModules.Init(application);
             return application;
         }
 

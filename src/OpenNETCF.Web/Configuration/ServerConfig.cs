@@ -1,4 +1,4 @@
-﻿#region License
+#region License
 // Copyright ©2017 Tacke Consulting (dba OpenNETCF)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
@@ -47,7 +47,7 @@ namespace OpenNETCF.Web.Configuration
         private string m_documentRoot;
         private bool m_loggingEnabled;
         private string m_logFolder;
-        private bool m_logFolderError = false;
+        private bool m_logFolderError;
         private static ServerConfig m_instance;
         private string m_tempRoot;
         private string m_errorFolder;
@@ -72,6 +72,7 @@ namespace OpenNETCF.Web.Configuration
             VirtualDirectories = new VirtualDirectoryMappingCollection();
             VirtualPathProviders = new VirtualPathProviders();
             HttpHandlers = new List<HttpHandler>();
+            HttpModules = new HttpModuleCollection();
             AssembliesToLoad = new List<string>();
             m_loadedAssemblies = new List<Assembly>();
 
@@ -109,7 +110,6 @@ namespace OpenNETCF.Web.Configuration
             Port = DefaultPort;
             MaxConnections = DefaultMaxConnections;
             UseSsl = false;
-            AuthenticationEnabled = false;
             LoggingEnabled = false;
             CustomErrorFolder = Path.Combine(HostLocation, "errors");
             DocumentRoot = Path.Combine(HostLocation, "inetpub");
@@ -189,96 +189,102 @@ namespace OpenNETCF.Web.Configuration
 
         internal static ServerConfig GetConfig(ILogProvider provider, bool cache)
         {
-            ServerConfig config = null;
-
-            if (m_instance == null)
-            {
-                if (provider != null)
-                {
-                    provider.LogRuntimeInfo(ZoneFlags.Startup, "Loading WebServer config node");
-                }
-
-                config = ConfigurationSettings.GetConfig("WebServer") as ServerConfig;
-
-                if (config == null)
-                {
-                    if (provider != null)
-                    {
-                        provider.LogRuntimeInfo(ZoneFlags.Startup, "Unable to locate WebServer config node");
-                    }
-                    throw new ConfigurationException("Unable to load 'WebServer' configuration node");
-                }
-
-                if (provider != null)
-                {
-                    provider.LogRuntimeInfo(ZoneFlags.Startup, "Config.DocumentRoot: " + config.DocumentRoot);
-                }
-
-                if (string.IsNullOrEmpty(config.DocumentRoot))
-                {
-                    throw new ConfigurationException("Empty DocumentRoot is invalid");
-                }
-
-                if (!Directory.Exists(config.DocumentRoot))
-                {
-                    if (provider != null)
-                    {
-                        provider.LogRuntimeInfo(ZoneFlags.Startup, "Creating DocumentRoot at " + config.DocumentRoot);
-                    }
-                    Directory.CreateDirectory(config.DocumentRoot);
-                    // TODO: Should we dump in a standard "default" web page (pulled from an embedded resource), or is the 404 going to be enough?
-                    // if we have a page that at least says "the server is installed an running" I think that would be useful
-                }
-
-                foreach (string assemblyName in config.AssembliesToLoad.Distinct())
-                {
-                    string newName = Path.Combine(Path.Combine(config.DocumentRoot, "bin"), assemblyName);
-
-                    if (provider != null)
-                    {
-                        provider.LogRuntimeInfo(ZoneFlags.Startup, "Loading Assembly: " + newName);
-                    }
-
-                    try
-                    {
-                        // try loading from the docs folder first
-                        if (File.Exists(newName))
-                        {
-                            Assembly a = Assembly.LoadFrom(newName);
-                            config.m_loadedAssemblies.Add(a);
-                            Type[] t = a.GetTypes();
-                            Debug.WriteLine(t.ToString());
-
-                        }
-                        else
-                        {
-                            // try the loader path (exception will throw if it's not there)
-                            Assembly.LoadFrom(assemblyName);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        string msg = string.Format("Unable to load requested assembly '{0}': {1}", assemblyName, ex.Message);
-                        Debug.WriteLine(msg);
-                        if (provider != null)
-                        {
-                            provider.LogPadarnError(msg, null);
-                        }
-                    }
-                }
-                if (cache)
-                {
-                    m_instance = config;
-                }
-            }
-            else
+            if (m_instance != null)
             {
                 if (m_instance.LogFileFolder == null)
                 {
                     m_instance.LogFileFolder = @"\Temp\PadarnLogs";
                 }
 
-                config = m_instance;
+                return m_instance;
+            }
+
+            if (provider != null)
+            {
+                provider.LogRuntimeInfo(ZoneFlags.Startup, "Loading WebServer config node");
+            }
+
+            var config = ConfigurationSettings.GetConfig("WebServer") as ServerConfig;
+
+            if (config == null)
+            {
+                if (provider != null)
+                {
+                    provider.LogRuntimeInfo(ZoneFlags.Startup, "Unable to locate WebServer config node");
+                }
+                throw new ConfigurationException("Unable to load 'WebServer' configuration node");
+            }
+
+            if (provider != null)
+            {
+                provider.LogRuntimeInfo(ZoneFlags.Startup, "Config.DocumentRoot: " + config.DocumentRoot);
+            }
+
+            if (string.IsNullOrEmpty(config.DocumentRoot))
+            {
+                throw new ConfigurationException("Empty DocumentRoot is invalid");
+            }
+
+            if (!Directory.Exists(config.DocumentRoot))
+            {
+                if (provider != null)
+                {
+                    provider.LogRuntimeInfo(ZoneFlags.Startup, "Creating DocumentRoot at " + config.DocumentRoot);
+                }
+                Directory.CreateDirectory(config.DocumentRoot);
+                // TODO: Should we dump in a standard "default" web page (pulled from an embedded resource), or is the 404 going to be enough?
+                // if we have a page that at least says "the server is installed an running" I think that would be useful
+            }
+
+            foreach (string assemblyName in config.AssembliesToLoad.Distinct())
+            {
+                string newName = Path.Combine(Path.Combine(config.DocumentRoot, "bin"), assemblyName);
+
+                if (provider != null)
+                {
+                    provider.LogRuntimeInfo(ZoneFlags.Startup, "Loading Assembly: " + newName);
+                }
+
+                try
+                {
+                    // try loading from the docs folder first
+                    if (File.Exists(newName))
+                    {
+                        Assembly a = Assembly.LoadFrom(newName);
+                        config.m_loadedAssemblies.Add(a);
+                        Type[] t = a.GetTypes();
+                        Debug.WriteLine(t.ToString());
+                    }
+                    else
+                    {
+                        // try the loader path (exception will throw if it's not there)
+                        Assembly.LoadFrom(assemblyName);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    string msg = string.Format("Unable to load requested assembly '{0}': {1}", assemblyName,
+                        ex.Message);
+                    Debug.WriteLine(msg);
+                    if (provider != null)
+                    {
+                        provider.LogPadarnError(msg, null);
+                    }
+                }
+            }
+
+            if (config.Authentication != null && config.Authentication.Enabled)
+            {
+                if (config.Authentication.Module == null)
+                {
+                    throw new ConfigurationException("Authentication enabled but no module to Init()");
+                }
+                config.HttpModules.Add("authentication", config.Authentication.Module);
+            }
+
+            if (cache)
+            {
+                m_instance = config;
             }
 
             return config;
@@ -335,7 +341,10 @@ namespace OpenNETCF.Web.Configuration
         /// <summary>
         /// Gets a value indicating if authentication is enabled for the server
         /// </summary>
-        public bool AuthenticationEnabled { get; internal set; }
+        public bool AuthenticationEnabled
+        {
+            get { return Authentication != null && Authentication.Enabled; }
+        }
 
         /// <summary>
         /// Gets the authentication configuration for the server
@@ -378,6 +387,7 @@ namespace OpenNETCF.Web.Configuration
         public VirtualPathProviders VirtualPathProviders { get; internal set; }
 
         internal List<HttpHandler> HttpHandlers { get; private set; }
+        internal HttpModuleCollection HttpModules { get; private set; }
         internal List<string> AssembliesToLoad { get; private set; }
 
         /// <summary>
