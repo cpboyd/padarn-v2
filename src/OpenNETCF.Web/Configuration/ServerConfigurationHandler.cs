@@ -140,12 +140,12 @@ namespace OpenNETCF.Web.Configuration
                             break;
 
                         case "defaultDocument":
-                            IEnumerable<string> docs = node.GetAttributeList("files/add", "value", nsMgr);
+                            IEnumerable<string> docs = node.GetNodeValues(nsMgr, "files", "add/@value");
                             cfg.DefaultDocuments.AddRange(docs);
                             break;
 
                         case "assemblies":
-                            IEnumerable<string> assemblyNames = node.GetAttributeList("add", "assembly", nsMgr);
+                            IEnumerable<string> assemblyNames = node.GetNodeValues(nsMgr, "add/@assembly");
                             cfg.AssembliesToLoad.AddRange(assemblyNames);
                             break;
 
@@ -158,7 +158,7 @@ namespace OpenNETCF.Web.Configuration
                             break;
 
                         case "virtualDirectories":
-                            cfg.VirtualDirectories.AddRange(new VirtualDirectoryMappingCollection(node));
+                            cfg.VirtualDirectories.AddRange(node);
                             break;
 
                         case "cookies":
@@ -170,11 +170,11 @@ namespace OpenNETCF.Web.Configuration
                             break;
 
                         case "caching":
-                            cfg.Caching.AddRange(new CachingConfig(node, nsMgr));
+                            cfg.Caching.AddRange(node, nsMgr);
                             break;
 
                         case "virtualPathProviders":
-                            IEnumerable<string> providers = node.GetAttributeList("add", "type", nsMgr);
+                            IEnumerable<string> providers = node.GetNodeValues(nsMgr, "add/@type");
                             cfg.VirtualPathProviders.AddRange(providers);
                             break;
 

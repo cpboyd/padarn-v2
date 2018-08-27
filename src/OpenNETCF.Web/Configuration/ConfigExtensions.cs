@@ -20,20 +20,32 @@ namespace OpenNETCF.Web.Configuration
 
         public static IEnumerable<string> GetAssemblies(this XmlNode section, XmlNamespaceManager nsmgr)
         {
-            XmlNodeList list = section.GetNodes("assembly", nsmgr);
+            XmlNodeList list = section.GetNodes(nsmgr, "assembly");
             return (from XmlNode node in list select node.InnerText);
         }
 
-        public static XmlNodeList GetNodes(this XmlNode section, string xpath, XmlNamespaceManager nsmgr)
+        public static XmlNodeList GetNodes(this XmlNode section, XmlNamespaceManager nsMgr, params string[] path)
         {
-            return (nsmgr == null)
+            string xpath = nsMgr.CombinePath(path);
+            return (nsMgr == null)
                 ? section.SelectNodes(xpath)
-                : section.SelectNodes("padarn:" + xpath, nsmgr);
+                : section.SelectNodes(xpath, nsMgr);
         }
 
-        public static IEnumerable<string> GetNodeValues(this XmlNode section, string xpath, XmlNamespaceManager nsmgr)
+        public static string CombinePath(this XmlNamespaceManager nsMgr, params string[] path)
         {
-            XmlNodeList list = section.GetNodes(xpath, nsmgr);
+            return (nsMgr == null)
+                ? string.Join("/", path)
+                : "padarn:" + string.Join("/padarn:", path);
+        }
+
+        public static IEnumerable<string> GetNodeValues(this XmlNode section, XmlNamespaceManager nsmgr, params string[] path)
+        {
+            return section.GetNodes(nsmgr, path).GetValues();
+        }
+
+        public static IEnumerable<string> GetValues(this XmlNodeList list)
+        {
             return (from XmlNode node in list
                     where node != null
                     select node.Value);
@@ -44,11 +56,6 @@ namespace OpenNETCF.Web.Configuration
             return (from XmlNode node in list
                     where node.Attributes[attribute] != null
                     select node.Attributes[attribute].Value);
-        }
-
-        public static IEnumerable<string> GetAttributeList(this XmlNode section, string xpath, string attribute, XmlNamespaceManager nsmgr)
-        {
-            return section.GetNodeValues(xpath + "/@" + attribute, nsmgr);
         }
 
         public static string AttributeOrEmpty(this XmlNode node, string attribute)

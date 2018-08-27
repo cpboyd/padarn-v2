@@ -38,7 +38,7 @@ namespace OpenNETCF.Web.Configuration
         {
             AssemblyNames = section.GetAssemblies(nsMgr);
 
-            XmlNodeList list = section.GetNodes("add", nsMgr);
+            XmlNodeList list = section.GetNodes(nsMgr, "add");
             foreach (XmlNode node in list)
             {
                 string verb = node.Attributes["verb"].Value;

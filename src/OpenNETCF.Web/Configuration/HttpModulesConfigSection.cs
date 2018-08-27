@@ -22,7 +22,7 @@ namespace OpenNETCF.Web.Configuration
 
         internal void AddRange(XmlNode section, XmlNamespaceManager nsMgr)
         {
-            XmlNodeList list = section.GetNodes("add", nsMgr);
+            XmlNodeList list = section.GetNodes(nsMgr, "add");
             foreach (XmlNode node in list)
             {
                 Add(new HttpModuleElement(node.Attributes));

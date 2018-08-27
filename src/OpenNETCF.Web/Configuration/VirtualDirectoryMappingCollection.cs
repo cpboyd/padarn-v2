@@ -32,7 +32,7 @@ namespace OpenNETCF.Web.Configuration
 
         internal VirtualDirectoryMappingCollection(XmlNode node)
         {
-            ParseXml(node);
+            AddRange(node);
         }
 
         public VirtualDirectoryMapping this[string virtualPath]
@@ -53,7 +53,7 @@ namespace OpenNETCF.Web.Configuration
                     .FirstOrDefault();
         }
 
-        private void ParseXml(XmlNode node)
+        internal void AddRange(XmlNode node)
         {
             if (!node.HasChildNodes)
             {
@@ -86,7 +86,7 @@ namespace OpenNETCF.Web.Configuration
 
                     HandlerBase.CheckForUnrecognizedAttributes(directoryNode);
 
-                    this.Add(virtualDir);
+                    Add(virtualDir);
                 }
             }
         }

@@ -32,13 +32,9 @@ namespace OpenNETCF.Web.Configuration
         {
         }
 
-        internal CachingConfig(XmlNode node, XmlNamespaceManager nsmgr)
+        internal CachingConfig(XmlNode section, XmlNamespaceManager nsMgr)
         {
-            XmlNodeList list = node.GetNodes("profiles/add", nsmgr);
-            foreach (XmlNode profile in list)
-            {
-                Add(new CachingProfile(profile));
-            }
+            AddRange(section, nsMgr);
         }
 
         /// <summary>
@@ -47,6 +43,15 @@ namespace OpenNETCF.Web.Configuration
         public CachingProfile[] Profiles
         {
             get { return ToArray(); }
+        }
+
+        internal void AddRange(XmlNode section, XmlNamespaceManager nsMgr)
+        {
+            XmlNodeList list = section.GetNodes(nsMgr, "profiles", "add");
+            foreach (XmlNode profile in list)
+            {
+                Add(new CachingProfile(profile));
+            }
         }
     }
 }
